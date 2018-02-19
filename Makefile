@@ -153,6 +153,9 @@ tascar_pdf: libtascargui.a
 $(PREFIX)/bin/%: %
 	cp $< $@
 
+$(PREFIX)/lib/%: %
+	cp $< $@
+
 %: %.o
 	$(CXX) $(CXXFLAGS) $(LDLIBS) $^ -o $@
 
