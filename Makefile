@@ -42,7 +42,6 @@ install: all
 	install -D libtascar/src/*.h -t $(DESTDIR)$(INCDIR)/tascar
 	install -D libtascar/build/*.h -t $(DESTDIR)$(INCDIR)/tascar
 	install -D plugins/build/*.so -t $(DESTDIR)$(LIBDIR)
-	install -D apps/build/tascar_* -t $(DESTDIR)$(BINDIR)
 	ldconfig -n $(DESTDIR)$(LIBDIR)
 
 .PHONY : all clean test
