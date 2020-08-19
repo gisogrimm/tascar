@@ -6,49 +6,39 @@ include ../rules.mk
 #
 # main targets:
 #
-RECEIVERS = omni nsp amb3h0v amb3h3v amb1h0v amb1h1v cardioid	\
-  neukom_basic neukom_inphase hann vbap vbap3d hoa2d ortf	\
-  intensityvector vmic chmap hoa2d_fuma cardioidmod debugpos	\
-  hoa2d_fuma_hos fakebf wfs hoa3d hoa3d_enc simplefdn itu51 foaconv hrtf
+RECEIVERS = omni ortf simplefdn itu51 hrtf
 
-SOURCES = omni cardioidmod door generic1storder
+SOURCES = omni
 
-TASCARMODS = system pos2osc sampler pendulum epicycles motionpath	\
-  foa2hoadiff route oscevents oscjacktime ltcgen lightctl nearsensor	\
-  dirgain dummy matrix hoafdnrot mpu6050track touchosc savegains	\
-  hrirconv joystick hossustain midicc2osc midictl rotator oscserver	\
-  qualisystracker orientationmodulator locationmodulator		\
-  locationvelocity granularsynth fail oscrelay waitforjackport sleep
+TASCARMODS = system route touchosc savegains oscserver	\
+   waitforjackport sleep
 
-TASCARMODSGUI = tracegui simplecontroller timedisplay geopresets
+#TASCARMODSGUI = tracegui simplecontroller timedisplay geopresets
 
-AUDIOPLUGINS = delay dummy gate hannenv identity lipsync							\
-  lipsync_paper lookatme metronome onsetdetector sine sndfile spksim	\
-  gainramp pulse pink dumplevels feedbackdelay bandpass filter				\
-  level2osc const noise loopmachine pos2osc gain sndfileasync					\
-  addchannel
+AUDIOPLUGINS = delay identity metronome sine sndfile pink bandpass	\
+   filter loopmachine gain sndfileasync
 
 ifeq "$(HAS_OPENCV2)" "yes"
-GLABSENSORS += trackir
-CXXFLAGS += -DHAS_OPENCV2
+#GLABSENSORS += trackir
+#CXXFLAGS += -DHAS_OPENCV2
 endif
 ifeq "$(HAS_OPENCV4)" "yes"
-GLABSENSORS += trackir
-CXXFLAGS += -DHAS_OPENCV4
+#GLABSENSORS += trackir
+#CXXFLAGS += -DHAS_OPENCV4
 endif
 # trackir requires opencv2, which is not available on Ubuntu 20.04
 
 
 ifeq "$(HAS_LSL)" "yes"
-TASCARMODS +=  lsljacktime lslactor levels2osc pos2lsl
-AUDIOPLUGINS += speechactivity periodogram
-TASCARMODSGUI += datalogging glabsensors
-GLABSENSORS += smiley eog emergency espheadtracker midicc	\
-  qualisys jackstatus serial
+#TASCARMODS +=  lsljacktime lslactor levels2osc pos2lsl
+#AUDIOPLUGINS += speechactivity periodogram
+#TASCARMODSGUI += datalogging glabsensors
+#GLABSENSORS += smiley eog emergency espheadtracker midicc	\
+#  qualisys jackstatus serial
 endif
 
 ifeq "$(HAS_OPENMHA)" "yes"
-AUDIOPLUGINS +=  openmha
+#AUDIOPLUGINS +=  openmha
 endif
 
 #

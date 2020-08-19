@@ -74,10 +74,10 @@ LDFLAGS += -L./
 ver:
 	echo '#define TASCARVER "'$(FULLVERSION)'"' > build/tascarver.h
 
-lib:  $(BUILD_OBJECTS) build/libtascar.so.$(LIBVERSION) build/libtascargui.so.$(LIBVERSION) build/libtascardmx.so.$(LIBVERSION)
+lib:  $(BUILD_OBJECTS) build/libtascar.so.$(LIBVERSION)
 	ldconfig -n build
 
-symlink: build/libtascar.so build/libtascargui.so build/libtascardmx.so
+symlink: build/libtascar.so
 
 build/libtascar.so.%: $(BUILD_OBJECTS)
 	$(CXX) -shared -Wl,-soname,libtascar.so.$(SOVERSION) -o $@ $^ ${LDFLAGS} ${LDLIBS}

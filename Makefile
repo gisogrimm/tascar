@@ -4,7 +4,7 @@ BINDIR=$(PREFIX)/bin
 INCDIR=$(PREFIX)/include
 DESTDIR=
 
-MODULES = libtascar apps plugins gui
+MODULES = libtascar plugins
 DOCMODULES = doc manual
 
 all: $(MODULES)
@@ -19,9 +19,6 @@ $(MODULES:external_libs=) $(DOCMODULES):
 clean:
 	for m in $(MODULES) $(DOCMODULES); do $(MAKE) -C $$m clean; done
 	$(MAKE) -C test clean
-	$(MAKE) -C manual clean
-	$(MAKE) -C examples clean
-	$(MAKE) -C external_libs clean
 	rm -Rf build devkit/Makefile.local devkit/build
 
 test:
@@ -46,8 +43,6 @@ install: all
 	install -D libtascar/build/*.h -t $(DESTDIR)$(INCDIR)/tascar
 	install -D plugins/build/*.so -t $(DESTDIR)$(LIBDIR)
 	install -D apps/build/tascar_* -t $(DESTDIR)$(BINDIR)
-	install -D gui/build/tascar -t $(DESTDIR)$(BINDIR)
-	install -D gui/build/tascar_spkcalib -t $(DESTDIR)$(BINDIR)
 	ldconfig -n $(DESTDIR)$(LIBDIR)
 
 .PHONY : all clean test
