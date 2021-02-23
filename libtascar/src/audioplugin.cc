@@ -42,6 +42,8 @@ TASCAR::audioplugin_t::audioplugin_t( const audioplugin_cfg_t& cfg )
     libname += plugintype + ".dylib";
   #elif __linux__
     libname += plugintype + ".so";
+  #elif WIN32
+    libname += plugintype + ".dll";
   #else
     #error not supported
   #endif

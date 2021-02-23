@@ -14,6 +14,7 @@
 
 extern "C" char* strptime(const char* s, const char* f, struct tm* tm);
 extern "C" void usleep(__int64 usec);
+#define popen _popen
 
 #endif _WINDOWS_PORT_H
 

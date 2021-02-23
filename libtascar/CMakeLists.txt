@@ -110,7 +110,8 @@ find_package(GSL REQUIRED)
 #find_package(liblo REQUIRED)
 #find_package(GTK3 COMPONENTS gtkmm)
 find_package(LibXml++ REQUIRED)
-
+find_package(dlfcn-win32 REQUIRED)
+set(CMAKE_DL_LIBS dlfcn-win32::dl)
 
 if (JACK_FOUND AND LIBSNDFILE_FOUND AND LIBXML++_FOUND AND FFTW_FOUND AND LIBLO_FOUND AND LIBSAMPLERATE_FOUND AND GSL_FOUND AND EIGEN3_FOUND)
     message("All dependencies ok!")
