@@ -8,6 +8,12 @@
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
+#include <iomanip>
+#include <sstream>
+#include <time.h>
+
+extern "C" char* strptime(const char* s, const char* f, struct tm* tm);
+
 #endif _WINDOWS_PORT_H
 
 #ifdef WIN32

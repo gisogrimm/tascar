@@ -78,6 +78,7 @@ set(LIB_SOURCES
         ${PROJECT_SOURCE_DIR}/src/ola.cc
         ${PROJECT_SOURCE_DIR}/src/vbap3d.cc
         ${PROJECT_SOURCE_DIR}/src/hoa.cc
+		${PROJECT_SOURCE_DIR}/src/windows_port.cc
         )
 if (Linux)
     list(APPEND LIB_HEADER

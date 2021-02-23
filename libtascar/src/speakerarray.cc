@@ -2,6 +2,10 @@
 #include "errorhandling.h"
 #include <algorithm>
 #include <chrono>
+#ifdef WIN32
+#include <ctime> // time_t
+#include "windows_port.h"
+#endif
 #include <random>
 #include <string.h>
 #include <fstream>
