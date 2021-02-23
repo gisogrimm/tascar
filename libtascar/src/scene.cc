@@ -2,9 +2,15 @@
 #include "amb33defs.h"
 #include "errorhandling.h"
 #include <algorithm>
+#ifdef WIN32
+#include "dirent.h"
+#include "windows.h"
+#else
 #include <fnmatch.h>
-#include <fstream>
 #include <libgen.h>
+#endif
+#include "shlwapi.h"
+#include <fstream>
 #include <locale.h>
 #include <set>
 #include <stdio.h>
@@ -789,9 +795,23 @@ TASCAR::Scene::scene_t::find_object(const std::string& pattern)
   std::vector<TASCAR::Scene::object_t*> retv;
   std::vector<TASCAR::Scene::object_t*> objs(get_objects());
   for(std::vector<TASCAR::Scene::object_t*>::iterator it = objs.begin();
-      it != objs.end(); ++it)
+      it != objs.end(); ++it) {
+#ifdef WIN32
+	// https://stackoverflow.com/questions/35877738/windows-fnmatch-substitute
+    wchar_t wname[1024];
+	wchar_t wmask[1024];
+
+	size_t outsize;
+    mbstowcs_s(&outsize, wname, (*it)->get_name().c_str(), 1024);
+	mbstowcs_s(&outsize, wmask, pattern.c_str(), 1024);
+
+	if(PathMatchSpecW(wname, wmask))
+	  retv.push_back(*it);
+#else
     if(fnmatch(pattern.c_str(), (*it)->get_name().c_str(), FNM_PATHNAME) == 0)
       retv.push_back(*it);
+#endif
+  }
   return retv;
 }
 
