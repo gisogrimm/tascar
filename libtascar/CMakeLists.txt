@@ -117,6 +117,9 @@ else ()
     message("Missing dependencies.")
 endif ()
 
+# Cross platform path manipulation
+add_subdirectory(third_party/cwalk)
+
 # ADDITIONAL FLAGS
 set(PLUGINPREFIX "" CACHE STRING "Prefix for plugins")
 if (NOT PLUGINPREFIX MATCHES "")
@@ -149,6 +152,7 @@ target_include_directories(tascar
 target_link_libraries(tascar
         PRIVATE
         Threads::Threads
+		cwalk
         PUBLIC
         ${LIBXML++_LIBRARIES}
         ${LIBLO_LIBRARIES}
@@ -206,7 +210,7 @@ if (GTK3_FOUND)
             )
     target_link_libraries(tascargui
             PRIVATE
-            Threads::Threads
+            Threads::Threads			
             PUBLIC
             tascar
             #${LIBXML++_LIBRARIES}
