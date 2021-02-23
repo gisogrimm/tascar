@@ -13,11 +13,12 @@
 #include <time.h>
 
 extern "C" char* strptime(const char* s, const char* f, struct tm* tm);
+extern "C" void usleep(__int64 usec);
 
 #endif _WINDOWS_PORT_H
 
 #ifdef WIN32
-// Some nasty Windows header declare MIN and MAX macros, remove them  everytime this header is included!
+// Some nasty Windows header declare MIN and MAX macros, remove them every time this header is included!
 #undef min
 #undef max
 #endif
