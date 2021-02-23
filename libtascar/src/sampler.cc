@@ -210,7 +210,7 @@ void TASCAR::sampler_t::run()
 {
   start();
   while( !b_quit ){
-    sleep(1);
+    usleep(1 * 1000 * 1000);
   }
   stop();
 }
