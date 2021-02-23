@@ -137,9 +137,8 @@ add_definitions(-D_USE_MATH_DEFINES) # For M_PI
 # libtascar
 add_library(tascar ${LIB_SOURCES})
 target_include_directories(tascar
-        PRIVATE
-        ${PROJECT_SOURCE_DIR}/include
         PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
         ${LIBXML++_INCLUDE_DIRS}
         ${LIBLO_INCLUDE_DIRS}
         ${LIBSNDFILE_INCLUDE_DIRS}
