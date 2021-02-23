@@ -6,6 +6,8 @@
 #include "amb33defs.h"
 #include <samplerate.h>
 
+#include "windows_port.h"
+
 using namespace TASCAR;
 
 wave_t::wave_t(uint32_t chunksize)

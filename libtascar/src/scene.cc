@@ -2,9 +2,11 @@
 #include "amb33defs.h"
 #include "errorhandling.h"
 #include <algorithm>
+#ifndef WIN32
 #include <fnmatch.h>
-#include <fstream>
 #include <libgen.h>
+#endif
+#include <fstream>
 #include <locale.h>
 #include <set>
 #include <stdio.h>
@@ -789,9 +791,15 @@ TASCAR::Scene::scene_t::find_object(const std::string& pattern)
   std::vector<TASCAR::Scene::object_t*> retv;
   std::vector<TASCAR::Scene::object_t*> objs(get_objects());
   for(std::vector<TASCAR::Scene::object_t*>::iterator it = objs.begin();
-      it != objs.end(); ++it)
+      it != objs.end(); ++it) {
+#ifdef WIN32
+    if(fnmatch_win32(pattern.c_str(), (*it)->get_name().c_str()))
+	  retv.push_back(*it);
+#else
     if(fnmatch(pattern.c_str(), (*it)->get_name().c_str(), FNM_PATHNAME) == 0)
       retv.push_back(*it);
+#endif
+  }
   return retv;
 }
 

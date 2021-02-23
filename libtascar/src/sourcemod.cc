@@ -22,6 +22,8 @@ sourcemod_t::sourcemod_t( xmlpp::Element* cfg )
     libname += sourcetype + ".dylib";
   #elif __linux__
     libname += sourcetype + ".so";
+  #elif WIN32
+    libname += sourcetype + ".dll";
   #else
     #error not supported
   #endif

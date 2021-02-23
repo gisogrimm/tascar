@@ -36,6 +36,8 @@
 #include "defs.h"
 #include <stdint.h>
 
+#include "windows_port.h"
+
 /// Avoid de-normals by flipping to zero
 template<class T> void make_friendly_number(T& x)
 {

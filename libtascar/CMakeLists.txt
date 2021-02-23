@@ -78,6 +78,7 @@ set(LIB_SOURCES
         ${PROJECT_SOURCE_DIR}/src/ola.cc
         ${PROJECT_SOURCE_DIR}/src/vbap3d.cc
         ${PROJECT_SOURCE_DIR}/src/hoa.cc
+		${PROJECT_SOURCE_DIR}/src/windows_port.cc
         )
 if (Linux)
     list(APPEND LIB_HEADER
@@ -100,22 +101,26 @@ set(UI_SOURCES
 
 # REQUIREMENTS
 find_package(Threads REQUIRED)
-find_package(Jack REQUIRED)
-find_package(LibSndFile REQUIRED)
-find_package(LibSamplerate REQUIRED)
-find_package(FFTW REQUIRED)
+#find_package(Jack2 REQUIRED) # was Jack
+find_package(SndFile REQUIRED) # was LibSndFile
+find_package(SampleRate REQUIRED) # was LibSamplerate
+find_package(FFTW3 REQUIRED) # was FFTW
 find_package(Eigen3 REQUIRED)
-find_package(liblo REQUIRED)
 find_package(GSL REQUIRED)
-find_package(GTK3 COMPONENTS gtkmm)
+#find_package(liblo REQUIRED)
+#find_package(GTK3 COMPONENTS gtkmm)
 find_package(LibXml++ REQUIRED)
-
+find_package(dlfcn-win32 REQUIRED)
+set(CMAKE_DL_LIBS dlfcn-win32::dl)
 
 if (JACK_FOUND AND LIBSNDFILE_FOUND AND LIBXML++_FOUND AND FFTW_FOUND AND LIBLO_FOUND AND LIBSAMPLERATE_FOUND AND GSL_FOUND AND EIGEN3_FOUND)
     message("All dependencies ok!")
 else ()
-    message(FATAL_ERROR "Missing dependencies.")
+    message("Missing dependencies.")
 endif ()
+
+# Cross platform path manipulation
+add_subdirectory(third_party/cwalk)
 
 # ADDITIONAL FLAGS
 set(PLUGINPREFIX "" CACHE STRING "Prefix for plugins")
@@ -124,7 +129,7 @@ if (NOT PLUGINPREFIX MATCHES "")
     add_compile_definitions(PLUGINPREFIX=${PLUGINPREFIX})
 endif ()
 add_compile_definitions(CMAKE)
-
+add_definitions(-D_USE_MATH_DEFINES) # For M_PI
 # CMake package config
 
 
@@ -132,9 +137,8 @@ add_compile_definitions(CMAKE)
 # libtascar
 add_library(tascar ${LIB_SOURCES})
 target_include_directories(tascar
-        PRIVATE
-        ${PROJECT_SOURCE_DIR}/include
         PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
         ${LIBXML++_INCLUDE_DIRS}
         ${LIBLO_INCLUDE_DIRS}
         ${LIBSNDFILE_INCLUDE_DIRS}
@@ -143,10 +147,13 @@ target_include_directories(tascar
         ${JACK_INCLUDE_DIRS}
         ${EIGEN3_INCLUDE_DIR}
         ${GSL_INCLUDE_DIR}
+		${CMAKE_CURRENT_LIST_DIR}/../../../third_party/unistd
+		${CMAKE_CURRENT_LIST_DIR}/../../../third_party/getopt-for-windows
         )
 target_link_libraries(tascar
         PRIVATE
         Threads::Threads
+		cwalk
         PUBLIC
         ${LIBXML++_LIBRARIES}
         ${LIBLO_LIBRARIES}
@@ -204,7 +211,7 @@ if (GTK3_FOUND)
             )
     target_link_libraries(tascargui
             PRIVATE
-            Threads::Threads
+            Threads::Threads			
             PUBLIC
             tascar
             #${LIBXML++_LIBRARIES}

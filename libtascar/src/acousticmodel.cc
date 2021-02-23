@@ -1,6 +1,8 @@
 #include "acousticmodel.h"
 #include "errorhandling.h"
 
+#include "windows_port.h"
+
 using namespace TASCAR;
 using namespace TASCAR::Acousticmodel;
 

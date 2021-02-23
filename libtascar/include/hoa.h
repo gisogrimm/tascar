@@ -123,7 +123,7 @@ namespace HOA {
     uint32_t amb_channels;
     uint32_t out_channels;
     int32_t M;
-    mode_t dectype;
+    decoder_t::modifier_t dectype;
     method_t method;
   };
 

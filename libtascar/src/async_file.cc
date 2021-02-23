@@ -6,6 +6,8 @@
 
 static std::string async_file_error("");
 
+#include "windows_port.h"
+
 std::string num2str(float num)
 {
   char c_str[64];

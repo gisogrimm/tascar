@@ -19,6 +19,8 @@ TASCAR::receivermod_t::receivermod_t(xmlpp::Element* cfg)
   libname += receivertype + ".dylib";
 #elif __linux__
   libname += receivertype + ".so";
+#elif WIN32
+  libname += receivertype + ".dll";
 #else
 #error not supported
 #endif
