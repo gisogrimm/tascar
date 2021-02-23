@@ -30,6 +30,8 @@
 #include <fstream>
 #include "errorhandling.h"
 #include "xmlconfig.h"
+#include <unistd.h>
+#include "windows_port.h"
 
 #define QUICKHULL_1
 

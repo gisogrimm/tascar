@@ -31,6 +31,8 @@
 #include "audiochunks.h"
 #include <math.h>
 
+#include "windows_port.h"
+
 namespace TASCAR {
 
   class sinctable_t {

@@ -1,6 +1,8 @@
 #include "levelmeter.h"
 #include <algorithm>
 
+#include "windows_port.h"
+
 TASCAR::levelmeter_t::levelmeter_t(float fs, float tc, levelmeter::weight_t weight)
   : wave_t(fs*tc),
     w(weight),

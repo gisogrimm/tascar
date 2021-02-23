@@ -192,8 +192,8 @@ int osc_server_t::dispatch_data_message(const char* path,lo_message m)
   if( !isactive )
     return 0;
   size_t len(lo_message_length(m,path));
-  char data[len+1];
-  return dispatch_data(lo_message_serialise(m,path,data,NULL),len);
+  std::vector<char> data(len+1);
+  return dispatch_data(lo_message_serialise(m,path,data.data(),NULL),len);
 }
 
 osc_server_t::~osc_server_t()
