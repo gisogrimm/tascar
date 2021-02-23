@@ -2,6 +2,10 @@
 
 #ifdef WIN32
 
+#include "dirent.h"
+#include "shlwapi.h"
+#include "windows.h"
+
 // https://stackoverflow.com/questions/321849/strptime-equivalent-on-windows
 char* strptime(const char* s, const char* f, struct tm* tm)
 {
@@ -34,6 +38,19 @@ void usleep(__int64 usec)
   SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
   WaitForSingleObject(timer, INFINITE);
   CloseHandle(timer);
+}
+
+
+bool fnmatch_win32(const char* mask, const char* name) {
+  // https://stackoverflow.com/questions/35877738/windows-fnmatch-substitute
+  wchar_t wname[1024];
+  wchar_t wmask[1024];
+
+  size_t outsize;
+  mbstowcs_s(&outsize, wname, name, 1024);
+  mbstowcs_s(&outsize, wmask, mask, 1024);
+
+  return PathMatchSpecW(wname, wmask);
 }
 
 #endif

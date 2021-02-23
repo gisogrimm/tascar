@@ -14,6 +14,8 @@
 
 extern "C" char* strptime(const char* s, const char* f, struct tm* tm);
 extern "C" void usleep(__int64 usec);
+extern "C" bool fnmatch_win32(const char* mask, const char* name);
+
 #define popen _popen
 
 #endif _WINDOWS_PORT_H
