@@ -23,7 +23,11 @@
 #include <unistd.h>
 #include "defs.h"
 #include "xmlconfig.h"
+#ifdef WIN32
+#include <pcre.h>
+#else
 #include <regex.h>
+#endif
 
 static std::string errmsg("");
 
@@ -90,10 +94,25 @@ double jackc_portless_t::tp_get_time() const
 // work around for bug in jack library:
 void assert_valid_regexp( const std::string& exp )
 {
+#ifdef WIN32
+  const char* error;
+  int erroffset;
+  pcre* re = pcre_compile(exp.c_str(), /* the pattern */
+                          0,           /* default options */
+                          &error,      /* for error message */
+                          &erroffset,  /* for error offset */
+                          NULL);
+  if(re == NULL)
+  {
+    throw TASCAR::ErrMsg("Invalid regular expression \"" + exp + "\".");
+  }
+  pcre_free(re);
+#else
   regex_t reg;
   if( regcomp( &reg, exp.c_str(), REG_EXTENDED | REG_NOSUB ) != 0 )
     throw TASCAR::ErrMsg("Invalid regular expression \""+exp+"\".");
   regfree( &reg );
+#endif
 }
 
 std::vector<std::string> get_port_names_regexp( jack_client_t* jc, std::string name, int flags )
