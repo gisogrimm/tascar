@@ -1,19 +1,24 @@
 cmake_minimum_required(VERSION 3.10)
 
 # GLOBAL
-project(tascar LANGUAGES CXX)
+##project(tascar LANGUAGES CXX)
+
+if(WIN32)
+else()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
-include(${PROJECT_SOURCE_DIR}/../version.cmake)
+endif()
+
+include(${CMAKE_CURRENT_LIST_DIR}/../version.cmake)
 set(PROJECT_VERSION ${VERSION})
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake/modules)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../cmake/modules)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 message("Building libtascar version ${VERSION}")
 message("Building components with version ${FULLVERSION}")
 configure_file(
-        "${PROJECT_SOURCE_DIR}/tascarver.h.in"
-        "${PROJECT_SOURCE_DIR}/include/tascarver.h"
+        "${CMAKE_CURRENT_LIST_DIR}/tascarver.h.in"
+        "${CMAKE_CURRENT_LIST_DIR}/include/tascarver.h"
 )
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -37,81 +42,90 @@ if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
 endif ()
 
 # Source file management
-file(GLOB LIB_HEADER ${PROJECT_SOURCE_DIR}/include/*.h)
+file(GLOB LIB_HEADER ${CMAKE_CURRENT_LIST_DIR}/include/*.h)
 set(LIB_SOURCES
-        ${PROJECT_SOURCE_DIR}/src/licensehandler.cc
-        ${PROJECT_SOURCE_DIR}/src/audiostates.cc
-        ${PROJECT_SOURCE_DIR}/src/coordinates.cc
-        ${PROJECT_SOURCE_DIR}/src/audiochunks.cc
-        ${PROJECT_SOURCE_DIR}/src/xmlconfig.cc
-        ${PROJECT_SOURCE_DIR}/src/dynamicobjects.cc
-        ${PROJECT_SOURCE_DIR}/src/sourcemod.cc
-        ${PROJECT_SOURCE_DIR}/src/receivermod.cc
-        ${PROJECT_SOURCE_DIR}/src/filterclass.cc
-        ${PROJECT_SOURCE_DIR}/src/osc_helper.cc
-        ${PROJECT_SOURCE_DIR}/src/pluginprocessor.cc
-        ${PROJECT_SOURCE_DIR}/src/acousticmodel.cc
-        ${PROJECT_SOURCE_DIR}/src/scene.cc
-        ${PROJECT_SOURCE_DIR}/src/render.cc
-        ${PROJECT_SOURCE_DIR}/src/session_reader.cc
-        ${PROJECT_SOURCE_DIR}/src/session.cc
-        ${PROJECT_SOURCE_DIR}/src/jackclient.cc
-        ${PROJECT_SOURCE_DIR}/src/delayline.cc
-        ${PROJECT_SOURCE_DIR}/src/async_file.cc
-        ${PROJECT_SOURCE_DIR}/src/errorhandling.cc
-        ${PROJECT_SOURCE_DIR}/src/osc_scene.cc
-        ${PROJECT_SOURCE_DIR}/src/ringbuffer.cc
-        ${PROJECT_SOURCE_DIR}/src/viewport.cc
-        ${PROJECT_SOURCE_DIR}/src/sampler.cc
-        ${PROJECT_SOURCE_DIR}/src/jackiowav.cc
-        ${PROJECT_SOURCE_DIR}/src/jackclient.cc
-        ${PROJECT_SOURCE_DIR}/src/cli.cc
-        ${PROJECT_SOURCE_DIR}/src/irrender.cc
-        ${PROJECT_SOURCE_DIR}/src/jackrender.cc
-        ${PROJECT_SOURCE_DIR}/src/audioplugin.cc
-        ${PROJECT_SOURCE_DIR}/src/levelmeter.cc
-        ${PROJECT_SOURCE_DIR}/src/serviceclass.cc
-        ${PROJECT_SOURCE_DIR}/src/speakerarray.cc
-        ${PROJECT_SOURCE_DIR}/src/spectrum.cc
-        ${PROJECT_SOURCE_DIR}/src/fft.cc
-        ${PROJECT_SOURCE_DIR}/src/stft.cc
-        ${PROJECT_SOURCE_DIR}/src/ola.cc
-        ${PROJECT_SOURCE_DIR}/src/vbap3d.cc
-        ${PROJECT_SOURCE_DIR}/src/hoa.cc
-		${PROJECT_SOURCE_DIR}/src/windows_port.cc
+        src/licensehandler.cc
+        src/audiostates.cc
+        src/coordinates.cc
+        src/audiochunks.cc
+        src/xmlconfig.cc
+        src/dynamicobjects.cc
+        src/sourcemod.cc
+        src/receivermod.cc
+        src/filterclass.cc
+        src/osc_helper.cc
+        src/pluginprocessor.cc
+        src/acousticmodel.cc
+        src/scene.cc
+        src/render.cc
+        src/session_reader.cc
+        src/session.cc
+        src/jackclient.cc
+        src/delayline.cc
+        src/async_file.cc
+        src/errorhandling.cc
+        src/osc_scene.cc
+        src/ringbuffer.cc
+        src/viewport.cc
+        src/sampler.cc
+        src/jackiowav.cc
+        src/jackclient.cc
+        src/cli.cc
+        src/irrender.cc
+        src/jackrender.cc
+        src/audioplugin.cc
+        src/levelmeter.cc
+        src/serviceclass.cc
+        src/speakerarray.cc
+        src/spectrum.cc
+        src/fft.cc
+        src/stft.cc
+        src/ola.cc
+        src/vbap3d.cc
+        src/hoa.cc
+		src/windows_port.cc
         )
 if (Linux)
     list(APPEND LIB_HEADER
-            ${PROJECT_SOURCE_DIR}/include/alsamidicc.h
+            ${CMAKE_CURRENT_LIST_DIR}/include/alsamidicc.h
             )
     list(APPEND LIB_SOURCES
-            ${PROJECT_SOURCE_DIR}/src/alsamidicc.cc
+            ${CMAKE_CURRENT_LIST_DIR}/src/alsamidicc.cc
             )
 endif ()
 set(DMX_SOURCES
-        ${PROJECT_SOURCE_DIR}/src/termsetbaud.cc
-        ${PROJECT_SOURCE_DIR}/src/serialport.cc
-        ${PROJECT_SOURCE_DIR}/src/dmxdriver.cc
+        ${CMAKE_CURRENT_LIST_DIR}/src/termsetbaud.cc
+        ${CMAKE_CURRENT_LIST_DIR}/src/serialport.cc
+        ${CMAKE_CURRENT_LIST_DIR}/src/dmxdriver.cc
         )
 set(UI_SOURCES
-        ${PROJECT_SOURCE_DIR}/src/gui_elements.cc
-        ${PROJECT_SOURCE_DIR}/src/pdfexport.cc
+        ${CMAKE_CURRENT_LIST_DIR}/src/gui_elements.cc
+        ${CMAKE_CURRENT_LIST_DIR}/src/pdfexport.cc
         )
 
 
 # REQUIREMENTS
+find_package(Boost REQUIRED)
+find_package(LibXml2 REQUIRED)
 find_package(Threads REQUIRED)
-#find_package(Jack2 REQUIRED) # was Jack
-find_package(SndFile REQUIRED) # was LibSndFile
-find_package(SampleRate REQUIRED) # was LibSamplerate
-find_package(FFTW3 REQUIRED) # was FFTW
+find_package(pthread REQUIRED)
+find_package(Jack REQUIRED) 
+find_package(LibSndFile REQUIRED) 
+find_package(LibSampleRate REQUIRED) 
+find_package(FFTW REQUIRED) 
 find_package(Eigen3 REQUIRED)
 find_package(GSL REQUIRED)
-#find_package(liblo REQUIRED)
+find_package(Glib REQUIRED)
+find_package(Glibmm REQUIRED)
+find_package(liblo REQUIRED)
 #find_package(GTK3 COMPONENTS gtkmm)
 find_package(LibXml++ REQUIRED)
 find_package(dlfcn-win32 REQUIRED)
+
+if(WIN32)
 set(CMAKE_DL_LIBS dlfcn-win32::dl)
+find_package(PCRE)
+endif()
 
 if (JACK_FOUND AND LIBSNDFILE_FOUND AND LIBXML++_FOUND AND FFTW_FOUND AND LIBLO_FOUND AND LIBSAMPLERATE_FOUND AND GSL_FOUND AND EIGEN3_FOUND)
     message("All dependencies ok!")
@@ -138,7 +152,7 @@ add_definitions(-D_USE_MATH_DEFINES) # For M_PI
 add_library(tascar ${LIB_SOURCES})
 target_include_directories(tascar
         PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_LIST_DIR}/include
         ${LIBXML++_INCLUDE_DIRS}
         ${LIBLO_INCLUDE_DIRS}
         ${LIBSNDFILE_INCLUDE_DIRS}
@@ -150,11 +164,13 @@ target_include_directories(tascar
 		${CMAKE_CURRENT_LIST_DIR}/../../../third_party/unistd
 		${CMAKE_CURRENT_LIST_DIR}/../../../third_party/getopt-for-windows
         )
-target_link_libraries(tascar
-        PRIVATE
+target_link_libraries(tascar        
         Threads::Threads
-		cwalk
-        PUBLIC
+		cwalk        
+		${PTHREAD_LIBRARIES}
+		${LIBXML2_LIBRARIES}
+		${GLIB_LIBRARIES}
+		${GLIBMM_LIBRARIES}
         ${LIBXML++_LIBRARIES}
         ${LIBLO_LIBRARIES}
         ${LIBSNDFILE_LIBRARIES}
@@ -163,6 +179,7 @@ target_link_libraries(tascar
         ${JACK_LIBRARIES}
         ${GSL_LIBRARIES}
         ${CMAKE_DL_LIBS}
+		${PCRE_PCRE_LIBRARY}
         )
 set_target_properties(tascar PROPERTIES PUBLIC_HEADER "${LIB_HEADER}")
 set(TARGETS_EXPORT_NAME tascarTarget)
@@ -178,6 +195,7 @@ write_basic_package_version_file(
         VERSION ${VERSION}
         COMPATIBILITY SameMajorVersion
 )
+if (CREATE_INSTALL)
 install(
         TARGETS tascar
         EXPORT "${TARGETS_EXPORT_NAME}"
@@ -196,6 +214,7 @@ install(
         NAMESPACE "tascar::"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/tascar"
 )
+endif()
 
 # libtascargui
 if (GTK3_FOUND)
@@ -203,7 +222,7 @@ if (GTK3_FOUND)
     target_compile_definitions(tascargui PRIVATE -DGTKMM30)
     target_include_directories(tascargui
             PRIVATE
-            ${PROJECT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_LIST_DIR}/include
             PUBLIC
             #${LIBXML++_INCLUDE_DIRS}
             #${JACK_INCLUDE_DIRS}
@@ -234,7 +253,7 @@ if (Linux)
     add_library(tascardmx SHARED ${DMX_SOURCES})
     target_include_directories(tascardmx
             PRIVATE
-            ${PROJECT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_LIST_DIR}/include
             )
     target_link_libraries(tascardmx
             PUBLIC
