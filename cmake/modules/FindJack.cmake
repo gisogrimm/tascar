@@ -19,15 +19,17 @@ else ()
     find_path(JACK_INCLUDE_DIR
             NAMES jack/jack.h
             PATH_SUFFIXES include includes
-            PATHS ${JACK_PKGCONF_INCLUDE_DIRS}
+            PATHS ${JACK_PKGCONF_INCLUDE_DIRS} ${CURRENT_PROJECT_DIR}/third_party/vcpkg/installed
             )
+	message("JACK_INCLUDE_DIR is ${JACK_INCLUDE_DIR}")
 
     # Library
     find_library(JACK_LIBRARY
-            NAMES jack jack64 libjack libjack64
+            NAMES jack jack64 libjack libjack64 jack2
             PATH_SUFFIXES lib
-            PATHS ${JACK_PKGCONF_LIBRARY_DIRS}
+            PATHS ${JACK_PKGCONF_LIBRARY_DIRS} ${CURRENT_PROJECT_DIR}/third_party/vcpkg/installed
             )
+	message("JACK_LIBRARY is ${JACK_LIBRARY}")
 
     find_package(PackageHandleStandardArgs)
     find_package_handle_standard_args(Jack DEFAULT_MSG JACK_LIBRARY JACK_INCLUDE_DIR)

@@ -29,17 +29,21 @@ else ()
             /usr/local/include
             /opt/local/include
             /sw/include
+			${CURRENT_PROJECT_DIR}/third_party/vcpkg/installed
             )
+	#message("LIBLO_INCLUDE_DIR is ${LIBLO_INCLUDE_DIR}")
 
     find_library(LIBLO_LIBRARY
             NAMES
-            lo
+            lo liblo
             PATHS
             /usr/lib
             /usr/local/lib
             /opt/local/lib
             /sw/lib
+			${CURRENT_PROJECT_DIR}/third_party/vcpkg/installed
             )
+	#message("LIBLO_LIBRARY is ${LIBLO_LIBRARY}")
 
     INCLUDE(FindPackageHandleStandardArgs)
     FIND_PACKAGE_HANDLE_STANDARD_ARGS(liblo DEFAULT_MSG LIBLO_LIBRARY LIBLO_INCLUDE_DIR)
