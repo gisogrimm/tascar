@@ -1,0 +1,3 @@
+[submodule "libtascar/third_party/cwalk"]
+	path = libtascar/third_party/cwalk
+	url = https://github.com/likle/cwalk.git
