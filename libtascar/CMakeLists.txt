@@ -179,7 +179,7 @@ target_link_libraries(tascar
         ${JACK_LIBRARIES}
         ${GSL_LIBRARIES}
         ${CMAKE_DL_LIBS}
-		${PCRE_PCRE_LIBRARY}
+		${PCRE_LIBRARY}
         )
 set_target_properties(tascar PROPERTIES PUBLIC_HEADER "${LIB_HEADER}")
 set(TARGETS_EXPORT_NAME tascarTarget)
