@@ -28,6 +28,7 @@
 #ifndef TASCAR_H
 #define TASCAR_H
 
+#include <stdint.h>
 #include "jackclient.h"
 #include "scene.h"
 #include "errorhandling.h"

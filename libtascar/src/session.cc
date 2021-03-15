@@ -18,7 +18,8 @@
 
    The functionality of TASCAR can be extended using modules. Five
    types of modules can be used in TASCAR:
-   
+   
+
    \li general purpose modules (derived from TASCAR::module_base_t)
    \li actor modules (derived from TASCAR::actor_module_t)
    \li audio processing plugins (derived from TASCAR::audioplugin_base_t)
@@ -74,7 +75,8 @@
    \endverbatim
 
    \note All external modules should use SI units for signals and variables.
-   
+   
+
 
    \section actormod Actor modules
 
@@ -144,9 +146,11 @@
    \example tascar_ap_noise.cc
 
    \example tascarsource_example.cc
-   
+   
+
    \example tascarreceiver_example.cc
-   
+   
+
 */
 
 

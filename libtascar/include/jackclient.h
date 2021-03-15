@@ -28,6 +28,7 @@
 #ifndef JACKCLIENT_H
 #define JACKCLIENT_H
 
+#include <stdint.h>
 #include <jack/jack.h>
 #include <string>
 #include <vector>

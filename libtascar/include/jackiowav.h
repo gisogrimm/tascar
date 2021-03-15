@@ -29,6 +29,7 @@
 #ifndef JACKIOWAV_H
 #define JACKIOWAV_H
 
+#include <stdint.h>
 #include "tascar.h"
 #include <jack/ringbuffer.h>
 #include <stdlib.h>

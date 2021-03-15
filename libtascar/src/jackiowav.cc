@@ -1,5 +1,7 @@
 #include "jackiowav.h"
 
+#include "windows_port.h"
+
 jackio_t::jackio_t(const std::string& ifname,const std::string& ofname,
 		   const std::vector<std::string>& ports, const std::string& jackname,int freewheel,int autoconnect,bool verbose)
   : jackc_transport_t(jackname),
