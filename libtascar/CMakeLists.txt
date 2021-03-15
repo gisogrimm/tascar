@@ -103,6 +103,11 @@ set(UI_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/src/pdfexport.cc
         )
 
+# If BOOST_ROOT is specified (on github actions), do provide a bit of help to CMake to find boost
+if(DEFINED ENV{BOOST_ROOT})
+set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} $ENV{BOOST_ROOT})
+set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} $ENV{BOOST_ROOT}/lib)
+endif()
 
 # REQUIREMENTS
 find_package(Boost REQUIRED)
