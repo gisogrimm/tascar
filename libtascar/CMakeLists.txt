@@ -107,9 +107,12 @@ set(UI_SOURCES
 #if(DEFINED $ENV{BOOST_ROOT})
 message("BOOST_ROOT environment found as '$ENV{BOOST_ROOT}'")
 set(BOOST_ROOT $ENV{BOOST_ROOT})
-set(BOOST_INCLUDEDIR ${BOOST_ROOT}/include)
+#set(BOOST_INCLUDEDIR ${BOOST_ROOT}/include)
 set(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib)
 set(Boost_DEBUG 1)
+set(Boost_COMPILER "-vc")
+set (Boost_DETAILED_FAILURE_MSG ON)
+set (Boost_THREADAPI win32)
 execute_process(COMMAND dir ${BOOST_ROOT})
 #endif()
 
