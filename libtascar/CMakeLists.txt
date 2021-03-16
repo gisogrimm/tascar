@@ -104,12 +104,13 @@ set(UI_SOURCES
         )
 
 # If BOOST_ROOT is specified (on github actions), do provide a bit of help to CMake to find boost
-if(DEFINED ENV{BOOST_ROOT})
+if(DEFINED $ENV{BOOST_ROOT})
 set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} $ENV{BOOST_ROOT})
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} $ENV{BOOST_ROOT}/lib)
 endif()
 
 # REQUIREMENTS
+message("BOOST_ROOT environment found as '$ENV{BOOST_ROOT}'")
 find_package(Boost REQUIRED)
 find_package(LibXml2 REQUIRED)
 find_package(Threads REQUIRED)
