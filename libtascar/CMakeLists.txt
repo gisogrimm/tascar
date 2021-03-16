@@ -109,6 +109,8 @@ message("BOOST_ROOT environment found as '$ENV{BOOST_ROOT}'")
 set(BOOST_ROOT $ENV{BOOST_ROOT})
 set(BOOST_INCLUDEDIR ${BOOST_ROOT}/include)
 set(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib)
+set(Boost_DEBUG 1)
+execute_process(COMMAND dir ${BOOST_ROOT})
 #endif()
 
 # REQUIREMENTS
