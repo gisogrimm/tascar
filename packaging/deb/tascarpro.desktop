@@ -5,3 +5,4 @@ Type=Application
 Icon=tascarpro.png
 Categories=Audio;AudioVideo;
 MimeType=application/x-tascar
+StartupWMClass=tascar
