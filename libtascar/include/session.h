@@ -194,6 +194,7 @@ namespace TASCAR {
     TASCAR::Scene::src_object_t& source_by_id(const std::string& id);
     TASCAR::Scene::receiver_obj_t& receiver_by_id(const std::string& id);
     void send_xml(const std::string& url, const std::string& path);
+    void send_routes(const std::string& url, const std::string& path);
 
   protected:
     // derived variables:

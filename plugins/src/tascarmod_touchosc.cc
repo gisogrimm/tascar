@@ -691,8 +691,8 @@ void touchosc_t::connect(const std::string& host, uint32_t channels)
   if(channels == 0)
     return;
   if(pthread_mutex_lock(&mtx) == 0) {
-    std::cout << "Adding touchosc host \"" + host + "\" with " << channels
-              << " channels.\n";
+    // std::cout << "Adding touchosc host \"" + host + "\" with " << channels
+    //          << " channels.\n";
     std::map<std::string, connection_t*>::iterator it;
     if((it = connections.find(host)) != connections.end()) {
       if(it->second)
@@ -741,7 +741,7 @@ void touchosc_t::service()
   uint32_t cnt(20);
   while(run_service) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    //usleep(100000);
+    // usleep(100000);
     if(pthread_mutex_lock(&mtx) == 0) {
       for(std::map<std::string, connection_t*>::iterator it =
               connections.begin();

@@ -1164,6 +1164,16 @@ namespace OSCSession {
     return 0;
   }
 
+  int _osc_send_routes(const char*, const char* types, lo_arg** argv, int argc,
+                       lo_message, void* user_data)
+  {
+    if(user_data && (argc == 2) && (types[0] == 's') && (types[1] == 's')) {
+      TASCAR::session_t* srv(reinterpret_cast<TASCAR::session_t*>(user_data));
+      srv->send_routes(&(argv[0]->s), &(argv[1]->s));
+    }
+    return 0;
+  }
+
   int _runscript(const char*, const char* types, lo_arg** argv, int argc,
                  lo_message, void* user_data)
   {
@@ -1183,6 +1193,10 @@ void TASCAR::session_t::add_transport_methods()
                            true, false, "",
                            "Send session file XML code to an OSC server. First "
                            "parameter is the URL, the second is the path.");
+  osc_server_t::add_method(
+      "/sendobjlist", "ss", OSCSession::_osc_send_routes, this, true, false, "",
+      "Send session routes to an OSC server. First "
+      "parameter is the URL, the second is the path prefix.");
   osc_server_t::add_method("/transport/locate", "f", OSCSession::_locate, this,
                            true, false, "",
                            "Locate the transport to the given second.");
@@ -1218,6 +1232,35 @@ void TASCAR::session_t::send_xml(const std::string& url,
   std::string xml = save_to_string();
   lo_send(target, path.c_str(), "s", xml.c_str());
   lo_address_free(target);
+}
+
+void TASCAR::session_t::send_routes(const std::string& url,
+                                    const std::string& path)
+{
+  lo_address target = lo_address_new_from_url(url.c_str());
+  if(!target)
+    return;
+  lo_send(target, (path + "/start").c_str(), "");
+  for(const auto& scene : scenemap) {
+    auto scenename = scene.second->name;
+    for(const auto& snd : scene.second->sounds) {
+      auto sndname = snd->get_name();
+      auto srcname = snd->get_parent_name();
+      std::string name = "/";
+      name += scenename + "/" + srcname + "/" + sndname;
+      DEBUG(snd->get_ctlname());
+      lo_send(target, (path + "/entry").c_str(), "s", name.c_str());
+    }
+  }
+  // auto objlist = find_objects("/*/*");
+  // DEBUG(1);
+  // for(const auto& obj : objlist ){
+  //  lo_send(target, (path+"/entry").c_str(), "s", obj.name.c_str());
+  //  DEBUG(obj.name);
+  //}
+  lo_send(target, (path + "/end").c_str(), "");
+  lo_address_free(target);
+  DEBUG(1);
 }
 
 void TASCAR::session_t::validate_attributes(std::string& msg) const

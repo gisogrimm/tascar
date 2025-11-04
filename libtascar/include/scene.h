@@ -212,6 +212,7 @@ namespace TASCAR {
       void set_ctlname(const std::string& pn) { ctlname = pn; };
       std::string get_ctlname() const { return ctlname; };
       std::vector<std::string> get_connect() const { return connect; };
+      bool get_isinput() const { return is_input; };
       float get_gain() const
       {
         if(is_input)

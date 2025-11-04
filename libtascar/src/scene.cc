@@ -1061,8 +1061,8 @@ face_group_t::face_group_t(tsccfg::node_t xmlsrc) : object_t(xmlsrc)
     p_reflector->nonrt_set(verts);
     reflectors.push_back(p_reflector);
   }
-  dynobject_t::GET_ATTRIBUTE(shoeboxfloor, "m",
-                             "generate shoebox room with only the floor surface");
+  dynobject_t::GET_ATTRIBUTE(
+      shoeboxfloor, "m", "generate shoebox room with only the floor surface");
   if(!shoeboxfloor.is_null()) {
     TASCAR::pos_t sb(shoeboxfloor);
     sb *= 0.5;
@@ -1078,8 +1078,9 @@ face_group_t::face_group_t(tsccfg::node_t xmlsrc) : object_t(xmlsrc)
     p_reflector->nonrt_set(verts);
     reflectors.push_back(p_reflector);
   }
-  dynobject_t::GET_ATTRIBUTE(shoeboxceiling, "m",
-                             "generate shoebox room with only the ceiling surface");
+  dynobject_t::GET_ATTRIBUTE(
+      shoeboxceiling, "m",
+      "generate shoebox room with only the ceiling surface");
   if(!shoeboxceiling.is_null()) {
     TASCAR::pos_t sb(shoeboxceiling);
     sb *= 0.5;
