@@ -43,6 +43,8 @@ function [ir,fs,x,y,sCfg,sHelp] = tascar_ir_measure( varargin )
   sCfg.sigtype = 'farina';
   sHelp.sigtype = ['Measurement signal type: squarephase, farina,' ...
 		   ' noise'];
+  sCfg.regthr = -60;
+  sHelp.regthr = 'Regularization threshold in dB (relative to median)';
   sCfg.fmin = 0.001;
   sHelp.fmin = 'Minimum frequency in Farina sigtype (1 = Nyquist frequency)';
   sCfg.fmax = 1;
@@ -84,6 +86,12 @@ function [ir,fs,x,y,sCfg,sHelp] = tascar_ir_measure( varargin )
     X = realfft(ymean(:,sCfg.refchannel));
     Y = realfft(ymean(:,setdiff(1:size(ymean,2),sCfg.refchannel)));
   end
+  % regularization:
+  X_med = median(abs(X));
+  regthr = X_med * 10.^(0.05*sCfg.regthr);
+  idx_reg = find(abs(X)<regthr);
+  X(idx_reg) = regthr * exp(i*angle(X(idx_reg)));
+  % end regularization
   Y = Y ./ repmat(X,[1,size(Y,2)]);
   ir = realifft(Y,sCfg.len);
 
