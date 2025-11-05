@@ -260,7 +260,7 @@ const std::string& debug_str(const std::string& s)
 }
 
 TASCAR::session_oscvars_t::session_oscvars_t(tsccfg::node_t src)
-    : xml_element_t(src), name("tascar"), srv_port("9877"), srv_proto("UDP")
+    : xml_element_t(src), name("render"), srv_port("9877"), srv_proto("UDP")
 {
   GET_ATTRIBUTE(srv_port, "", "OSC port number");
   GET_ATTRIBUTE(srv_addr, "", "OSC multicast address in case of UDP transport");
@@ -406,7 +406,7 @@ void assert_jackpar(const std::string& what, double expected, double found,
 
 TASCAR::session_t::session_t()
     : TASCAR::session_oscvars_t(root()),
-      jackc_transport_t(jacknamer(name, "session.")),
+      jackc_transport_t(jacknamer(name, "sync")),
       osc_server_t(srv_addr, srv_port, srv_proto,
                    TASCAR::config("tascar.osc.list", 0)),
       period_time(1.0 / (double)srate), started_(false)
@@ -448,7 +448,7 @@ TASCAR::session_t::session_t()
 TASCAR::session_t::session_t(const std::string& filename_or_data, load_type_t t,
                              const std::string& path)
     : TASCAR::session_core_t(filename_or_data, t, path),
-      session_oscvars_t(root()), jackc_transport_t(jacknamer(name, "session.")),
+      session_oscvars_t(root()), jackc_transport_t(jacknamer(name, "sync")),
       osc_server_t(srv_addr, srv_port, srv_proto,
                    TASCAR::config("tascar.osc.list", 0)),
       period_time(1.0 / (double)srate), started_(false)
@@ -595,7 +595,7 @@ void TASCAR::session_t::add_scene(tsccfg::node_t src)
   if(!src)
     src = root.add_child("scene");
   try {
-    newscene = new TASCAR::scene_render_rt_t(src);
+    newscene = new TASCAR::scene_render_rt_t(src, name);
     if(namelist.find(newscene->name) != namelist.end())
       throw TASCAR::ErrMsg("A scene of name \"" + newscene->name +
                            "\" already exists in the session.");
@@ -1243,14 +1243,22 @@ void TASCAR::session_t::send_routes(const std::string& url,
   lo_send(target, (path + "/start").c_str(), "");
   for(const auto& scene : scenemap) {
     auto scenename = scene.second->name;
-    for(const auto& snd : scene.second->sounds) {
-      auto sndname = snd->get_name();
-      auto srcname = snd->get_parent_name();
-      std::string name = "/";
-      name += scenename + "/" + srcname + "/" + sndname;
-      DEBUG(snd->get_ctlname());
-      lo_send(target, (path + "/entry").c_str(), "s", name.c_str());
-    }
+    for(const auto& snd : scene.second->sounds)
+      lo_send(target, (path + "/entry").c_str(), "ssiifi",
+              snd->get_ctlname().c_str(), "sound", 1, 0, snd->get_gain(),
+              snd->get_mute());
+    for(const auto& snd : scene.second->diff_snd_field_objects)
+      lo_send(target, (path + "/entry").c_str(), "ssiifi",
+              snd->get_ctlname().c_str(), "diffuse", 4, 0, snd->get_gain(),
+              snd->get_mute());
+    for(const auto& snd : scene.second->diffuse_reverbs)
+      lo_send(target, (path + "/entry").c_str(), "ssiifi",
+              snd->get_ctlname().c_str(), "reverb", 0, 0, snd->get_gain(),
+              snd->get_mute());
+    for(const auto& snd : scene.second->receivermod_objects)
+      lo_send(target, (path + "/entry").c_str(), "ssiifi",
+              snd->get_ctlname().c_str(), "receiver", 0, snd->cfg().n_channels,
+              snd->get_gain(), snd->get_mute());
   }
   // auto objlist = find_objects("/*/*");
   // DEBUG(1);

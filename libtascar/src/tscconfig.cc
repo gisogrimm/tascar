@@ -97,6 +97,8 @@ namespace TASCAR {
   static std::vector<std::string> warnings;
   static globalconfig_t config_;
   static std::atomic_size_t maxid(0);
+  static std::set<std::string> tuidlist;
+  std::mutex tuidlistmtx;
 
   class console_log_t {
   public:
@@ -111,10 +113,11 @@ namespace TASCAR {
       std::lock_guard<std::mutex> lk{mtx};
       double t = tictoc.toc();
       logs.push_back(log_entry_t(t, msg));
-      if( showlog )
-        std::fprintf(stderr,"%8.3f %s\n",t,msg.c_str());
+      if(showlog)
+        std::fprintf(stderr, "%8.3f %s\n", t, msg.c_str());
     };
     bool showlog = false;
+
   private:
     TASCAR::tictoc_t tictoc;
     std::vector<log_entry_t> logs;
@@ -362,6 +365,15 @@ std::string TASCAR::get_tuid()
   snprintf(c, sizeof(c), "%zx", ++maxid);
   c[sizeof(c) - 1] = 0;
   return c;
+}
+
+void TASCAR::validate_tuid(const std::string& id, const tsccfg::node_t& e)
+{
+  std::lock_guard<std::mutex> lk{TASCAR::tuidlistmtx};
+  if(TASCAR::tuidlist.find(id) != TASCAR::tuidlist.end())
+    throw TASCAR::ErrMsg("The id \"" + id + "\" is not unique.\n  (" +
+                         tsccfg::node_get_path(e) + ")");
+  TASCAR::tuidlist.insert(id);
 }
 
 const std::vector<tsccfg::node_t>
@@ -2349,7 +2361,6 @@ float TASCAR::lin2dbspl(const float& x)
 
 TASCAR::cfg_node_desc_t::cfg_node_desc_t() {}
 TASCAR::cfg_node_desc_t::~cfg_node_desc_t() {}
-
 
 void donothing() {}
 

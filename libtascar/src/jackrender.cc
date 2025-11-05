@@ -39,9 +39,10 @@ std::string strrep(std::string s, const std::string& pat,
   return s;
 }
 
-TASCAR::scene_render_rt_t::scene_render_rt_t(tsccfg::node_t xmlsrc)
+TASCAR::scene_render_rt_t::scene_render_rt_t(tsccfg::node_t xmlsrc,
+                                             const std::string& parentname)
     : render_core_t(xmlsrc), osc_scene_t(xmlsrc, this),
-      jackc_transport_t(jacknamer(name, "render."))
+      jackc_transport_t(jacknamer(parentname, name))
 {
 }
 

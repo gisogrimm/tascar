@@ -20,24 +20,29 @@
 #ifndef JACKRENDER_H
 #define JACKRENDER_H
 
-#include "render.h"
 #include "osc_scene.h"
+#include "render.h"
 
 namespace TASCAR {
 
-  class scene_render_rt_t : public TASCAR::render_core_t, public TASCAR::Scene::osc_scene_t, public jackc_transport_t  {
+  class scene_render_rt_t : public TASCAR::render_core_t,
+                            public TASCAR::Scene::osc_scene_t,
+                            public jackc_transport_t {
   public:
-    scene_render_rt_t(tsccfg::node_t xmlsrc);
+    scene_render_rt_t(tsccfg::node_t xmlsrc, const std::string& parentname);
     virtual ~scene_render_rt_t();
-    void run(bool &b_quit);
+    void run(bool& b_quit);
     void start();
     void stop();
+
   private:
     // jack callback:
-    int process(jack_nframes_t nframes,const std::vector<float*>& inBuffer,const std::vector<float*>& outBuffer, uint32_t tp_frame, bool tp_rolling);
+    int process(jack_nframes_t nframes, const std::vector<float*>& inBuffer,
+                const std::vector<float*>& outBuffer, uint32_t tp_frame,
+                bool tp_rolling);
   };
 
-}
+} // namespace TASCAR
 
 #endif
 

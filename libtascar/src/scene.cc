@@ -266,6 +266,7 @@ scene_t::scene_t(tsccfg::node_t xmlsrc)
   try {
     GET_ATTRIBUTE(name, "", "scene name");
     GET_ATTRIBUTE(id, "", "scene id, or empty to auto-generate id");
+    TASCAR::validate_tuid(id, xmlsrc);
     GET_ATTRIBUTE(ismorder, "", "order of image source model");
     GET_ATTRIBUTE(guiscale, "m", "scale of GUI window of this scene");
     GET_ATTRIBUTE(guicenter, "m", "origin of GUI window");
@@ -810,6 +811,7 @@ route_t::route_t(tsccfg::node_t xmlsrc)
 {
   GET_ATTRIBUTE(name, "", "Route name");
   GET_ATTRIBUTE(id, "", "Unique route id, empty to autogenerate");
+  TASCAR::validate_tuid(id, xmlsrc);
   GET_ATTRIBUTE_BOOL(mute, "Mute flag of route");
   GET_ATTRIBUTE_BOOL(solo, "Solo flag of route");
 }
@@ -914,11 +916,17 @@ void face_object_t::process_active(double t, uint32_t anysolo)
   active = is_active(anysolo, t);
 }
 
-std::string jacknamer(const std::string& scenename, const std::string& base)
+std::string jacknamer(const std::string& prefix, const std::string& name)
 {
-  if(scenename.empty())
-    return base + "tascar";
-  return base + scenename;
+  if(name.empty()) {
+    if(prefix.size())
+      return prefix + ".tascar";
+    else
+      return "tascar";
+  }
+  if(prefix.size())
+    return prefix + "." + name;
+  return name;
 }
 
 std::vector<TASCAR::Scene::object_t*>
@@ -1241,6 +1249,7 @@ sound_name_t::sound_name_t(tsccfg::node_t xmlsrc, src_object_t* parent_)
   if(name.empty())
     throw TASCAR::ErrMsg("Invalid (empty) sound name.");
   GET_ATTRIBUTE(id, "", "id of sound vertex");
+  TASCAR::validate_tuid(id, xmlsrc);
   if(parent_)
     parentname = parent_->get_name();
 }

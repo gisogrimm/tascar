@@ -516,7 +516,7 @@ namespace TASCAR {
 
 } // namespace TASCAR
 
-std::string jacknamer(const std::string& scenename, const std::string& base);
+std::string jacknamer(const std::string& prefix, const std::string& name);
 
 #endif
 

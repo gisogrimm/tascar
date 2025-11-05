@@ -62,9 +62,8 @@ public:
 };
 
 sampler_mod_t::sampler_mod_t(const TASCAR::module_cfg_t& cfg)
-    : sampler_var_t(cfg), TASCAR::sampler_t(
-                              jacknamer(session->name, "sampler."), multicast,
-                              port)
+    : sampler_var_t(cfg), TASCAR::sampler_t(jacknamer(session->name, "sampler"),
+                                            multicast, port)
 {
   for(auto snd : sampler_var_t::sounds)
     add_sound(snd.name, snd.gain);
