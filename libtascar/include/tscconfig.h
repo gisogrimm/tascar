@@ -194,6 +194,8 @@ namespace TASCAR {
   std::string get_tuid();
   // check for uniqueness:
   void validate_tuid(const std::string& id, const tsccfg::node_t& e);
+  // reset list:
+  void reset_tuid_list();
 
   std::string strrep(std::string s, const std::string& pat,
                      const std::string& rep);

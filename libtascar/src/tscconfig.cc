@@ -367,6 +367,14 @@ std::string TASCAR::get_tuid()
   return c;
 }
 
+void TASCAR::reset_tuid_list()
+{
+  std::lock_guard<std::mutex> lk{TASCAR::tuidlistmtx};
+  maxid = 0;
+  TASCAR::tuidlist.clear();
+}
+
+
 void TASCAR::validate_tuid(const std::string& id, const tsccfg::node_t& e)
 {
   std::lock_guard<std::mutex> lk{TASCAR::tuidlistmtx};

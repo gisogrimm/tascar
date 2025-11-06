@@ -48,6 +48,7 @@ TASCAR::tsc_reader_t::tsc_reader_t()
   if(root.get_element_name() != "session")
     throw TASCAR::ErrMsg("Invalid root node name. Expected \"session\", got " +
                          root.get_element_name() + ".");
+  TASCAR::reset_tuid_list();
 }
 
 void add_includes(tsccfg::node_t e, const std::string& parentdoc,
@@ -127,6 +128,7 @@ TASCAR::tsc_reader_t::tsc_reader_t(const std::string& filename_or_data,
   if(root.get_element_name() != "session")
     throw TASCAR::ErrMsg("Invalid root node name. Expected \"session\", got " +
                          root.get_element_name() + ".");
+  TASCAR::reset_tuid_list();
   // add session-includes:
   add_includes(root(), "", this);
 }
