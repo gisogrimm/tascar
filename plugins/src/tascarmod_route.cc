@@ -103,6 +103,7 @@ public:
   void configure();
   void release();
   void validate_attributes(std::string&) const;
+  uint32_t get_num_input_ports();
 
 private:
   uint32_t channels;
@@ -147,6 +148,11 @@ int osc_setfade(const char*, const char* types, lo_arg** argv, int argc,
     return 0;
   }
   return 1;
+}
+
+uint32_t routemod_t::get_num_input_ports()
+{
+  return jackc_t::get_num_input_ports();
 }
 
 const std::string& fail_on_empty_name(const std::string& name,
@@ -224,7 +230,7 @@ void routemod_t::configure()
       TASCAR::add_warning("No port \"" + TASCAR::vecstr2str(con) + "\" found.");
     uint32_t ip(0);
     for(auto it = ports.begin(); it != ports.end(); ++it) {
-      if(ip < get_num_input_ports()) {
+      if(ip < jackc_t::get_num_input_ports()) {
         connect_in(ip, *it, true, true);
         ++ip;
       }

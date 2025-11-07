@@ -219,7 +219,7 @@ void hrirconv_mod_t::configure()
         TASCAR::add_warning("No port \"" + hrirconv_var_t::connect +
                             "\" found.");
       for(auto it = ports.begin(); it != ports.end(); ++it) {
-        if(ip < get_num_input_ports()) {
+        if(ip < jackc_t::get_num_input_ports()) {
           connect_in(ip, *it, true, true);
           ++ip;
         }

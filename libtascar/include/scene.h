@@ -207,6 +207,7 @@ namespace TASCAR {
     public:
       audio_port_t(tsccfg::node_t e, bool is_input_);
       virtual ~audio_port_t();
+      virtual uint32_t get_num_input_ports() = 0;
       void set_port_index(uint32_t port_index_);
       uint32_t get_port_index() const { return port_index; };
       void set_ctlname(const std::string& pn) { ctlname = pn; };
@@ -251,6 +252,7 @@ namespace TASCAR {
       void configure();
       void post_prepare();
       void release();
+      uint32_t get_num_input_ports();
       void validate_attributes(std::string& msg) const;
       /**
          \callgraph
@@ -306,6 +308,7 @@ namespace TASCAR {
          \callergraph
       */
       void process_plugins(const TASCAR::transport_t& tp);
+      uint32_t get_num_input_ports();
       void apply_gain();
       // void prepare( chunk_cfg_t& );
       // void release();
@@ -387,6 +390,7 @@ namespace TASCAR {
       */
       virtual void postproc(std::vector<wave_t>& output);
       void validate_attributes(std::string& msg) const;
+      uint32_t get_num_input_ports();
     };
 
     class mask_object_t : public object_t,

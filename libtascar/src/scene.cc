@@ -525,6 +525,12 @@ void receiver_obj_t::configure()
     addmeter(f_sample);
 }
 
+uint32_t receiver_obj_t::get_num_input_ports()
+{
+  DEBUG(n_channels);
+  return 0;
+}
+
 void receiver_obj_t::release()
 {
   TASCAR::Acousticmodel::receiver_t::release();
@@ -805,6 +811,11 @@ float sound_t::read_meter()
   return std::numeric_limits<float>::lowest();
 }
 
+uint32_t sound_t::get_num_input_ports()
+{
+  return n_channels;
+}
+
 route_t::route_t(tsccfg::node_t xmlsrc)
     : xml_element_t(xmlsrc), id(TASCAR::get_tuid()), mute(false), solo(false),
       meter_tc(2), meter_weight(TASCAR::levelmeter::Z), targetlevel(0)
@@ -902,6 +913,11 @@ void diff_snd_field_obj_t::release()
   audiostates_t::release();
   if(source)
     source->release();
+}
+
+uint32_t diff_snd_field_obj_t::get_num_input_ports()
+{
+  return n_channels;
 }
 
 void diff_snd_field_obj_t::process_active(double t, uint32_t anysolo)
