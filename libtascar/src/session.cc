@@ -1246,27 +1246,31 @@ void TASCAR::session_t::send_routes(const std::string& url,
     for(const auto& snd : scene.second->sounds)
       lo_send(target, (path + "/entry").c_str(), "ssiifi",
               snd->get_ctlname().c_str(), "sound", snd->get_num_input_ports(),
-              0, snd->get_gain(), snd->get_mute());
+              snd->get_num_output_ports(), snd->get_gain_db(), snd->get_mute());
     for(const auto& snd : scene.second->diff_snd_field_objects)
       lo_send(target, (path + "/entry").c_str(), "ssiifi",
               snd->get_ctlname().c_str(), "diffuse", snd->get_num_input_ports(),
-              0, snd->get_gain(), snd->get_mute());
+              snd->get_num_output_ports(), snd->get_gain_db(), snd->get_mute());
     for(const auto& snd : scene.second->diffuse_reverbs)
       lo_send(target, (path + "/entry").c_str(), "ssiifi",
               snd->get_ctlname().c_str(), "reverb", snd->get_num_input_ports(),
-              0, snd->get_gain(), snd->get_mute());
+              snd->get_num_output_ports(), snd->get_gain_db(), snd->get_mute());
     for(const auto& snd : scene.second->receivermod_objects)
       lo_send(target, (path + "/entry").c_str(), "ssiifi",
               snd->get_ctlname().c_str(), "receiver",
-              snd->get_num_input_ports(), snd->cfg().n_channels,
-              snd->get_gain(), snd->get_mute());
+              snd->get_num_input_ports(), snd->get_num_output_ports(),
+              snd->get_gain_db(), snd->get_mute());
   }
-  // auto objlist = find_objects("/*/*");
-  // DEBUG(1);
-  // for(const auto& obj : objlist ){
-  //  lo_send(target, (path+"/entry").c_str(), "s", obj.name.c_str());
-  //  DEBUG(obj.name);
-  //}
+  auto routes = find_route_ports({"/*"});
+  for(const auto& route : routes) {
+    auto scenerp = dynamic_cast<TASCAR::Scene::route_t*>(route);
+    if(scenerp) {
+      lo_send(target, (path + "/entry").c_str(), "ssiifi",
+              route->get_ctlname().c_str(), "route",
+              route->get_num_input_ports(), route->get_num_output_ports(),
+              route->get_gain_db(), scenerp->get_mute());
+    }
+  }
   lo_send(target, (path + "/end").c_str(), "");
   lo_address_free(target);
 }

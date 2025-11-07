@@ -527,8 +527,12 @@ void receiver_obj_t::configure()
 
 uint32_t receiver_obj_t::get_num_input_ports()
 {
-  DEBUG(n_channels);
   return 0;
+}
+
+uint32_t receiver_obj_t::get_num_output_ports()
+{
+  return n_channels;
 }
 
 void receiver_obj_t::release()
@@ -816,6 +820,11 @@ uint32_t sound_t::get_num_input_ports()
   return n_channels;
 }
 
+uint32_t sound_t::get_num_output_ports()
+{
+  return 0u;
+}
+
 route_t::route_t(tsccfg::node_t xmlsrc)
     : xml_element_t(xmlsrc), id(TASCAR::get_tuid()), mute(false), solo(false),
       meter_tc(2), meter_weight(TASCAR::levelmeter::Z), targetlevel(0)
@@ -918,6 +927,11 @@ void diff_snd_field_obj_t::release()
 uint32_t diff_snd_field_obj_t::get_num_input_ports()
 {
   return n_channels;
+}
+
+uint32_t diff_snd_field_obj_t::get_num_output_ports()
+{
+  return 0;
 }
 
 void diff_snd_field_obj_t::process_active(double t, uint32_t anysolo)

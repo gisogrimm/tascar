@@ -104,6 +104,7 @@ public:
   void release();
   void validate_attributes(std::string&) const;
   uint32_t get_num_input_ports();
+  uint32_t get_num_output_ports();
 
 private:
   uint32_t channels;
@@ -153,6 +154,11 @@ int osc_setfade(const char*, const char* types, lo_arg** argv, int argc,
 uint32_t routemod_t::get_num_input_ports()
 {
   return jackc_t::get_num_input_ports();
+}
+
+uint32_t routemod_t::get_num_output_ports()
+{
+  return jackc_t::get_num_output_ports();
 }
 
 const std::string& fail_on_empty_name(const std::string& name,
@@ -246,7 +252,7 @@ void routemod_t::configure()
                           TASCAR::vecstr2str(connect_out) + "\".");
     uint32_t ip(0);
     for(auto it = ports.begin(); it != ports.end(); ++it) {
-      if(ip < get_num_output_ports()) {
+      if(ip < jackc_t::get_num_output_ports()) {
         jackc_t::connect_out(ip, *it, true);
         ++ip;
       }
