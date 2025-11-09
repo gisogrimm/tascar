@@ -52,14 +52,11 @@ namespace TASCAR {
       float damping = 0.0f;
     };
 
-    class route_t : public xml_element_t {
+    class object_with_name_and_id_t {
     public:
-      route_t(tsccfg::node_t);
-      ~route_t();
+      object_with_name_and_id_t(tsccfg::node_t);
       std::string get_name() const { return name; };
       std::string get_id() const { return id; };
-      bool get_mute() const { return mute; };
-      bool get_solo() const { return solo; };
       std::string default_name(const std::string& s)
       {
         if(name.empty())
@@ -67,6 +64,29 @@ namespace TASCAR {
         return name;
       }
       void set_name(const std::string& s) { name = s; };
+
+    private:
+      std::string name;
+      std::string id;
+    };
+
+    /**
+       \brief some magic super-class
+
+       Activity control (mute/solo)
+
+       Name and ID configuration
+
+       Level metering for user display
+
+       This class is inherited by all objects of a scene.
+     */
+    class route_t : public xml_element_t, public object_with_name_and_id_t {
+    public:
+      route_t(tsccfg::node_t);
+      ~route_t();
+      bool get_mute() const { return mute; };
+      bool get_solo() const { return solo; };
       void set_mute(bool b) { mute = b; };
       void set_solo(bool b, uint32_t& anysolo);
       /**
@@ -98,10 +118,6 @@ namespace TASCAR {
       {
         return *(rmsmeter[k]);
       };
-
-    private:
-      std::string name;
-      std::string id;
 
     public:
       bool mute;
@@ -201,7 +217,8 @@ namespace TASCAR {
     class src_object_t;
 
     /**
-       \brief Audio ports
+       \brief Audio ports (anything which can receive or send audio,
+       e.g., to jack) with gain controls and calibration
     */
     class audio_port_t : public TASCAR::xml_element_t {
     public:
@@ -279,17 +296,13 @@ namespace TASCAR {
       plugin_processor_t plugins;
     };
 
-    class sound_name_t : private xml_element_t {
+    class sound_name_t : public object_with_name_and_id_t {
     public:
       sound_name_t(tsccfg::node_t e, src_object_t* parent_);
       std::string get_parent_name() const { return parentname; };
-      std::string get_name() const { return name; };
-      std::string get_fullname() const { return parentname + "." + name; };
-      std::string get_id() const { return id; };
+      std::string get_fullname() const { return parentname + "." + get_name(); };
 
     private:
-      std::string name;
-      std::string id;
       std::string parentname;
     };
 

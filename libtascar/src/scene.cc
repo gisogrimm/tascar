@@ -825,13 +825,20 @@ uint32_t sound_t::get_num_output_ports()
   return 0u;
 }
 
-route_t::route_t(tsccfg::node_t xmlsrc)
-    : xml_element_t(xmlsrc), id(TASCAR::get_tuid()), mute(false), solo(false),
-      meter_tc(2), meter_weight(TASCAR::levelmeter::Z), targetlevel(0)
+object_with_name_and_id_t::object_with_name_and_id_t(tsccfg::node_t xmlsrc)
+    : id(TASCAR::get_tuid())
 {
-  GET_ATTRIBUTE(name, "", "Route name");
-  GET_ATTRIBUTE(id, "", "Unique route id, empty to autogenerate");
+  xml_element_t e(xmlsrc);
+  e.GET_ATTRIBUTE(name, "", "Route name");
+  e.GET_ATTRIBUTE(id, "", "Unique route id, empty to autogenerate");
   TASCAR::validate_tuid(id, xmlsrc);
+}
+
+route_t::route_t(tsccfg::node_t xmlsrc)
+    : xml_element_t(xmlsrc), object_with_name_and_id_t(xmlsrc), mute(false),
+      solo(false), meter_tc(2), meter_weight(TASCAR::levelmeter::Z),
+      targetlevel(0)
+{
   GET_ATTRIBUTE_BOOL(mute, "Mute flag of route");
   GET_ATTRIBUTE_BOOL(solo, "Solo flag of route");
 }
@@ -1271,15 +1278,13 @@ void obstacle_group_t::process_active(double t, uint32_t anysolo)
 }
 
 sound_name_t::sound_name_t(tsccfg::node_t xmlsrc, src_object_t* parent_)
-    : xml_element_t(xmlsrc), id(TASCAR::get_tuid())
+  : object_with_name_and_id_t(xmlsrc)
 {
-  GET_ATTRIBUTE(name, "", "name of sound vertex");
-  if(parent_ && name.empty())
-    name = parent_->next_sound_name();
-  if(name.empty())
+  xml_element_t e(xmlsrc);
+  if(parent_ && get_name().empty())
+    set_name(parent_->next_sound_name());
+  if(get_name().empty())
     throw TASCAR::ErrMsg("Invalid (empty) sound name.");
-  GET_ATTRIBUTE(id, "", "id of sound vertex");
-  TASCAR::validate_tuid(id, xmlsrc);
   if(parent_)
     parentname = parent_->get_name();
 }
