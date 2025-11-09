@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session license="CC0">
+  <scene name="scene">
+    <source name="in">
+      <sound name="0"/>
+      <sound name="1"/>
+      <sound name="2"/>
+      <sound name="3"/>
+    </source>
+    <source name="in2">
+      <sound name="0"/>
+      <sound name="1"/>
+      <sound name="2"/>
+      <sound name="3"/>
+    </source>
+    <receiver name="out" type="ortf" broadband="true"/>
+    <reverb absorption="0.6" damping="0.7" dw="60" fdnorder="5" forwardstages="0" gain="-20.2" gainmethod="original" id="reverb" image="false" lowcut="125" name="reverb" truncate_forward="true" type="simplefdn" volumetric="25 13 7.5" volumetricgainwithdistance="true"/>
+    <facegroup name="room" shoebox="25 13 7.5"/>
+  </scene>
+  <modules>
+    <mcuctl name="master" dumpmsg="true" connect="BCF2000:0" banksize="7" pattern="/scene/in*/* /test*" mainctl="/scene/out"/>
+    <route name="test1" channels="2"/>
+    <route name="test2" channels="2"/>
+  </modules>
+</session>

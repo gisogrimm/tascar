@@ -64,6 +64,13 @@ namespace TASCAR {
     */
     void send_midi(int channel, int param, int value);
     /**
+       \brief Send a pitchbend event to output (14bit)
+       \param channel MIDI channel number
+       \param param MIDI parameter
+       \param value MIDI value
+    */
+    void send_midi_pitchbend(int channel, int param, int value);
+    /**
        \brief Send a NoteOn event to output
        \param channel MIDI channel number
        \param pitch Pitch of note

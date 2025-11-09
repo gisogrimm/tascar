@@ -39,7 +39,7 @@ MASKPLUGINS = fig8 multibeam sampledgain
 ifneq ($(OS),Windows_NT)
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-  TASCARMODS += midicc2osc midictl mididispatch joystick	\
+  TASCARMODS += midicc2osc midictl mcuctl mididispatch joystick	\
     qualisystracker ltcgen lightctl ovheadtracker serialheadtracker
   AUDIOPLUGINS += simplesynth
 endif

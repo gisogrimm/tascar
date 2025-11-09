@@ -84,17 +84,16 @@ void TASCAR::midi_ctl_t::service()
       if(ev) {
         switch(ev->type) {
         case SND_SEQ_EVENT_CONTROLLER:
-          // if(ev && (ev->type == SND_SEQ_EVENT_CONTROLLER)) {
           emit_event(ev->data.control.channel, ev->data.control.param,
                      ev->data.control.value);
           break;
-          //}
+        case SND_SEQ_EVENT_PITCHBEND:
+          emit_event(ev->data.control.channel, ev->data.control.param,
+                     ev->data.control.value);
+          break;
         case SND_SEQ_EVENT_NOTE:
         case SND_SEQ_EVENT_NOTEON:
         case SND_SEQ_EVENT_NOTEOFF:
-          // if(ev && ((ev->type == SND_SEQ_EVENT_NOTE) ||
-          //        (ev->type == SND_SEQ_EVENT_NOTEON) ||
-          //        (ev->type == SND_SEQ_EVENT_NOTEOFF))) {
           emit_event_note(ev->data.note.channel, ev->data.note.note,
                           ((ev->type == SND_SEQ_EVENT_NOTEOFF)
                                ? 0
@@ -130,6 +129,23 @@ void TASCAR::midi_ctl_t::send_midi(int channel, int param, int value)
   ev.data.control.channel = (unsigned char)(channel);
   ev.data.control.param = (unsigned char)(param);
   ev.data.control.value = (unsigned char)(value);
+  snd_seq_event_output_direct(seq, &ev);
+  snd_seq_drain_output(seq);
+  snd_seq_sync_output_queue(seq);
+}
+
+void TASCAR::midi_ctl_t::send_midi_pitchbend(int channel, int param, int value)
+{
+  snd_seq_event_t ev;
+  memset(&ev, 0, sizeof(ev));
+  snd_seq_ev_clear(&ev);
+  snd_seq_ev_set_source(&ev, port_out.port);
+  snd_seq_ev_set_subs(&ev);
+  snd_seq_ev_set_direct(&ev);
+  ev.type = SND_SEQ_EVENT_PITCHBEND;
+  ev.data.control.channel = (unsigned char)(channel);
+  ev.data.control.param = (unsigned char)(param);
+  ev.data.control.value = value;
   snd_seq_event_output_direct(seq, &ev);
   snd_seq_drain_output(seq);
   snd_seq_sync_output_queue(seq);
