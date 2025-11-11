@@ -566,6 +566,8 @@ receiver_t::receiver_t(tsccfg::node_t xmlsrc, const std::string& name,
       "volume in which receiver does not apply distance based gain model");
   GET_ATTRIBUTE_BOOL(volumetricgainwithdistance,
                      "For volumetric receivers, increase gain with distance");
+  GET_ATTRIBUTE_BOOL(create_input_ports,
+                     "Create jack input ports for direct speaker feed");
   GET_ATTRIBUTE(avgdist, "m",
                 "Average distance which is assumed inside receiver boxes, or 0 "
                 "to use $(\\frac18 V)^{1/3}$");

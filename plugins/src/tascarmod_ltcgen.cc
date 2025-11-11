@@ -74,9 +74,9 @@ ltcgen_t::ltcgen_t(const TASCAR::module_cfg_t& cfg)
     ltc_tv_standard = LTC_TV_FILM_24;
     break;
   default:
-    TASCAR::add_warning("Non-standard LTC frame rate: " +
-                        TASCAR::to_string(fpsnum) + "/" +
-                        TASCAR::to_string(fpsden) + " fps");
+    TASCAR::add_warning(
+        "Non-standard LTC frame rate: " + TASCAR::to_string(fpsnum) + "/" +
+        TASCAR::to_string(fpsden) + " fps");
   }
   encoder =
       ltc_encoder_create(get_srate(), fpsnum / fpsden, ltc_tv_standard, 0);
@@ -144,8 +144,8 @@ int ltcgen_t::process(jack_nframes_t n, const std::vector<float*>&,
         }
         ltc_encoder_encode_byte(encoder, byteCnt, 1.0);
         byteCnt++;
-        //encoded_data = ltc_encoder_get_buffer(encoder, enc_buf);
-        encoded_data = ltc_encoder_copy_buffer(encoder, enc_buf);
+        encoded_data = ltc_encoder_get_buffer(encoder, enc_buf);
+        // encoded_data = ltc_encoder_copy_buffer(encoder, enc_buf);
         enc_buf_ = enc_buf;
       }
       if(encoded_data) {
