@@ -226,8 +226,10 @@ namespace TASCAR {
       virtual ~audio_port_t();
       virtual uint32_t get_num_input_ports() = 0;
       virtual uint32_t get_num_output_ports() = 0;
-      void set_port_index(uint32_t port_index_);
-      uint32_t get_port_index() const { return port_index; };
+      void set_input_port_index(uint32_t port_index_);
+      uint32_t get_input_port_index() const { return input_port_index; };
+      void set_output_port_index(uint32_t port_index_);
+      uint32_t get_output_port_index() const { return output_port_index; };
       void set_ctlname(const std::string& pn) { ctlname = pn; };
       std::string get_ctlname() const { return ctlname; };
       std::vector<std::string> get_connect() const { return connect; };
@@ -248,13 +250,14 @@ namespace TASCAR {
     private:
       std::string ctlname;
       std::vector<std::string> connect;
-      uint32_t port_index;
+      uint32_t input_port_index = 0;
+      uint32_t output_port_index = 0;
       const bool is_input;
 
     public:
-      float gain;
-      float caliblevel;
-      bool has_caliblevel;
+      float gain = 1.0f;
+      float caliblevel = 1.0f;
+      bool has_caliblevel = false;
     };
 
     /**
@@ -300,7 +303,10 @@ namespace TASCAR {
     public:
       sound_name_t(tsccfg::node_t e, src_object_t* parent_);
       std::string get_parent_name() const { return parentname; };
-      std::string get_fullname() const { return parentname + "." + get_name(); };
+      std::string get_fullname() const
+      {
+        return parentname + "." + get_name();
+      };
 
     private:
       std::string parentname;

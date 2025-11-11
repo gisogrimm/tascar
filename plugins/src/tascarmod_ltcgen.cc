@@ -144,7 +144,8 @@ int ltcgen_t::process(jack_nframes_t n, const std::vector<float*>&,
         }
         ltc_encoder_encode_byte(encoder, byteCnt, 1.0);
         byteCnt++;
-        encoded_data = ltc_encoder_get_buffer(encoder, enc_buf);
+        //encoded_data = ltc_encoder_get_buffer(encoder, enc_buf);
+        encoded_data = ltc_encoder_copy_buffer(encoder, enc_buf);
         enc_buf_ = enc_buf;
       }
       if(encoded_data) {

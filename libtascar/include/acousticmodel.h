@@ -250,6 +250,7 @@ namespace TASCAR {
       uint32_t ismmax = 2147483647;
       uint32_t layers = 0xffffffff;
       bool use_global_mask = true;
+      bool create_input_ports = false;
       float diffusegain = 1.0f;
       bool has_diffusegain = false;
       float falloff = -1.0f;

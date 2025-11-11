@@ -121,9 +121,14 @@ void diff_snd_field_obj_t::validate_attributes(std::string& msg) const
 
 audio_port_t::~audio_port_t() {}
 
-void audio_port_t::set_port_index(uint32_t port_index_)
+void audio_port_t::set_input_port_index(uint32_t input_port_index_)
 {
-  port_index = port_index_;
+  input_port_index = input_port_index_;
+}
+
+void audio_port_t::set_output_port_index(uint32_t output_port_index_)
+{
+  output_port_index = output_port_index_;
 }
 
 void audio_port_t::set_inv(bool inv)
@@ -890,8 +895,7 @@ void face_object_t::geometry_update(double t)
 }
 
 audio_port_t::audio_port_t(tsccfg::node_t xmlsrc, bool is_input_)
-    : xml_element_t(xmlsrc), ctlname(""), port_index(0), is_input(is_input_),
-      gain(1), caliblevel(1.0)
+    : xml_element_t(xmlsrc), ctlname(""), is_input(is_input_)
 {
   GET_ATTRIBUTE(connect, "",
                 "Regular expressions of port names for connections");
@@ -1278,7 +1282,7 @@ void obstacle_group_t::process_active(double t, uint32_t anysolo)
 }
 
 sound_name_t::sound_name_t(tsccfg::node_t xmlsrc, src_object_t* parent_)
-  : object_with_name_and_id_t(xmlsrc)
+    : object_with_name_and_id_t(xmlsrc)
 {
   xml_element_t e(xmlsrc);
   if(parent_ && get_name().empty())

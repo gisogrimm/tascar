@@ -106,7 +106,7 @@ void TASCAR::scene_render_rt_t::start()
                                "\" did not match any port.");
         for(auto it = cno.begin(); it != cno.end(); ++it)
           if(it->size())
-            connect_in(sounds[k]->get_port_index(), *it, true);
+            connect_in(sounds[k]->get_input_port_index(), *it, true);
       }
       // connect diffuse ports:
       for(std::vector<TASCAR::Scene::diff_snd_field_obj_t*>::iterator idiff =
@@ -117,7 +117,7 @@ void TASCAR::scene_render_rt_t::start()
         for(auto it = cn.begin(); it != cn.end(); ++it)
           *it = strrep(*it, "@", "player." + name + ":" + pdiff->get_name());
         // cn = get_port_names_regexp( cn );
-        uint32_t pi(pdiff->get_port_index());
+        uint32_t pi(pdiff->get_input_port_index());
         for(auto it = cn.begin(); it != cn.end(); ++it)
           if(it->size()) {
             for(uint32_t k = 0; k < 4; ++k) {
@@ -131,11 +131,12 @@ void TASCAR::scene_render_rt_t::start()
     }
     // connect receiver ports:
     for(unsigned int k = 0; k < receivermod_objects.size(); k++) {
+      auto portindex = receivermod_objects[k]->get_output_port_index();
       std::vector<std::string> cn(receivermod_objects[k]->get_connect());
       for(auto it = cn.begin(); it != cn.end(); ++it)
         if(it->size()) {
           for(uint32_t ch = 0; ch < receivermod_objects[k]->n_channels; ch++)
-            connect_out(receivermod_objects[k]->get_port_index() + ch,
+            connect_out(portindex + ch,
                         *it + receivermod_objects[k]->labels[ch], true);
         }
       std::vector<std::string> cns(receivermod_objects[k]->get_connections());
@@ -143,8 +144,7 @@ void TASCAR::scene_render_rt_t::start()
                                          receivermod_objects[k]->n_channels);
           kc++) {
         if(cns[kc].size())
-          connect_out(receivermod_objects[k]->get_port_index() + kc, cns[kc],
-                      true);
+          connect_out(portindex + kc, cns[kc], true);
       }
     }
   }

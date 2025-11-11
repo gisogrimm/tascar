@@ -263,8 +263,8 @@ uint32_t acoustic_model_t::process(const TASCAR::transport_t& tp)
             return 1;
           }
         } // of visible
-      }   // of layers check
-    }     // of ISM order check
+      } // of layers check
+    } // of ISM order check
   } else {
     delayline.add_chunk(audio);
   }
