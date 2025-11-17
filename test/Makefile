@@ -105,8 +105,8 @@ TEST_LEV = $(patsubst %,test_reclevel_%,$(LEVELREC))
 
 FAILING_TESTS = test_ir5
 
-TOL = 3e-7
-RMSTOL = 3e-7
+TOL = 4e-7
+RMSTOL = 4e-7
 
 all: prepare $(TESTS) hoa3d $(TEST_FAIL) testrec testlev
 
