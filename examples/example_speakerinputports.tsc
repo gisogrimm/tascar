@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<session license="CC0">
+  <scene>
+    <source name="in">
+      <sound>
+        <plugins>
+	  <pink alpha="1" level="50"/>
+        </plugins>
+      </sound>
+    </source>
+    <receiver name="out" type="hoa2d" layout="16ch.spk" create_input_ports="true"/>
+  </scene>
+</session>
