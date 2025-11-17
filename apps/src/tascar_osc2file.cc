@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     return 1;
   }
   std::atomic<bool> b_quit(false);
-  st.add_method("/osc2lsl/quit", "",
+  st.add_method("/osc2file/quit", "",
                 [&b_quit](lo_arg**, int) { b_quit = true; });
   bool added = false;
   for(auto& t : streams) {
