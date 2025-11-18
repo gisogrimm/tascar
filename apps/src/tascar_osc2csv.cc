@@ -31,7 +31,9 @@
 #include <map>
 #include <unistd.h>
 
-// std::ofstream ofh;
+bool max1hz = true;
+
+std::map<std::string, int64_t> pathsecs;
 
 static int send_something(const char* path_, const char* types, lo_arg** argv,
                           int argc, lo_message, void*)
@@ -39,15 +41,23 @@ static int send_something(const char* path_, const char* types, lo_arg** argv,
   std::string path = path_;
   if(path.size()) {
     const auto p1 = std::chrono::system_clock::now();
+    auto seconds =
+        std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch())
+            .count();
+    if(max1hz) {
+      if(pathsecs.find(path) != pathsecs.end()) {
+        auto delta = seconds - pathsecs[path];
+        if((delta < 1) && (delta >= 0))
+          return 0;
+      }
+    }
+    pathsecs[path] = seconds;
     if(path[0] == '/')
       path.insert(0, ".");
     std::filesystem::path spath(path);
     create_directories(spath.parent_path());
     auto fname = spath;
     fname += ".csv";
-    auto seconds =
-        std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch())
-            .count();
     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
                             p1.time_since_epoch())
                             .count();
@@ -85,11 +95,11 @@ static int send_something(const char* path_, const char* types, lo_arg** argv,
 int main(int argc, char** argv)
 {
   int32_t port(-1);
-  const char* options = "ha:p:o:";
+  const char* options = "ha:p:u";
   struct option long_options[] = {{"help", 0, 0, 'h'},
                                   {"add", 1, 0, 'a'},
-                                  {"output", 1, 0, 'o'},
                                   {"port", 1, 0, 'p'},
+                                  {"unlimited", 0, 0, 'u'},
                                   {0, 0, 0, 0}};
   int opt(0);
   int option_index(0);
@@ -110,6 +120,9 @@ int main(int argc, char** argv)
           "'/path:ff'.\n"
           "<format> can be 'i' (integer), 'f' (32 bit float) or 's' (string).");
       return 0;
+    case 'u':
+      max1hz = false;
+      break;
     case 'a':
       streams.push_back(optarg);
       break;
