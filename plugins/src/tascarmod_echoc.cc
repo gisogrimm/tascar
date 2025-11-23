@@ -23,6 +23,21 @@
 #include "ola.h"
 #include "session.h"
 
+// helper function to find index of sample with largest absolute value
+// of an impulse response
+uint32_t get_idxmaxabs(const TASCAR::wave_t& w)
+{
+  uint32_t imax = 0u;
+  float vmax = 0.0f;
+  float tmp = 0.0f;
+  for(uint32_t k = 0; k < w.n; ++k)
+    if((tmp = fabsf(w.d[k])) > vmax) {
+      vmax = tmp;
+      imax = k;
+    }
+  return imax;
+}
+
 class echoc_var_t : public TASCAR::module_base_t {
 public:
   echoc_var_t(const TASCAR::module_cfg_t& cfg);
@@ -64,7 +79,7 @@ public:
   echoc_mod_t(const TASCAR::module_cfg_t& cfg);
   void configure();
   void ir_measure();
-  void ir_update();
+  void ir_update_from_file_and_truncate();
   void ports_connect();
   virtual ~echoc_mod_t();
   int process(jack_nframes_t nframes, const std::vector<float*>& inBuffer,
@@ -74,7 +89,7 @@ public:
                          void* user_data)
   {
     ((echoc_mod_t*)user_data)->ir_measure();
-    ((echoc_mod_t*)user_data)->ir_update();
+    ((echoc_mod_t*)user_data)->ir_update_from_file_and_truncate();
     return 0;
   }
   static int osc_connect(const char*, const char*, lo_arg**, int, lo_message,
@@ -94,6 +109,7 @@ private:
   std::mutex lock;
   std::vector<TASCAR::overlap_save_t*> filters;
   std::vector<TASCAR::static_delay_t*> delays;
+  // temporary storage for delayed signal:
   TASCAR::wave_t* tmp_wav = NULL;
   std::atomic_bool connecting_ports = false;
   std::atomic_bool reconnect = false;
@@ -103,13 +119,20 @@ private:
 echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
     : echoc_var_t(cfg), jackc_t(name)
 {
+  // create output ports which will send the phase-inverted signal, to
+  // be added to the microphone signals by jack:
   for(size_t ch = 0; ch < micports.size(); ++ch)
     add_output_port("out." + std::to_string(ch));
+  // create input ports which receive a copy of the loudspeaker
+  // signal:
   for(size_t ch = 0; ch < loudspeakerports.size(); ++ch)
     add_input_port("in." + std::to_string(ch));
+  // for adaptation, add a copy of the microphone signals before
+  // addition of the phase inverted copy:
   for(size_t ch = 0; ch < micports.size(); ++ch)
     add_input_port("adapt." + std::to_string(ch));
   if(autoreconnect) {
+    // update port connections upon any jack port change:
     jack_set_port_connect_callback(jc, &echoc_mod_t::jack_port_connect_cb,
                                    this);
   }
@@ -160,22 +183,24 @@ void echoc_mod_t::ports_connect()
 
 void echoc_mod_t::configure()
 {
+  // temporary storage for delayed signal:
   if(tmp_wav)
     delete tmp_wav;
   tmp_wav = new TASCAR::wave_t(n_fragment);
+  //
   if(measureatstart)
     ir_measure();
-  ir_update();
+  ir_update_from_file_and_truncate();
   ports_connect();
   reconnect = true;
 }
 
+// periodically reconnect ports:
 void echoc_mod_t::port_service()
 {
   size_t pcnt = 100;
   while(run_port_service) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    //usleep(10000);
     if(!measuring) {
       if(reconnect) {
         if(pcnt)
@@ -184,7 +209,6 @@ void echoc_mod_t::port_service()
           pcnt = 100;
           reconnect = false;
           ports_connect();
-          // std::cerr << "reconnecting\n";
         }
       }
     }
@@ -208,20 +232,7 @@ echoc_mod_t::~echoc_mod_t()
     port_thread.join();
 }
 
-uint32_t get_idxmaxabs(const TASCAR::wave_t& w)
-{
-  uint32_t imax = 0u;
-  float vmax = 0.0f;
-  float tmp = 0.0f;
-  for(uint32_t k = 0; k < w.n; ++k)
-    if((tmp = fabsf(w.d[k])) > vmax) {
-      vmax = tmp;
-      imax = k;
-    }
-  return imax;
-}
-
-void echoc_mod_t::ir_update()
+void echoc_mod_t::ir_update_from_file_and_truncate()
 {
   std::lock_guard<std::mutex> lockguard(lock);
   // clear all filters and delays:
@@ -279,6 +290,7 @@ void echoc_mod_t::ir_update()
   }
 }
 
+// measure impulse responses using a sweep:
 void echoc_mod_t::ir_measure()
 {
   measuring = true;
@@ -294,41 +306,54 @@ void echoc_mod_t::ir_measure()
   std::vector<TASCAR::wave_t> isig = {TASCAR::wave_t(irlen * (nrep + 1))};
   TASCAR::fft_t fft(irlen);
   TASCAR::fft_t fft_y(irlen);
+  // generate exponential sweep:
   const std::complex<float> If = {0.0f, 1.0f};
   for(size_t k = 0; k < fft.s.n_; k++)
     fft.s[k] = std::exp(-If * TASCAR_2PIf * (float)irlen *
                         std::pow((float)k / (float)(fft.s.n_), 2.0f)) *
                1.0f / sqrtf(irlen);
   fft.ifft();
+  // scale to desired signal level:
   fft.w *= TASCAR::db2lin(level - fft.w.spldb());
+  // repeat stimulus for averaging:
   for(size_t k = 0; k < nrep + 1; ++k)
     isig[0].append(fft.w);
   fft.fft();
+  // create output signals:
   std::vector<TASCAR::wave_t> osig;
   for(size_t ch = 0; ch < micports.size(); ++ch)
     osig.push_back(TASCAR::wave_t(irlen * (nrep + 1)));
+  // storage for impulse responses:
   std::vector<TASCAR::wave_t> all_ir;
   float fs = f_sample;
   for(auto& port : loudspeakerports) {
     std::vector<TASCAR::wave_t> ir(osig.size(), TASCAR::wave_t(irlen));
     std::vector<std::string> ports = {port};
     ports.insert(ports.end(), micports.begin(), micports.end());
+    // create an audio recorder instance, and record signals:
     jackio_t jio(isig, osig, ports, name + "irrecorder", 0, false);
     jio.run();
+    // process recordings:
     for(size_t ch = 0; ch < osig.size(); ++ch) {
       fft_y.w.clear();
+      // take average of response over repetitions:
       for(size_t rep = 1; rep < nrep; ++rep)
         for(size_t k = 0; k < irlen; ++k)
           fft_y.w.d[k] += osig[ch].d[irlen * rep + k];
       fft_y.w *= 1.0f / nrep;
+      // apply Fourier transform:
       fft_y.fft();
+      // calculate impulse response by element-wise division by
+      // reference signal:
       for(size_t bin = 0; bin < fft_y.s.n_; ++bin)
         fft_y.s.b[bin] /= fft.s.b[bin];
       fft_y.ifft();
+      // copy to impulse response container:
       ir[ch].copy(fft_y.w);
     }
     all_ir.insert(all_ir.end(), ir.begin(), ir.end());
   }
+  // store all impulse responses on disk:
   TASCAR::audiowrite(TASCAR::env_expand(path + name + ".wav"), all_ir, fs,
                      SF_FORMAT_WAV | SF_FORMAT_FLOAT | SF_ENDIAN_FILE);
   measuring = false;
@@ -338,6 +363,7 @@ int echoc_mod_t::process(jack_nframes_t nframes,
                          const std::vector<float*>& inBuffer,
                          const std::vector<float*>& outBuffer)
 {
+  // clear output samples:
   for(auto pOut : outBuffer)
     memset(pOut, 0, sizeof(float) * nframes);
   if(!bypass) {
@@ -350,10 +376,12 @@ int echoc_mod_t::process(jack_nframes_t nframes,
           // std::cerr << "*";
           for(auto pOut : outBuffer) {
             if(idx < filters.size()) {
+              // create a delayed copy of the input signal:
               for(uint32_t k = 0; k < nframes; ++k)
                 tmp_wav->d[k] = delays[idx]->operator()(pIn[k]);
-              TASCAR::wave_t wout(nframes, pOut);
-              filters[idx]->process(*tmp_wav, wout);
+              TASCAR::wave_t wOut(nframes, pOut);
+              // filter signal and store in pOut (referenced by wOut):
+              filters[idx]->process(*tmp_wav, wOut);
             }
             ++idx;
           }
