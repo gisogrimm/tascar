@@ -1,9 +1,8 @@
-function doc = tascar_xml_edit_elements( doc, etype, attr, value, varargin )
 % tascar_xml_edit_elements - edit XML elements
 %
 % Usage:
 % doc = tascar_xml_edit_elements( doc, etype, attr, value, [cattr1, cvalue1, ...] )
-% 
+%
 % doc - document (java object)
 % etype - element name
 % attr - attribute name to edit
@@ -19,21 +18,29 @@ function doc = tascar_xml_edit_elements( doc, etype, attr, value, varargin )
 % doc = tascar_xml_edit_elements( doc, 'group', 'id', '3', 'name', 'alpha', 'id', '5'
 % tascar_xml_save(doc, 'output.xml');
 %
-  if ~ischar(value)
-    value = sprintf('%g',value);
-  end
-  root = javaMethod('getFirstChild',doc);
-  elem_list = javaMethod('getElementsByTagName',doc,etype);
-  N = javaMethod('getLength',elem_list);
-  for k=1:N
-    elem = javaMethod('item',elem_list,k-1);
-    b_matched = true;
-    for k=1:2:numel(varargin)
-      if ~strcmp(javaMethod('getAttribute',elem,varargin{k}),varargin{k+1})
-	b_matched = false;
-      end
+function doc = tascar_xml_edit_elements( doc, etype, attr, value, varargin )
+    if ~isjava(doc)
+        error('Input document must be a Java Document object.');
     end
-    if b_matched
-      javaMethod('setAttribute',elem,attr,value);
+    if ~ischar(etype)
+        error('Element type must be a string.');
     end
-  end
+    if ~ischar(value)
+        value = sprintf('%g',value);
+    end
+    root = javaMethod('getFirstChild',doc);
+    elem_list = javaMethod('getElementsByTagName',doc,etype);
+    N = javaMethod('getLength',elem_list);
+    for k=1:N
+        elem = javaMethod('item',elem_list,k-1);
+        b_matched = true;
+        for k=1:2:numel(varargin)
+            if ~strcmp(javaMethod('getAttribute',elem,varargin{k}),varargin{k+1})
+                b_matched = false;
+            end
+        end
+        if b_matched
+            javaMethod('setAttribute',elem,attr,value);
+        end
+    end
+end
