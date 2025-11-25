@@ -38,6 +38,25 @@ uint32_t get_idxmaxabs(const TASCAR::wave_t& w)
   return imax;
 }
 
+class blms_proc_t : public TASCAR::overlap_save_t {
+public:
+  blms_proc_t(uint32_t irslen, uint32_t chunksize);
+  void adapt(const TASCAR::wave_t&, const TASCAR::wave_t&,
+             const TASCAR::wave_t&);
+
+private:
+};
+
+blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize)
+    : TASCAR::overlap_save_t(irslen, chunksize)
+{
+}
+
+void blms_proc_t::adapt(const TASCAR::wave_t&, const TASCAR::wave_t&,
+                        const TASCAR::wave_t&)
+{
+}
+
 class echoc_var_t : public TASCAR::module_base_t {
 public:
   echoc_var_t(const TASCAR::module_cfg_t& cfg);
@@ -54,6 +73,7 @@ public:
   bool measureatstart = false;
   bool autoreconnect = false;
   bool bypass = false;
+  bool adaptive = false;
 };
 
 echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
@@ -72,6 +92,7 @@ echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
   GET_ATTRIBUTE_BOOL(autoreconnect,
                      "Automatically re-connect ports after jack port change");
   GET_ATTRIBUTE_BOOL(bypass, "Bypass filter stage");
+  GET_ATTRIBUTE_BOOL(adaptive, "Use adaptive filtering");
 }
 
 class echoc_mod_t : public echoc_var_t, public jackc_t {
@@ -107,7 +128,7 @@ private:
   bool run_port_service = true;
   std::thread port_thread;
   std::mutex lock;
-  std::vector<TASCAR::overlap_save_t*> filters;
+  std::vector<blms_proc_t*> filters;
   std::vector<TASCAR::static_delay_t*> delays;
   // temporary storage for delayed signal:
   TASCAR::wave_t* tmp_wav = NULL;
@@ -279,8 +300,7 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
       filterir.clear();
       for(uint32_t k = 0; k < filterir.n; ++k)
         filterir.d[k] = -ir.d[k + predelay];
-      filters.push_back(
-          new TASCAR::overlap_save_t(filterlen_final, n_fragment));
+      filters.push_back(new blms_proc_t(filterlen_final, n_fragment));
       filters.back()->set_irs(filterir);
     }
   }
@@ -373,7 +393,7 @@ int echoc_mod_t::process(jack_nframes_t nframes,
       for(auto pIn : inBuffer) {
         if(cin < loudspeakerports.size()) {
           // input port, not a filter update port.
-          // std::cerr << "*";
+          uint32_t cout = 0;
           for(auto pOut : outBuffer) {
             if(idx < filters.size()) {
               // create a delayed copy of the input signal:
@@ -382,8 +402,13 @@ int echoc_mod_t::process(jack_nframes_t nframes,
               TASCAR::wave_t wOut(nframes, pOut);
               // filter signal and store in pOut (referenced by wOut):
               filters[idx]->process(*tmp_wav, wOut);
+              if(adaptive) {
+                TASCAR::wave_t wIn(nframes, pIn + loudspeakerports.size());
+                filters[idx]->adapt(*tmp_wav, wOut, wIn);
+              }
             }
             ++idx;
+            ++cout;
           }
         }
         ++cin;

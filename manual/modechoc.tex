@@ -1,14 +1,43 @@
-The {\em echoc} module provides echo cancellation. As a non-adaptive method, it operates in two phases: In the measurement phase, a test signal is played back through the speaker outputs \attr{loudspeakerports} and the response is recorded through the microphone inputs \attr{micports}. In the filter phase, the output signals are filtered with the phase-inverted corresponding responses, and the signal is added to the microphone signal. An overview of the signal flow is given in the figure \ref{fig:modechoc}.
+The {\em echoc} module provides echo/feedback cancellation. As a
+non-adaptive method, it operates in two phases: In the measurement
+phase, a test signal is played back through the speaker outputs
+\attr{loudspeakerports} and the response is recorded through the
+microphone inputs \attr{micports}. In the filter phase, the output
+signals are filtered with the phase-inverted corresponding responses,
+and the signal is added to the microphone signal. An overview of the
+signal flow is given in the figure \ref{fig:modechoc2}.
 
-Please note that no feedback jack connections are possible for the echo cancellation to work, because feedback connections cause an additional delay which results in a mismatch of the cancellation signal. This also means that a graph from the microphone to the loudspeaker (e.g., self monitoring) is not possible for the echo cancellation to work. Future versions may compensate for this extra delay.
+Please note that no feedback jack connections are possible for the
+echo cancellation to work, because feedback connections cause an
+additional delay which results in a mismatch of the cancellation
+signal. This also means that a graph from the microphone to the
+loudspeaker (e.g., self monitoring) is not possible for the echo
+cancellation to work. Future versions may compensate for this extra
+delay.
 
-The filter is implemented in frequency domain as overlap-save algorithm.
+The filter is implemented in frequency domain as overlap-save
+algorithm.
 
 \begin{figure}[htb]
     \centering
     \fbox{\includegraphics[width=\textwidth]{echoc.pdf}}
-    \caption{Signal flow of the echoc plugin. The sound source (left side) is played back through the loudspeakers. In the signal sent to the other clients (on the right side), the sound source is cancelled. The adaptive filter estimator (gray box) is not yet implemented.}
+    \caption{Signal flow of the echoc plugin. The sound source (left
+      side) is played back through the loudspeakers. In the signal
+      sent to the other clients (on the right side), the sound source
+      is cancelled. The adaptive filter estimator (gray box) is not
+      yet implemented.}
     \label{fig:modechoc}
+\end{figure}
+
+\begin{figure}[htb]
+    \centering
+    \fbox{\includegraphics[width=0.7\textwidth]{echoc_new.pdf}}
+    \caption{Signal flow of the echoc plugin. The sound source is
+      played back through the loudspeakers. In the signal sent to
+      other signal processing, data logging or other clients, the
+      sound source is cancelled. The adaptive filter estimator and the
+      whitening filter $W$ are not yet implemented.}
+    \label{fig:modechoc2}
 \end{figure}
 
 
