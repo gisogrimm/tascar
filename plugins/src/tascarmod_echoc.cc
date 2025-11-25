@@ -193,12 +193,15 @@ void echoc_mod_t::ports_connect()
   connecting_ports = true;
   for(size_t ch = 0; ch < micports.size(); ++ch)
     disconnect_out(ch);
-  for(size_t ch = 0; ch < loudspeakerports.size(); ++ch)
+  for(size_t ch = 0; ch < loudspeakerports.size() + micports.size(); ++ch)
     disconnect_in(ch);
   for(size_t ch = 0; ch < micports.size(); ++ch)
     connect_out(ch, micports[ch], true, true, true);
   for(size_t ch = 0; ch < loudspeakerports.size(); ++ch)
     connect_in(ch, loudspeakerports[ch], true, true, true);
+  for(size_t ch = loudspeakerports.size();
+      ch < loudspeakerports.size() + micports.size(); ++ch)
+    connect_in(ch, micports[ch - loudspeakerports.size()], true, false, true);
   connecting_ports = false;
 }
 
