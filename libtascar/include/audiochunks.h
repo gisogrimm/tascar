@@ -144,6 +144,13 @@ namespace TASCAR {
     float spldb() const;
     float maxabsdb() const;
     void append(const wave_t& src);
+    /**
+     * @brief Shift all samples to make space at end, then insert all
+     * samples from source. This will discard the first samples. This
+     * function will throw an exception when src is not smaller than
+     * this.
+     */
+    void insert_at_end(const wave_t& src);
     void resize(uint32_t chunksize);
     virtual void resample(double ratio);
     /**

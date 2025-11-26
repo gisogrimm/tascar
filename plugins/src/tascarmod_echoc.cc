@@ -55,12 +55,16 @@ public:
   TASCAR::static_delay_t delayline;
 
 private:
+  // container for error signal:
   TASCAR::wave_t w_e;
+  // container for full length error and u signal:
+  TASCAR::wave_t w_e_long;
+  TASCAR::wave_t w_u_long;
 };
 
 blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay)
     : TASCAR::overlap_save_t(irslen, chunksize), delayline(delay),
-      w_e(chunksize)
+      w_e(chunksize), w_e_long(get_fftlen()), w_u_long(get_fftlen())
 {
 }
 

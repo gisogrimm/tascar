@@ -479,6 +479,19 @@ void wave_t::append(const wave_t& src)
   }
 }
 
+void wave_t::insert_at_end(const wave_t& src)
+{
+  if(src.n >= n)
+    throw TASCAR::ErrMsg("cannot insert " + TASCAR::to_string(src.n) +
+                         " samples into a chunk of " + TASCAR::to_string(n) +
+                         " samples.");
+  auto n1 = n - src.n;
+  // time-shift data in the non-windowed input chunk:
+  memmove(d, d + src.n, n1 * sizeof(float));
+  // append data from new input chunk w:
+  memmove(d + n1, src.d, src.n * sizeof(float));
+}
+
 void wave_t::resample(double ratio)
 {
   if(ratio == 1)

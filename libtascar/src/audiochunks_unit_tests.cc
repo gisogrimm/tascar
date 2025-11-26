@@ -49,10 +49,10 @@ TEST(wave_t, plusop)
 {
   TASCAR::wave_t wave(4);
   wave += 1.0f;
-  EXPECT_EQ(1.0f,wave.d[0]);
-  EXPECT_EQ(1.0f,wave.d[1]);
-  EXPECT_EQ(1.0f,wave.d[2]);
-  EXPECT_EQ(1.0f,wave.d[3]);
+  EXPECT_EQ(1.0f, wave.d[0]);
+  EXPECT_EQ(1.0f, wave.d[1]);
+  EXPECT_EQ(1.0f, wave.d[2]);
+  EXPECT_EQ(1.0f, wave.d[3]);
 }
 
 TEST(wave_t, resample)
@@ -101,7 +101,7 @@ TEST(wave_t, resample)
   wave[16] = 1.0f;
   orms = wave.rms();
   wave.resample(0.5);
-  //for(uint32_t k = 0; k < wave.size(); ++k)
+  // for(uint32_t k = 0; k < wave.size(); ++k)
   //  std::cout << k << " " << wave[k] << std::endl;
   EXPECT_EQ(16u, wave.size());
   ASSERT_NEAR(orms, wave.rms(), 0.04);
@@ -120,7 +120,29 @@ TEST(wave_t, resample)
   ASSERT_NEAR(-0.0185304f, wave[12], 1e-6);
   ASSERT_NEAR(0.0237894f, wave[13], 1e-6);
   ASSERT_NEAR(-0.0257178f, wave[14], 1e-6);
-  //ASSERT_NEAR(0.0253359f, wave[15], 1e-6);
+  // ASSERT_NEAR(0.0253359f, wave[15], 1e-6);
+}
+
+TEST(wave_t, insertatend)
+{
+  TASCAR::wave_t wlong(
+      std::vector<float>({0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f}));
+  TASCAR::wave_t wshort(std::vector<float>({6.0f, 7.0f}));
+  EXPECT_EQ(6.0f, wshort.d[0]);
+  EXPECT_EQ(7.0f, wshort.d[1]);
+  EXPECT_EQ(0.0f, wlong.d[0]);
+  EXPECT_EQ(1.0f, wlong.d[1]);
+  EXPECT_EQ(2.0f, wlong.d[2]);
+  EXPECT_EQ(3.0f, wlong.d[3]);
+  EXPECT_EQ(4.0f, wlong.d[4]);
+  EXPECT_EQ(5.0f, wlong.d[5]);
+  wlong.insert_at_end(wshort);
+  EXPECT_EQ(2.0f, wlong.d[0]);
+  EXPECT_EQ(3.0f, wlong.d[1]);
+  EXPECT_EQ(4.0f, wlong.d[2]);
+  EXPECT_EQ(5.0f, wlong.d[3]);
+  EXPECT_EQ(6.0f, wlong.d[4]);
+  EXPECT_EQ(7.0f, wlong.d[5]);
 }
 
 // Local Variables:
