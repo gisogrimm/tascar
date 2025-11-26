@@ -148,6 +148,12 @@ namespace TASCAR {
   class static_delay_t : public TASCAR::wave_t {
   public:
     static_delay_t(uint32_t d);
+    /**
+       \brief Change the delay of a delay line
+       \param d New delay in samples
+       \note This function is not thread-safe.
+     */
+    void set_delay_nonrt(uint32_t d);
     inline float operator()(float x)
     {
       if(is_zero)

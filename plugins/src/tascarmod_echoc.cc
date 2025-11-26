@@ -17,6 +17,15 @@
  * Version 3 along with TASCAR. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * For reference, see:
+ *
+ * Spriet, A., Proudler, I., Moonen, M. & Wouters, J. (2005). Adaptive
+ * feedback cancellation in hearing aids with linear prediction of the
+ * desired signal. IEEE Transactions on Signal Processing, 53(10),
+ * 3749–3763.
+ */
+
 #include "jackclient.h"
 #include "jackiowav.h"
 #include "mutex"
@@ -24,14 +33,14 @@
 #include "session.h"
 
 // helper function to find index of sample with largest absolute value
-// of an impulse response
-uint32_t get_idxmaxabs(const TASCAR::wave_t& w)
+// of an impulse response 'ir'
+uint32_t get_idxmaxabs(const TASCAR::wave_t& ir)
 {
   uint32_t imax = 0u;
   float vmax = 0.0f;
   float tmp = 0.0f;
-  for(uint32_t k = 0; k < w.n; ++k)
-    if((tmp = fabsf(w.d[k])) > vmax) {
+  for(uint32_t k = 0; k < ir.n; ++k)
+    if((tmp = fabsf(ir.d[k])) > vmax) {
       vmax = tmp;
       imax = k;
     }
@@ -40,21 +49,29 @@ uint32_t get_idxmaxabs(const TASCAR::wave_t& w)
 
 class blms_proc_t : public TASCAR::overlap_save_t {
 public:
-  blms_proc_t(uint32_t irslen, uint32_t chunksize);
+  blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay);
   void adapt(const TASCAR::wave_t&, const TASCAR::wave_t&,
              const TASCAR::wave_t&);
+  TASCAR::static_delay_t delayline;
 
 private:
+  TASCAR::wave_t w_e;
 };
 
-blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize)
-    : TASCAR::overlap_save_t(irslen, chunksize)
+blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay)
+    : TASCAR::overlap_save_t(irslen, chunksize), delayline(delay),
+      w_e(chunksize)
 {
 }
 
-void blms_proc_t::adapt(const TASCAR::wave_t&, const TASCAR::wave_t&,
-                        const TASCAR::wave_t&)
+void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
+                        const TASCAR::wave_t& w_adapt)
 {
+  w_e.copy(w_out);
+  w_e += w_adapt;
+  // apply whitening filter on w_e and w_u
+  // Fourier-transform of w_e and w_u
+  // update filter based on E{s_e * conj(s_u)}
 }
 
 class echoc_var_t : public TASCAR::module_base_t {
@@ -86,13 +103,19 @@ echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
   GET_ATTRIBUTE(level, "dB SPL", "Playback level");
   GET_ATTRIBUTE(nrep, "", "Number of measurement repetitions");
   GET_ATTRIBUTE(filterlen, "samples", "Minimal length of filters");
-  GET_ATTRIBUTE(premax, "samples", "Time before to maximum to add to filter");
+  GET_ATTRIBUTE(premax, "samples", "Time before IR maximum to add to filter");
   GET_ATTRIBUTE_BOOL(measureatstart,
                      "Perform a measurement when the plugin is loaded");
   GET_ATTRIBUTE_BOOL(autoreconnect,
                      "Automatically re-connect ports after jack port change");
   GET_ATTRIBUTE_BOOL(bypass, "Bypass filter stage");
   GET_ATTRIBUTE_BOOL(adaptive, "Use adaptive filtering");
+  if(micports.empty())
+    throw TASCAR::ErrMsg(
+        "At least one microphone (filter output) port must be given");
+  if(loudspeakerports.empty())
+    throw TASCAR::ErrMsg(
+        "At least one loudspeaker (filter input) port must be given");
 }
 
 class echoc_mod_t : public echoc_var_t, public jackc_t {
@@ -128,17 +151,20 @@ private:
   bool run_port_service = true;
   std::thread port_thread;
   std::mutex lock;
-  std::vector<blms_proc_t*> filters;
-  std::vector<TASCAR::static_delay_t*> delays;
-  // temporary storage for delayed signal:
-  TASCAR::wave_t* tmp_wav = NULL;
+  std::vector<blms_proc_t*> flt_hat_H;
+  //  temporary storage for delayed signal:
+  TASCAR::wave_t w_u_delayed;
   std::atomic_bool connecting_ports = false;
   std::atomic_bool reconnect = false;
   std::atomic_bool measuring = false;
+  const size_t N_in = 0;
+  const size_t N_out = 0;
+  const size_t N_flt = 0;
 };
 
 echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
-    : echoc_var_t(cfg), jackc_t(name)
+    : echoc_var_t(cfg), jackc_t(name), N_in(loudspeakerports.size()),
+      N_out(micports.size()), N_flt(N_in * N_out)
 {
   // create output ports which will send the phase-inverted signal, to
   // be added to the microphone signals by jack:
@@ -158,8 +184,7 @@ echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
                                    this);
   }
   activate();
-  for(size_t ch = 0; ch < micports.size(); ++ch)
-    connect_in(ch + loudspeakerports.size(), micports[ch], true, false);
+  ports_connect();
   add_variables(session);
   if(autoreconnect) {
     port_thread = std::thread(&echoc_mod_t::port_service, this);
@@ -180,12 +205,15 @@ void echoc_mod_t::jack_port_connect_cb()
 
 void echoc_mod_t::add_variables(TASCAR::osc_server_t* srv)
 {
+  srv->set_variable_owner(
+      TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
   std::string prefix_(srv->get_prefix());
   srv->set_prefix(std::string("/") + name);
   srv->add_method("/measure", "", &echoc_mod_t::osc_measure, this);
   srv->add_method("/connect", "", &echoc_mod_t::osc_connect, this);
   srv->add_bool("/bypass", &bypass);
   srv->set_prefix(prefix_);
+  srv->unset_variable_owner();
 }
 
 void echoc_mod_t::ports_connect()
@@ -207,10 +235,11 @@ void echoc_mod_t::ports_connect()
 
 void echoc_mod_t::configure()
 {
-  // temporary storage for delayed signal:
-  if(tmp_wav)
-    delete tmp_wav;
-  tmp_wav = new TASCAR::wave_t(n_fragment);
+  {
+    std::lock_guard<std::mutex> lockguard(lock);
+    // temporary storage for delayed signal:
+    w_u_delayed.resize(n_fragment);
+  }
   //
   if(measureatstart)
     ir_measure();
@@ -244,14 +273,9 @@ echoc_mod_t::~echoc_mod_t()
   run_port_service = false;
   deactivate();
   // clear all filters and delays:
-  for(auto& obj : filters)
+  for(auto& obj : flt_hat_H)
     delete obj;
-  filters.clear();
-  for(auto& obj : delays)
-    delete obj;
-  delays.clear();
-  if(tmp_wav)
-    delete tmp_wav;
+  flt_hat_H.clear();
   if(port_thread.joinable())
     port_thread.join();
 }
@@ -260,12 +284,9 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
 {
   std::lock_guard<std::mutex> lockguard(lock);
   // clear all filters and delays:
-  for(auto& obj : filters)
+  for(auto& obj : flt_hat_H)
     delete obj;
-  filters.clear();
-  for(auto& obj : delays)
-    delete obj;
-  delays.clear();
+  flt_hat_H.clear();
   if(n_fragment == 0)
     return;
   auto fftlen = pow(2.0, ceil(log2(n_fragment + filterlen - 1)));
@@ -280,6 +301,10 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
           "Invalid sampling rate of impulse response (expected " +
           TASCAR::to_string(f_sample) + " Hz, got " + TASCAR::to_string(fs) +
           " Hz).");
+    if(all_ir.size() != N_in * N_out)
+      TASCAR::add_warning(
+          "Not the same number of channels in pre-stored impulse response as "
+          "number of inputs * number of outputs");
     // find maxima and measurement quality:
     std::vector<uint32_t> idxmax;
     std::vector<float> aratio;
@@ -299,12 +324,13 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
             TASCAR::to_string(100.0f * aratio.back(), " (%1.0f%%)"));
       ++ch;
       uint32_t predelay = std::max(idxmax.back(), premax) - premax;
-      delays.push_back(new TASCAR::static_delay_t(predelay));
+      DEBUG(predelay);
       filterir.clear();
       for(uint32_t k = 0; k < filterir.n; ++k)
         filterir.d[k] = -ir.d[k + predelay];
-      filters.push_back(new blms_proc_t(filterlen_final, n_fragment));
-      filters.back()->set_irs(filterir);
+      flt_hat_H.push_back(
+          new blms_proc_t(filterlen_final, n_fragment, predelay));
+      flt_hat_H.back()->set_irs(filterir);
     }
   }
   catch(const std::exception& ex) {
@@ -398,16 +424,16 @@ int echoc_mod_t::process(jack_nframes_t nframes,
           // input port, not a filter update port.
           uint32_t cout = 0;
           for(auto pOut : outBuffer) {
-            if(idx < filters.size()) {
+            if(idx < flt_hat_H.size()) {
               // create a delayed copy of the input signal:
               for(uint32_t k = 0; k < nframes; ++k)
-                tmp_wav->d[k] = delays[idx]->operator()(pIn[k]);
-              TASCAR::wave_t wOut(nframes, pOut);
-              // filter signal and store in pOut (referenced by wOut):
-              filters[idx]->process(*tmp_wav, wOut);
+                w_u_delayed.d[k] = flt_hat_H[idx]->delayline(pIn[k]);
+              TASCAR::wave_t w_out(nframes, pOut);
+              // filter signal and store in pOut (referenced by w_out):
+              flt_hat_H[idx]->process(w_u_delayed, w_out);
               if(adaptive) {
-                TASCAR::wave_t wIn(nframes, pIn + loudspeakerports.size());
-                filters[idx]->adapt(*tmp_wav, wOut, wIn);
+                TASCAR::wave_t w_adapt(nframes, pIn + loudspeakerports.size());
+                flt_hat_H[idx]->adapt(w_u_delayed, w_out, w_adapt);
               }
             }
             ++idx;

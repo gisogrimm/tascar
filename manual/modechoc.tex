@@ -20,23 +20,17 @@ algorithm.
 
 \begin{figure}[htb]
     \centering
-    \fbox{\includegraphics[width=\textwidth]{echoc.pdf}}
-    \caption{Signal flow of the echoc plugin. The sound source (left
-      side) is played back through the loudspeakers. In the signal
-      sent to the other clients (on the right side), the sound source
-      is cancelled. The adaptive filter estimator (gray box) is not
-      yet implemented.}
-    \label{fig:modechoc}
-\end{figure}
-
-\begin{figure}[htb]
-    \centering
-    \fbox{\includegraphics[width=0.7\textwidth]{echoc_new.pdf}}
-    \caption{Signal flow of the echoc plugin. The sound source is
-      played back through the loudspeakers. In the signal sent to
-      other signal processing, data logging or other clients, the
-      sound source is cancelled. The adaptive filter estimator and the
-      whitening filter $W$ are not yet implemented.}
+    \fbox{\includegraphics[width=0.9\textwidth]{echoc_new.pdf}}
+    \caption{Signal flow of the echoc plugin. The sound source $u[k]$
+      is played back through the loudspeakers. In the signal $e[k]$
+      sent to other signal processing, data logging or other clients,
+      the sound source is cancelled. The adaptive filter estimator and
+      the whitening filter $W$ are not yet implemented. The feedback
+      path can be split into a time- and frequency independent delay,
+      accounting for converter and transmission delays as well as for
+      block-wise processing, and a time- and frequency dependent
+      filter $H$. See also \citep{Spriet2005}, Figure 2 for
+      reference.}
     \label{fig:modechoc2}
 \end{figure}
 

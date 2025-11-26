@@ -89,6 +89,14 @@ static_delay_t::static_delay_t(uint32_t d) : wave_t(d)
   is_zero = (d == 0u);
 }
 
+void static_delay_t::set_delay_nonrt(uint32_t d)
+{
+  resize(d);
+  is_zero = (d == 0u);
+  pos = 0u;
+}
+
+
 /*
  * Local Variables:
  * mode: c++
