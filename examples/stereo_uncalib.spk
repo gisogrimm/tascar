@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<layout calibdate="2022-04-27 20:19:46" calibfor="type:nsp" caliblevel="101.179" checksum="3782836406" convlabels="" convprecalib="true" decorr="true" decorr_length="0.05" densitycorr="true" diffusegain="0" fcsub="80" name="" onload="" onunload="" xyzgain="1">
+<layout calibdate="2022-04-27 20:19:46" calibfor="type:nsp" caliblevel="101.179" checksum="3782836406" convlabels="" convprecalib="true" decorr="true" decorr_length="0.05" densitycorr="true" diffusegain="0" fcsub="80" name="" onload="" onunload="">
   <speaker az="60" compB="" connect="system:playback_1" conv="" delay="0" el="0" eqfreq="" eqgain="" eqstages="0" gain="-1.06965" label="" r="1"/>
   <speaker az="-60" compB="" connect="system:playback_2" conv="" delay="0" el="0" eqfreq="" eqgain="" eqstages="0" gain="0" label="" r="1"/>
 </layout>

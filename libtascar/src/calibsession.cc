@@ -362,8 +362,9 @@ void add_stimulus_plugin(xml_element_t node, const spk_eq_param_t& par)
 }
 
 calibsession_t::calibsession_t(const std::string& fname, const calib_cfg_t& cfg)
-    : session_t("<?xml version=\"1.0\"?><session srv_port=\"none\"/>",
-                LOAD_STRING, ""),
+    : session_t(
+          "<?xml version=\"1.0\"?><session srv_port=\"none\" license=\"CC0\"/>",
+          LOAD_STRING, ""),
       gainmodified(false), levelsrecorded(false), calibrated(false),
       calibrated_diff(false), startlevel(0), startdiffgain(0), delta(0),
       delta_diff(0), spkname(fname), spk_file(NULL), cfg_(cfg), lmin(0),
@@ -393,11 +394,13 @@ calibsession_t::calibsession_t(const std::string& fname, const calib_cfg_t& cfg)
   e_rcvr.set_attribute("name", "rec_nsp");
   e_rcvr.set_attribute("type", "nsp");
   e_rcvr.set_attribute("layout", fname);
+  e_rcvr.set_attribute("create_input_ports", "true");
   // receiver 2 is specific to the layout, for overall calibration:
   xml_element_t e_rcvr2(e_scene.add_child("receiver"));
   e_rcvr2.set_attribute("name", "rec_spec");
   e_rcvr2.set_attribute("mute", "true");
   e_rcvr2.set_attribute("layout", fname);
+  e_rcvr2.set_attribute("create_input_ports", "true");
   // receiver 3 is omni, for reference signal:
   xml_element_t e_rcvr3(e_scene.add_child("receiver"));
   e_rcvr3.set_attribute("type", "omni");
@@ -419,6 +422,7 @@ calibsession_t::calibsession_t(const std::string& fname, const calib_cfg_t& cfg)
   // add diffuse source for diffuse gain calibration:
   xml_element_t e_diff(e_scene.add_child("diffuse"));
   e_diff.set_attribute("mute", "true");
+  e_diff.set_attribute("name", "diffuse");
   add_stimulus_plugin(e_diff, cfg_.par_speaker);
   // extra routes:
   xml_element_t e_mods(root.add_child("modules"));
@@ -440,7 +444,8 @@ calibsession_t::calibsession_t(const std::string& fname, const calib_cfg_t& cfg)
                                TASCAR::to_string(cfg_.par_speaker.duration));
   e_route_levels.set_attribute("levelmeter_weight", "C");
   // end of scene creation.
-  // doc->write_to_file_formatted("temp.cfg");
+  // for debugging store calibration session file:
+  // save("temp.cfg");
   add_scene(e_scene.e);
   add_module(e_route_pink.e);
   add_module(e_route_sub.e);

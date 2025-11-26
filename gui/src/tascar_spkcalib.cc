@@ -207,7 +207,7 @@ bool spkeq_display_t::on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
   cr->restore();
   // coherence
   cr->save();
-  if(get_min(coh) < 0.75f) {
+  if(get_min(coh) < 0.6f) {
     cr->set_source_rgb(0.8, 0, 0);
     cr->select_font_face("", Cairo::FONT_SLANT_NORMAL, Cairo::FONT_WEIGHT_BOLD);
   }
