@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<session license="CC0">
+  <scene guiscale="6" guitracking="out">
+    <source name="static" start="0.5" end="1">
+      <sound x="1.5">
+	<plugins>
+	  <pink level="50" alpha="1"/>
+	</plugins>
+      </sound>
+    </source>
+    <source name="rotsource" start="1" end="4">
+      <sound x="1.5">
+	<plugins>
+	  <sine a="70" f="1000"/>
+	</plugins>
+      </sound>
+    </source>
+    <receiver type="hrtf"/>
+  </scene>
+  <modules>
+    <rotator actor="/*/*source" mode="4" t0="1" t1="4" phi0="0" phi1="120"/>
+  </modules>
+</session>
+<!--
+
+send_osc 9877 /transport/playrange 0 1.2
+
+-->

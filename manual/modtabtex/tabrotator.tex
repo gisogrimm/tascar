@@ -10,17 +10,17 @@ name & description (type, unit) & def.\\
 \hline
 \indattr{actor} & pattern to match actor objects (string array) & \\
 \hline
-\indattr{mode} & Operation mode (uint32, 0|1|2|3) & 0\\
+\indattr{mode} & Operation mode (uint32, 0|1|2|3|4) & 0\\
 \hline
-\indattr{phi0} & Start angle (sigmoid/cosine movement) (double, deg) & -90\\
+\indattr{phi0} & Start angle (1,2,4) (double, deg) & -90\\
 \hline
-\indattr{phi1} & End angle (sigmoid/cosine movement) (double, deg) & 90\\
+\indattr{phi1} & End angle (1,2,4) (double, deg) & 90\\
 \hline
-\indattr{t0} & Start time (double, s) & 0\\
+\indattr{t0} & Start time (mode 0,1,2,4) (double, s) & 0\\
 \hline
-\indattr{t1} & End time (sigmoid/cosine movement) (double, s) & 1\\
+\indattr{t1} & End time (mode 1,2,4) (double, s) & 1\\
 \hline
-\indattr{w} & Angular velocity (double, deg/s) & 10\\
+\indattr{w} & Angular velocity (mode 0,3) (double, deg/s) & 10\\
 \hline
 \end{tabularx}
 }

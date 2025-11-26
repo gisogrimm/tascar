@@ -1,35 +1,37 @@
 The \elem{rotator} module can create parametric rotation of objects
 around the $z$-axis. Four modes are supported, {\em linear}
 (\attr{mode="0"}, default), {\em sigmoid} (\attr{mode="1"}), {\em
-  cosine} (\attr{mode="2"}), and {\em free} (\attr{mode="3"}).
+  cosine} (\attr{mode="2"}), {\em free} (\attr{mode="3"}), and {\em
+  linear (limited)} (\attr{mode="4"}).
 
-\definecolor{shadecolor}{RGB}{255,230,204}\begin{snugshade}
-{\footnotesize
-\label{attrtab:rotator}
-Attributes of element {\bf rotator}\nopagebreak
-
-\begin{tabularx}{\textwidth}{lXl}
-\hline
-name & description (type, unit) & def.\\
-\hline
-\hline
-\indattr{actor} & pattern to match actor objects (string array) & \\
-\hline
-\indattr{mode} & Operation mode (uint32, 0|1|2|3) & 0\\
-\hline
-\indattr{phi0} & Start angle (sigmoid/cosine movement) (double, deg) & -90\\
-\hline
-\indattr{phi1} & End angle (sigmoid/cosine movement) (double, deg) & 90\\
-\hline
-\indattr{t0} & Starting time (double, s) & 0\\
-\hline
-\indattr{t1} & End time (sigmoid/cosine movement) (double, s) & 1\\
-\hline
-\indattr{w} & Angular velocity (double, deg/s) & 10\\
-\hline
-\end{tabularx}
-}
-\end{snugshade}
+\input{modtabtex/tabrotator.tex}
+%\definecolor{shadecolor}{RGB}{255,230,204}\begin{snugshade}
+%{\footnotesize
+%\label{attrtab:rotator}
+%Attributes of element {\bf rotator}\nopagebreak
+%
+%\begin{tabularx}{\textwidth}{lXl}
+%\hline
+%name & description (type, unit) & def.\\
+%\hline
+%\hline
+%\indattr{actor} & pattern to match actor objects (string array) & \\
+%\hline
+%\indattr{mode} & Operation mode (uint32, 0|1|2|3) & 0\\
+%\hline
+%\indattr{phi0} & Start angle (sigmoid/cosine movement) (double, deg) & -90\\
+%\hline
+%\indattr{phi1} & End angle (sigmoid/cosine movement) (double, deg) & 90\\
+%\hline
+%\indattr{t0} & Starting time (double, s) & 0\\
+%\hline
+%\indattr{t1} & End time (sigmoid/cosine movement) (double, s) & 1\\
+%\hline
+%\indattr{w} & Angular velocity (double, deg/s) & 10\\
+%\hline
+%\end{tabularx}
+%}
+%\end{snugshade}
 
 \input{oscdoc_tascarmod_rotator.tex}
 
@@ -73,3 +75,18 @@ O_z = \left\{\begin{array}{ll}
 
 Same as linear, but the rotation phase is continuously incremented
 independent of the transport time.
+
+\paragraph{Linear (limited) rotation}
+
+\begin{lstlisting}[numbers=none]
+  <rotator mode="4" t0="1" t1="4" phi0="0" phi1="120" actor="/*/out"/>
+\end{lstlisting}
+
+\begin{equation}
+O_z = \left\{\begin{array}{ll}
+\varphi_0 & t<t_0\\
+\varphi_0+(\varphi_1-\varphi_0)(\frac{t-t_0}{t_1-t_0}) & t_0\le t \le t_1\\
+\varphi_1 & t_1 < t
+\end{array}\right.
+\end{equation}
+

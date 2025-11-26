@@ -22,7 +22,7 @@
 
 class ormod_t : public TASCAR::actor_module_t {
 public:
-  enum { linear, sigmoid, cosine, free };
+  enum { linear, sigmoid, cosine, free, linearlim };
   ormod_t(const TASCAR::module_cfg_t& cfg);
   virtual ~ormod_t();
   void update(uint32_t tp_frame, bool running);
@@ -41,24 +41,27 @@ ormod_t::ormod_t(const TASCAR::module_cfg_t& cfg)
     : actor_module_t(cfg, true), mode(linear), w(10.0), t0(0.0), t1(1.0),
       phi0(-90.0), phi1(90.0)
 {
-  actor_module_t::GET_ATTRIBUTE(mode, "0|1|2|3", "Operation mode");
-  actor_module_t::GET_ATTRIBUTE(w, "deg/s", "Angular velocity");
-  actor_module_t::GET_ATTRIBUTE(t0, "s", "Start time");
-  actor_module_t::GET_ATTRIBUTE(t1, "s", "End time (sigmoid/cosine movement)");
-  actor_module_t::GET_ATTRIBUTE(phi0, "deg",
-                                "Start angle (sigmoid/cosine movement)");
-  actor_module_t::GET_ATTRIBUTE(phi1, "deg",
-                                "End angle (sigmoid/cosine movement)");
+  actor_module_t::GET_ATTRIBUTE(mode, "0|1|2|3|4", "Operation mode");
+  actor_module_t::GET_ATTRIBUTE(w, "deg/s", "Angular velocity (mode 0,3)");
+  actor_module_t::GET_ATTRIBUTE(t0, "s", "Start time (mode 0,1,2,4)");
+  actor_module_t::GET_ATTRIBUTE(t1, "s", "End time (mode 1,2,4)");
+  actor_module_t::GET_ATTRIBUTE(phi0, "deg", "Start angle (1,2,4)");
+  actor_module_t::GET_ATTRIBUTE(phi1, "deg", "End angle (1,2,4)");
   session->set_variable_owner(
       TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
-  session->add_uint(TASCAR::vecstr2str(actor) + "/mode", &mode, "",
-                    "Operation mode");
-  session->add_double(TASCAR::vecstr2str(actor) + "/w", &w, "",
-                      "Angular velocity in deg/s");
-  session->add_double(TASCAR::vecstr2str(actor) + "/t0", &t0);
-  session->add_double(TASCAR::vecstr2str(actor) + "/t1", &t1);
-  session->add_double(TASCAR::vecstr2str(actor) + "/phi0", &phi0);
-  session->add_double(TASCAR::vecstr2str(actor) + "/phi1", &phi1);
+  for(auto& o : obj) {
+    session->add_uint(o.name + "/rotator/mode", &mode, "", "Operation mode");
+    session->add_double(o.name + "/rotator/w", &w, "",
+                        "Angular velocity in deg/s (mode 0,3)");
+    session->add_double(o.name + "/rotator/t0", &t0, "",
+                        "Start time in s (mode 0,1,2,4)");
+    session->add_double(o.name + "/rotator/t1", &t1, "",
+                        "End time in s (mode 1,2,4)");
+    session->add_double(o.name + "/rotator/phi0", &phi0, "",
+                        "Start angle in degree (mode 1,2,4)");
+    session->add_double(o.name + "/rotator/phi1", &phi1, "",
+                        "End angle in degree (mode 1,2,4)");
+  }
   session->unset_variable_owner();
 }
 
@@ -69,6 +72,10 @@ void ormod_t::update(uint32_t tp_frame, bool)
   switch(mode) {
   case linear:
     r.z = DEG2RAD * (tptime - t0) * w;
+    break;
+  case linearlim:
+    tptime = std::max(t0, std::min(t1, tptime));
+    r.z = DEG2RAD * (phi0 + (phi1 - phi0) * (tptime - t0) / (t1 - t0));
     break;
   case sigmoid:
     r.z =
