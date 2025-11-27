@@ -73,6 +73,8 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
 {
   w_e.copy(w_out);
   w_e += w_adapt;
+  w_e_long.insert_at_end(w_e);
+  w_u_long.insert_at_end(w_u);
   // apply whitening filter on w_e and w_u
   // Fourier-transform of w_e and w_u
   // update filter based on E{s_e * conj(s_u)}
@@ -172,15 +174,15 @@ echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
 {
   // create output ports which will send the phase-inverted signal, to
   // be added to the microphone signals by jack:
-  for(size_t ch = 0; ch < micports.size(); ++ch)
+  for(size_t ch = 0; ch < N_out; ++ch)
     add_output_port("out." + std::to_string(ch));
   // create input ports which receive a copy of the loudspeaker
   // signal:
-  for(size_t ch = 0; ch < loudspeakerports.size(); ++ch)
+  for(size_t ch = 0; ch < N_in; ++ch)
     add_input_port("in." + std::to_string(ch));
   // for adaptation, add a copy of the microphone signals before
   // addition of the phase inverted copy:
-  for(size_t ch = 0; ch < micports.size(); ++ch)
+  for(size_t ch = 0; ch < N_out; ++ch)
     add_input_port("adapt." + std::to_string(ch));
   if(autoreconnect) {
     // update port connections upon any jack port change:
@@ -225,15 +227,14 @@ void echoc_mod_t::ports_connect()
   connecting_ports = true;
   for(size_t ch = 0; ch < micports.size(); ++ch)
     disconnect_out(ch);
-  for(size_t ch = 0; ch < loudspeakerports.size() + micports.size(); ++ch)
+  for(size_t ch = 0; ch < N_in + N_out; ++ch)
     disconnect_in(ch);
-  for(size_t ch = 0; ch < micports.size(); ++ch)
+  for(size_t ch = 0; ch < N_out; ++ch)
     connect_out(ch, micports[ch], true, true, true);
-  for(size_t ch = 0; ch < loudspeakerports.size(); ++ch)
+  for(size_t ch = 0; ch < N_in; ++ch)
     connect_in(ch, loudspeakerports[ch], true, true, true);
-  for(size_t ch = loudspeakerports.size();
-      ch < loudspeakerports.size() + micports.size(); ++ch)
-    connect_in(ch, micports[ch - loudspeakerports.size()], true, false, true);
+  for(size_t ch = N_in; ch < N_in + N_out; ++ch)
+    connect_in(ch, micports[ch - N_in], true, false, true);
   connecting_ports = false;
 }
 
@@ -341,6 +342,8 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
     TASCAR::add_warning(std::string("In plugin echoc (") +
                         tsccfg::node_get_path(e) + "): " + ex.what());
   }
+  for(auto kflt = flt_hat_H.size(); kflt < N_flt; ++kflt)
+    flt_hat_H.push_back(new blms_proc_t(filterlen_final, n_fragment, 0));
 }
 
 // measure impulse responses using a sweep:
@@ -421,30 +424,22 @@ int echoc_mod_t::process(jack_nframes_t nframes,
     memset(pOut, 0, sizeof(float) * nframes);
   if(!bypass) {
     if(lock.try_lock()) {
-      size_t idx = 0;
-      uint32_t cin = 0;
-      for(auto pIn : inBuffer) {
-        if(cin < loudspeakerports.size()) {
-          // input port, not a filter update port.
-          uint32_t cout = 0;
-          for(auto pOut : outBuffer) {
-            if(idx < flt_hat_H.size()) {
-              // create a delayed copy of the input signal:
-              for(uint32_t k = 0; k < nframes; ++k)
-                w_u_delayed.d[k] = flt_hat_H[idx]->delayline(pIn[k]);
-              TASCAR::wave_t w_out(nframes, pOut);
-              // filter signal and store in pOut (referenced by w_out):
-              flt_hat_H[idx]->process(w_u_delayed, w_out);
-              if(adaptive) {
-                TASCAR::wave_t w_adapt(nframes, pIn + loudspeakerports.size());
-                flt_hat_H[idx]->adapt(w_u_delayed, w_out, w_adapt);
-              }
-            }
-            ++idx;
-            ++cout;
+      size_t flt_idx = 0;
+      for(uint32_t cin = 0; cin < N_in; ++cin) {
+        auto p_in = inBuffer[cin];
+        for(uint32_t cout = 0; cout < N_out; ++cout) {
+          // create a delayed copy of the input signal:
+          for(uint32_t k = 0; k < nframes; ++k)
+            w_u_delayed.d[k] = flt_hat_H[flt_idx]->delayline(p_in[k]);
+          TASCAR::wave_t w_out(nframes, outBuffer[cout]);
+          // filter signal and store in pOut (referenced by w_out):
+          flt_hat_H[flt_idx]->process(w_u_delayed, w_out);
+          if(adaptive) {
+            TASCAR::wave_t w_adapt(nframes, inBuffer[N_in + cout]);
+            flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt);
           }
+          ++flt_idx;
         }
-        ++cin;
       }
       lock.unlock();
     }
