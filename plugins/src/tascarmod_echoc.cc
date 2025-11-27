@@ -163,6 +163,7 @@ private:
   std::atomic_bool connecting_ports = false;
   std::atomic_bool reconnect = false;
   std::atomic_bool measuring = false;
+  std::atomic_bool configured = false;
   const size_t N_in = 0;
   const size_t N_out = 0;
   const size_t N_flt = 0;
@@ -251,6 +252,7 @@ void echoc_mod_t::configure()
   ir_update_from_file_and_truncate();
   ports_connect();
   reconnect = true;
+  configured = true;
 }
 
 // periodically reconnect ports:
@@ -343,7 +345,7 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
                         tsccfg::node_get_path(e) + "): " + ex.what());
   }
   for(auto kflt = flt_hat_H.size(); kflt < N_flt; ++kflt)
-    flt_hat_H.push_back(new blms_proc_t(filterlen_final, n_fragment, 0));
+    flt_hat_H.push_back(new blms_proc_t(filterlen_final, n_fragment, 1));
 }
 
 // measure impulse responses using a sweep:
@@ -422,7 +424,7 @@ int echoc_mod_t::process(jack_nframes_t nframes,
   // clear output samples:
   for(auto pOut : outBuffer)
     memset(pOut, 0, sizeof(float) * nframes);
-  if(!bypass) {
+  if((!bypass) && configured) {
     if(lock.try_lock()) {
       size_t flt_idx = 0;
       for(uint32_t cin = 0; cin < N_in; ++cin) {

@@ -374,10 +374,11 @@ void ap_sndfile_t::add_variables(TASCAR::osc_server_t* srv)
   srv->set_variable_owner(
       TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
   if(triggered)
-    srv->add_uint("/loop", &triggeredloop);
+    srv->add_uint("/loop", &triggeredloop, "",
+                  "loop counter, 0 for infinite loop");
   else
-    srv->add_uint("/loop", &loop);
-  srv->add_bool("/mute", &mute);
+    srv->add_uint("/loop", &loop, "", "loop counter, 0 for infinite loop");
+  srv->add_bool("/mute", &mute, "mute state, 1=muted, 0=not muted");
   srv->add_method("/loadfile", "ssf", &osc_loadfile, this);
   srv->add_method("/loadfile", "s", &osc_loadfile_simple, this);
   srv->add_double(
@@ -386,9 +387,9 @@ void ap_sndfile_t::add_variables(TASCAR::osc_server_t* srv)
   srv->add_double("/position", &position, "",
                   "temporal position relative to object time, in seconds");
   srv->add_float("/rampstart", &rampstart, "[0,10]",
-                 "Ramp duration in s at start of sound");
+                 "ramp duration in s at start of sound");
   srv->add_float("/rampend", &rampend, "[0,10]",
-                 "Ramp duration in s at end of sound");
+                 "ramp duration in s at end of sound");
   srv->unset_variable_owner();
 }
 
