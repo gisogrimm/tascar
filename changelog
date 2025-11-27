@@ -1,3 +1,6 @@
+0.235.2:
+       - bug fix for speaker calibration filter optimisation to prevent unstable filters
+
 0.235.1:
        - correct option name in tascar_renderfile
 

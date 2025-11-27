@@ -812,8 +812,8 @@ std::vector<float> TASCAR::multiband_pareq_t::optim_response(
         k = numiter;
     }
   }
-  // display final filter settings for analysis:
-  optimpar2fltsettings(par, fs, true);
+  // do not display final filter settings:
+  optimpar2fltsettings(par, fs, false);
   return dbresponse(vF, fs);
 }
 
