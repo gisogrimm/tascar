@@ -717,8 +717,8 @@ receiver_t::~receiver_t()
 
 void receiver_t::clear_output()
 {
-  for(uint32_t ch = 0; ch < outchannels.size(); ch++)
-    outchannels[ch].clear();
+  for(auto & outchannel : outchannels )
+    outchannel.clear();
   scatterbuffer->clear();
 }
 

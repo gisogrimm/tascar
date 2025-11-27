@@ -262,7 +262,7 @@ void TASCAR::render_core_t::process(uint32_t nframes,
     for(auto prec : receivermod_objects) {
       if(prec->create_input_ports) {
         const auto portindex = prec->get_input_port_index();
-        const auto numch = prec->n_channels;
+        const auto numch = prec->outchannels.size();
         for(uint32_t ch = 0; ch < numch; ch++)
           prec->outchannels[ch].copy(inBuffer[portindex + ch], nframes);
       }
