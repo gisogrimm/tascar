@@ -128,6 +128,7 @@ TEST(wave_t, insertatend)
   TASCAR::wave_t wlong(
       std::vector<float>({0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f}));
   TASCAR::wave_t wshort(std::vector<float>({6.0f, 7.0f}));
+  TASCAR::wave_t wshort2(std::vector<float>({8.0f, 9.0f}));
   EXPECT_EQ(6.0f, wshort.d[0]);
   EXPECT_EQ(7.0f, wshort.d[1]);
   EXPECT_EQ(0.0f, wlong.d[0]);
@@ -141,6 +142,20 @@ TEST(wave_t, insertatend)
   EXPECT_EQ(3.0f, wlong.d[1]);
   EXPECT_EQ(4.0f, wlong.d[2]);
   EXPECT_EQ(5.0f, wlong.d[3]);
+  EXPECT_EQ(6.0f, wlong.d[4]);
+  EXPECT_EQ(7.0f, wlong.d[5]);
+  wlong.insert_at_end(wshort2);
+  EXPECT_EQ(4.0f, wlong.d[0]);
+  EXPECT_EQ(5.0f, wlong.d[1]);
+  EXPECT_EQ(6.0f, wlong.d[2]);
+  EXPECT_EQ(7.0f, wlong.d[3]);
+  EXPECT_EQ(8.0f, wlong.d[4]);
+  EXPECT_EQ(9.0f, wlong.d[5]);
+  wlong.insert_at_end(wshort);
+  EXPECT_EQ(6.0f, wlong.d[0]);
+  EXPECT_EQ(7.0f, wlong.d[1]);
+  EXPECT_EQ(8.0f, wlong.d[2]);
+  EXPECT_EQ(9.0f, wlong.d[3]);
   EXPECT_EQ(6.0f, wlong.d[4]);
   EXPECT_EQ(7.0f, wlong.d[5]);
 }

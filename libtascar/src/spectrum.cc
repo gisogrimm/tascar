@@ -105,7 +105,7 @@ void TASCAR::spec_t::conj()
 
 std::ostream& operator<<(std::ostream& out, const TASCAR::wave_t& p)
 {
-  out << std::string("W(") << p.n << std::string("):");
+  //out << std::string("W(") << p.n << std::string("):");
   for(uint32_t k=0;k<p.n;k++)
     out << std::string(" ") << p.d[k];
   return out;
@@ -113,7 +113,7 @@ std::ostream& operator<<(std::ostream& out, const TASCAR::wave_t& p)
 
 std::ostream& operator<<(std::ostream& out, const TASCAR::spec_t& p)
 {
-  out << std::string("S(") << p.n_ << std::string("):");
+  //out << std::string("S(") << p.n_ << std::string("):");
   for(uint32_t k=0;k<p.n_;k++)
     out << std::string(" ") << p.b[k].real() << std::string((p.b[k].imag()>=0.0)?"+":"") << p.b[k].imag() << "i";
   return out;

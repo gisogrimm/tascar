@@ -32,6 +32,7 @@
 #include "ola.h"
 #include "session.h"
 #include <condition_variable>
+#include <fstream>
 
 using namespace std::chrono_literals;
 
@@ -83,8 +84,8 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   w_u_long.insert_at_end(w_u);
   // apply whitening filter on w_e and w_u
   // Fourier-transform of w_e and w_u
-  fft_e.execute(w_e);
-  fft_u.execute(w_u);
+  fft_e.execute(w_e_long);
+  fft_u.execute(w_u_long);
   // update filter based on E{s_e * conj(s_u)}
   fft_u.s.conj();
   fft_e.s *= fft_u.s;
@@ -115,8 +116,8 @@ public:
   bool adaptive = false;
   float sendperiod = 0.1f;
   float mu = 1e-5f;
-  std::string url = "osc.udp://localhost:9999/";
-  std::string sendpath = "/echoc/ir";
+  // std::string url = "osc.udp://localhost:9999/";
+  // std::string sendpath = "/echoc/ir";
 };
 
 echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
@@ -137,8 +138,8 @@ echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
   GET_ATTRIBUTE_BOOL(bypass, "Bypass filter stage");
   GET_ATTRIBUTE_BOOL(adaptive, "Use adaptive filtering");
   GET_ATTRIBUTE(mu, "", "Step size coefficient");
-  GET_ATTRIBUTE(url, "", "Target URL");
-  GET_ATTRIBUTE(sendpath, "", "Target path");
+  // GET_ATTRIBUTE(url, "", "Target URL");
+  // GET_ATTRIBUTE(sendpath, "", "Target path");
   GET_ATTRIBUTE(sendperiod, "s", "IR sending period");
   if(micports.empty())
     throw TASCAR::ErrMsg(
@@ -228,10 +229,10 @@ echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
   if(autoreconnect) {
     port_thread = std::thread(&echoc_mod_t::port_service, this);
   }
-  if(!url.empty()) {
-    lo_addr = lo_address_new_from_url(url.c_str());
-    send_thread = std::thread(&echoc_mod_t::send_service, this);
-  }
+  // if(!url.empty()) {
+  // lo_addr = lo_address_new_from_url(url.c_str());
+  send_thread = std::thread(&echoc_mod_t::send_service, this);
+  //}
 }
 
 void echoc_mod_t::jack_port_connect_cb(jack_port_id_t, jack_port_id_t, int,
@@ -291,8 +292,6 @@ void echoc_mod_t::configure()
   for(const auto& H : flt_hat_H)
     v_H.push_back(TASCAR::spec_t(H->H_long.n_));
   ports_connect();
-  DEBUG(v_H.size());
-  DEBUG(flt_hat_H.size());
   reconnect = true;
   configured = true;
 }
@@ -327,25 +326,26 @@ void echoc_mod_t::send_service()
       tictoc.tic();
       auto fftlen = flt_hat_H[0]->get_fftlen();
       TASCAR::fft_t fft(fftlen);
-      lo_message ir_msg;
-      lo_arg** ir_oscmsgargv;
-      ir_msg = lo_message_new();
+      // lo_message ir_msg;
+      // lo_arg** ir_oscmsgargv;
+      // ir_msg = lo_message_new();
       // add data to message
-      for(size_t k = 0; k < fftlen; ++k)
-        lo_message_add_float(ir_msg, 0.0f);
-      ir_oscmsgargv = lo_message_get_argv(ir_msg);
+      // for(size_t k = 0; k < fftlen; ++k)
+      //  lo_message_add_float(ir_msg, 0.0f);
+      // ir_oscmsgargv = lo_message_get_argv(ir_msg);
       std::vector<TASCAR::wave_t> all_ir;
       for(size_t kflt = 0; kflt < v_H.size(); ++kflt) {
         fft.execute(v_H[kflt]);
-        for(size_t k = 0; k < fftlen; ++k)
-          ir_oscmsgargv[k]->f = fft.w.d[k];
-        lo_send_message(lo_addr, (sendpath + std::to_string(kflt)).c_str(),
-                        ir_msg);
+        // for(size_t k = 0; k < fftlen; ++k)
+        //  ir_oscmsgargv[k]->f = fft.w.d[k];
+        // lo_send_message(lo_addr, (sendpath + std::to_string(kflt)).c_str(),
+        //                ir_msg);
         all_ir.push_back(fft.w);
       }
-      TASCAR::audiowrite(TASCAR::env_expand(filepath + name + ".wav"), all_ir, f_sample,
+      TASCAR::audiowrite(TASCAR::env_expand(filepath + name + "_adapt.wav"),
+                         all_ir, f_sample,
                          SF_FORMAT_WAV | SF_FORMAT_FLOAT | SF_ENDIAN_FILE);
-      lo_message_free(ir_msg);
+      // lo_message_free(ir_msg);
       has_data = false;
     }
   }
@@ -412,6 +412,7 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
             TASCAR::to_string(100.0f * aratio.back(), " (%1.0f%%)"));
       ++ch;
       uint32_t predelay = std::max(idxmax.back(), premax) - premax;
+      predelay = 2 * n_fragment;
       DEBUG(predelay);
       filterir.clear();
       for(uint32_t k = 0; k < filterir.n; ++k)
@@ -425,8 +426,9 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
     TASCAR::add_warning(std::string("In plugin echoc (") +
                         tsccfg::node_get_path(e) + "): " + ex.what());
   }
-  for(auto kflt = flt_hat_H.size(); kflt < N_flt; ++kflt){
-    flt_hat_H.push_back(new blms_proc_t(filterlen_final, n_fragment, 1));
+  for(auto kflt = flt_hat_H.size(); kflt < N_flt; ++kflt) {
+    flt_hat_H.push_back(
+        new blms_proc_t(filterlen_final, n_fragment, 2 * n_fragment));
     flt_hat_H.back()->H_long *= 0.0f;
   }
 }
@@ -517,11 +519,14 @@ int echoc_mod_t::process(jack_nframes_t nframes,
           for(uint32_t k = 0; k < nframes; ++k)
             w_u_delayed.d[k] = flt_hat_H[flt_idx]->delayline(p_in[k]);
           TASCAR::wave_t w_out(nframes, outBuffer[cout]);
+          // TASCAR::wave_t w_u(nframes, p_in);
           // filter signal and store in pOut (referenced by w_out):
           flt_hat_H[flt_idx]->process(w_u_delayed, w_out);
+          // flt_hat_H[flt_idx]->process(w_u, w_out);
           if(adaptive) {
             TASCAR::wave_t w_adapt(nframes, inBuffer[N_in + cout]);
             flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt, mu);
+            // flt_hat_H[flt_idx]->adapt(w_u, w_out, w_adapt, mu);
           }
           ++flt_idx;
         }
