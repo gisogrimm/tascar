@@ -32,6 +32,7 @@
 #include "ola.h"
 #include "session.h"
 #include <condition_variable>
+#include <filesystem>
 #include <fstream>
 
 using namespace std::chrono_literals;
@@ -55,7 +56,7 @@ class blms_proc_t : public TASCAR::overlap_save_t {
 public:
   blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay);
   void adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
-             const TASCAR::wave_t& w_adapt, float mu);
+             const TASCAR::wave_t& w_adapt, float mu, float delta);
   TASCAR::static_delay_t delayline;
 
 private:
@@ -66,17 +67,18 @@ private:
   TASCAR::wave_t w_u_long;
   TASCAR::fft_t fft_e;
   TASCAR::fft_t fft_u;
+  TASCAR::wave_t w_Pu;
 };
 
 blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay)
     : TASCAR::overlap_save_t(irslen, chunksize), delayline(delay),
       w_e(chunksize), w_e_long(get_fftlen()), w_u_long(get_fftlen()),
-      fft_e(get_fftlen()), fft_u(get_fftlen())
+      fft_e(get_fftlen()), fft_u(get_fftlen()), w_Pu(fft_e.s.n_)
 {
 }
 
 void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
-                        const TASCAR::wave_t& w_adapt, float mu)
+                        const TASCAR::wave_t& w_adapt, float mu, float delta)
 {
   w_e.copy(w_out);
   w_e += w_adapt;
@@ -86,10 +88,17 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   // Fourier-transform of w_e and w_u
   fft_e.execute(w_e_long);
   fft_u.execute(w_u_long);
+  // normalization:
+  // w_Pu *= 0.9;
+  for(uint32_t k = 0; k < w_Pu.n; ++k) {
+    float p = std::abs(fft_u.s.b[k]);
+    p *= p;
+    w_Pu.d[k] = p;
+    fft_e.s.b[k] /= (p + delta);
+  }
   // update filter based on E{s_e * conj(s_u)}
   fft_u.s.conj();
   fft_e.s *= fft_u.s;
-  // normalization:
   // apply constraints:
   // scale gradient:
   fft_e.s *= -mu;
@@ -116,6 +125,7 @@ public:
   bool adaptive = false;
   float sendperiod = 0.1f;
   float mu = 1e-5f;
+  float delta = 1e-6f;
   // std::string url = "osc.udp://localhost:9999/";
   // std::string sendpath = "/echoc/ir";
 };
@@ -138,6 +148,7 @@ echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
   GET_ATTRIBUTE_BOOL(bypass, "Bypass filter stage");
   GET_ATTRIBUTE_BOOL(adaptive, "Use adaptive filtering");
   GET_ATTRIBUTE(mu, "", "Step size coefficient");
+  GET_ATTRIBUTE(delta, "", "Regularization coefficient");
   // GET_ATTRIBUTE(url, "", "Target URL");
   // GET_ATTRIBUTE(sendpath, "", "Target path");
   GET_ATTRIBUTE(sendperiod, "s", "IR sending period");
@@ -382,44 +393,46 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
   // load recorded IR:
   float fs = 0;
   try {
-    auto all_ir =
-        TASCAR::audioread(TASCAR::env_expand(filepath + name + ".wav"), fs);
-    if(fs != f_sample)
-      TASCAR::add_warning(
-          "Invalid sampling rate of impulse response (expected " +
-          TASCAR::to_string(f_sample) + " Hz, got " + TASCAR::to_string(fs) +
-          " Hz).");
-    if(all_ir.size() != N_flt)
-      TASCAR::add_warning(
-          "Not the same number of channels in pre-stored impulse response as "
-          "number of inputs * number of outputs");
-    // find maxima and measurement quality:
-    std::vector<uint32_t> idxmax;
-    std::vector<float> aratio;
-    size_t ch = 0;
-    TASCAR::wave_t filterir(filterlen_final);
-    for(const auto& ir : all_ir) {
-      idxmax.push_back(get_idxmaxabs(ir));
-      float r = 0.0f;
-      for(uint32_t k = 0; k <= idxmax.back(); ++k)
-        r += ir.d[k] * ir.d[k];
-      r = sqrtf(r);
-      aratio.push_back(fabsf(ir.d[idxmax.back()]) / r);
-      if(aratio.back() < 0.5)
+    if(std::filesystem::exists(TASCAR::env_expand(filepath + name + ".wav"))) {
+      auto all_ir =
+          TASCAR::audioread(TASCAR::env_expand(filepath + name + ".wav"), fs);
+      if(fs != f_sample)
         TASCAR::add_warning(
-            "echoc: Poor IR measurement quality in channel " +
-            std::to_string(ch) +
-            TASCAR::to_string(100.0f * aratio.back(), " (%1.0f%%)"));
-      ++ch;
-      uint32_t predelay = std::max(idxmax.back(), premax) - premax;
-      predelay = 2 * n_fragment;
-      DEBUG(predelay);
-      filterir.clear();
-      for(uint32_t k = 0; k < filterir.n; ++k)
-        filterir.d[k] = -ir.d[k + predelay];
-      flt_hat_H.push_back(
-          new blms_proc_t(filterlen_final, n_fragment, predelay));
-      flt_hat_H.back()->set_irs(filterir);
+            "Invalid sampling rate of impulse response (expected " +
+            TASCAR::to_string(f_sample) + " Hz, got " + TASCAR::to_string(fs) +
+            " Hz).");
+      if(all_ir.size() != N_flt)
+        TASCAR::add_warning(
+            "Not the same number of channels in pre-stored impulse response as "
+            "number of inputs * number of outputs");
+      // find maxima and measurement quality:
+      std::vector<uint32_t> idxmax;
+      std::vector<float> aratio;
+      size_t ch = 0;
+      TASCAR::wave_t filterir(filterlen_final);
+      for(const auto& ir : all_ir) {
+        idxmax.push_back(get_idxmaxabs(ir));
+        float r = 0.0f;
+        for(uint32_t k = 0; k <= idxmax.back(); ++k)
+          r += ir.d[k] * ir.d[k];
+        r = sqrtf(r);
+        aratio.push_back(fabsf(ir.d[idxmax.back()]) / r);
+        if(aratio.back() < 0.5)
+          TASCAR::add_warning(
+              "echoc: Poor IR measurement quality in channel " +
+              std::to_string(ch) +
+              TASCAR::to_string(100.0f * aratio.back(), " (%1.0f%%)"));
+        ++ch;
+        uint32_t predelay = std::max(idxmax.back(), premax) - premax;
+        predelay = 2 * n_fragment;
+        DEBUG(predelay);
+        filterir.clear();
+        for(uint32_t k = 0; k < filterir.n; ++k)
+          filterir.d[k] = -ir.d[k + predelay];
+        flt_hat_H.push_back(
+            new blms_proc_t(filterlen_final, n_fragment, predelay));
+        flt_hat_H.back()->set_irs(filterir);
+      }
     }
   }
   catch(const std::exception& ex) {
@@ -525,7 +538,7 @@ int echoc_mod_t::process(jack_nframes_t nframes,
           // flt_hat_H[flt_idx]->process(w_u, w_out);
           if(adaptive) {
             TASCAR::wave_t w_adapt(nframes, inBuffer[N_in + cout]);
-            flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt, mu);
+            flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt, mu, delta);
             // flt_hat_H[flt_idx]->adapt(w_u, w_out, w_adapt, mu);
           }
           ++flt_idx;
