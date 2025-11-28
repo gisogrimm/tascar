@@ -31,6 +31,9 @@
 #include "mutex"
 #include "ola.h"
 #include "session.h"
+#include <condition_variable>
+
+using namespace std::chrono_literals;
 
 // helper function to find index of sample with largest absolute value
 // of an impulse response 'ir'
@@ -50,8 +53,8 @@ uint32_t get_idxmaxabs(const TASCAR::wave_t& ir)
 class blms_proc_t : public TASCAR::overlap_save_t {
 public:
   blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay);
-  void adapt(const TASCAR::wave_t&, const TASCAR::wave_t&,
-             const TASCAR::wave_t&);
+  void adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
+             const TASCAR::wave_t& w_adapt, float mu);
   TASCAR::static_delay_t delayline;
 
 private:
@@ -60,16 +63,19 @@ private:
   // container for full length error and u signal:
   TASCAR::wave_t w_e_long;
   TASCAR::wave_t w_u_long;
+  TASCAR::fft_t fft_e;
+  TASCAR::fft_t fft_u;
 };
 
 blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay)
     : TASCAR::overlap_save_t(irslen, chunksize), delayline(delay),
-      w_e(chunksize), w_e_long(get_fftlen()), w_u_long(get_fftlen())
+      w_e(chunksize), w_e_long(get_fftlen()), w_u_long(get_fftlen()),
+      fft_e(get_fftlen()), fft_u(get_fftlen())
 {
 }
 
 void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
-                        const TASCAR::wave_t& w_adapt)
+                        const TASCAR::wave_t& w_adapt, float mu)
 {
   w_e.copy(w_out);
   w_e += w_adapt;
@@ -77,14 +83,24 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   w_u_long.insert_at_end(w_u);
   // apply whitening filter on w_e and w_u
   // Fourier-transform of w_e and w_u
+  fft_e.execute(w_e);
+  fft_u.execute(w_u);
   // update filter based on E{s_e * conj(s_u)}
+  fft_u.s.conj();
+  fft_e.s *= fft_u.s;
+  // normalization:
+  // apply constraints:
+  // scale gradient:
+  fft_e.s *= -mu;
+  // update filter:
+  H_long += fft_e.s;
 }
 
 class echoc_var_t : public TASCAR::module_base_t {
 public:
   echoc_var_t(const TASCAR::module_cfg_t& cfg);
   std::string name = "echoc";
-  std::string path = "";
+  std::string filepath = "";
   std::vector<std::string> micports = {"system:capture_1"};
   std::vector<std::string> loudspeakerports = {"system:playback_1",
                                                "system:playback_2"};
@@ -97,6 +113,10 @@ public:
   bool autoreconnect = false;
   bool bypass = false;
   bool adaptive = false;
+  float sendperiod = 0.1f;
+  float mu = 1e-5f;
+  std::string url = "osc.udp://localhost:9999/";
+  std::string sendpath = "/echoc/ir";
 };
 
 echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
@@ -116,6 +136,10 @@ echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
                      "Automatically re-connect ports after jack port change");
   GET_ATTRIBUTE_BOOL(bypass, "Bypass filter stage");
   GET_ATTRIBUTE_BOOL(adaptive, "Use adaptive filtering");
+  GET_ATTRIBUTE(mu, "", "Step size coefficient");
+  GET_ATTRIBUTE(url, "", "Target URL");
+  GET_ATTRIBUTE(sendpath, "", "Target path");
+  GET_ATTRIBUTE(sendperiod, "s", "IR sending period");
   if(micports.empty())
     throw TASCAR::ErrMsg(
         "At least one microphone (filter output) port must be given");
@@ -154,9 +178,13 @@ public:
 
 private:
   void port_service();
-  bool run_port_service = true;
+  std::atomic_bool run_port_service = true;
   std::thread port_thread;
-  std::mutex lock;
+  void send_service();
+  std::atomic_bool run_send_service = true;
+  std::thread send_thread;
+  std::mutex lock_filter;
+  std::mutex lock_send;
   std::vector<blms_proc_t*> flt_hat_H;
   //  temporary storage for delayed signal:
   TASCAR::wave_t w_u_delayed;
@@ -167,6 +195,10 @@ private:
   const size_t N_in = 0;
   const size_t N_out = 0;
   const size_t N_flt = 0;
+  lo_address lo_addr = NULL;
+  std::condition_variable cond;
+  std::atomic_bool has_data = false;
+  std::vector<TASCAR::spec_t> v_H;
 };
 
 echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
@@ -196,6 +228,10 @@ echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
   if(autoreconnect) {
     port_thread = std::thread(&echoc_mod_t::port_service, this);
   }
+  if(!url.empty()) {
+    lo_addr = lo_address_new_from_url(url.c_str());
+    send_thread = std::thread(&echoc_mod_t::send_service, this);
+  }
 }
 
 void echoc_mod_t::jack_port_connect_cb(jack_port_id_t, jack_port_id_t, int,
@@ -219,6 +255,7 @@ void echoc_mod_t::add_variables(TASCAR::osc_server_t* srv)
   srv->add_method("/measure", "", &echoc_mod_t::osc_measure, this);
   srv->add_method("/connect", "", &echoc_mod_t::osc_connect, this);
   srv->add_bool("/bypass", &bypass);
+  srv->add_float("/mu", &mu, "", "step size coefficient");
   srv->set_prefix(prefix_);
   srv->unset_variable_owner();
 }
@@ -242,7 +279,7 @@ void echoc_mod_t::ports_connect()
 void echoc_mod_t::configure()
 {
   {
-    std::lock_guard<std::mutex> lockguard(lock);
+    std::lock_guard<std::mutex> lockguard(lock_filter);
     // temporary storage for delayed signal:
     w_u_delayed.resize(n_fragment);
   }
@@ -250,7 +287,12 @@ void echoc_mod_t::configure()
   if(measureatstart)
     ir_measure();
   ir_update_from_file_and_truncate();
+  v_H.clear();
+  for(const auto& H : flt_hat_H)
+    v_H.push_back(TASCAR::spec_t(H->H_long.n_));
   ports_connect();
+  DEBUG(v_H.size());
+  DEBUG(flt_hat_H.size());
   reconnect = true;
   configured = true;
 }
@@ -275,21 +317,60 @@ void echoc_mod_t::port_service()
   }
 }
 
+void echoc_mod_t::send_service()
+{
+  TASCAR::tictoc_t tictoc;
+  std::unique_lock<std::mutex> lk(lock_send);
+  while(run_send_service) {
+    cond.wait_for(lk, 100ms);
+    if(has_data && !v_H.empty() && (tictoc.toc() > sendperiod)) {
+      tictoc.tic();
+      auto fftlen = flt_hat_H[0]->get_fftlen();
+      TASCAR::fft_t fft(fftlen);
+      lo_message ir_msg;
+      lo_arg** ir_oscmsgargv;
+      ir_msg = lo_message_new();
+      // add data to message
+      for(size_t k = 0; k < fftlen; ++k)
+        lo_message_add_float(ir_msg, 0.0f);
+      ir_oscmsgargv = lo_message_get_argv(ir_msg);
+      std::vector<TASCAR::wave_t> all_ir;
+      for(size_t kflt = 0; kflt < v_H.size(); ++kflt) {
+        fft.execute(v_H[kflt]);
+        for(size_t k = 0; k < fftlen; ++k)
+          ir_oscmsgargv[k]->f = fft.w.d[k];
+        lo_send_message(lo_addr, (sendpath + std::to_string(kflt)).c_str(),
+                        ir_msg);
+        all_ir.push_back(fft.w);
+      }
+      TASCAR::audiowrite(TASCAR::env_expand(filepath + name + ".wav"), all_ir, f_sample,
+                         SF_FORMAT_WAV | SF_FORMAT_FLOAT | SF_ENDIAN_FILE);
+      lo_message_free(ir_msg);
+      has_data = false;
+    }
+  }
+}
+
 echoc_mod_t::~echoc_mod_t()
 {
   run_port_service = false;
+  run_send_service = false;
   deactivate();
+  if(port_thread.joinable())
+    port_thread.join();
+  if(send_thread.joinable())
+    send_thread.join();
   // clear all filters and delays:
   for(auto& obj : flt_hat_H)
     delete obj;
   flt_hat_H.clear();
-  if(port_thread.joinable())
-    port_thread.join();
+  if(lo_addr)
+    lo_address_free(lo_addr);
 }
 
 void echoc_mod_t::ir_update_from_file_and_truncate()
 {
-  std::lock_guard<std::mutex> lockguard(lock);
+  std::lock_guard<std::mutex> lockguard(lock_filter);
   // clear all filters and delays:
   for(auto& obj : flt_hat_H)
     delete obj;
@@ -302,13 +383,13 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
   float fs = 0;
   try {
     auto all_ir =
-        TASCAR::audioread(TASCAR::env_expand(path + name + ".wav"), fs);
+        TASCAR::audioread(TASCAR::env_expand(filepath + name + ".wav"), fs);
     if(fs != f_sample)
       TASCAR::add_warning(
           "Invalid sampling rate of impulse response (expected " +
           TASCAR::to_string(f_sample) + " Hz, got " + TASCAR::to_string(fs) +
           " Hz).");
-    if(all_ir.size() != N_in * N_out)
+    if(all_ir.size() != N_flt)
       TASCAR::add_warning(
           "Not the same number of channels in pre-stored impulse response as "
           "number of inputs * number of outputs");
@@ -344,15 +425,17 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
     TASCAR::add_warning(std::string("In plugin echoc (") +
                         tsccfg::node_get_path(e) + "): " + ex.what());
   }
-  for(auto kflt = flt_hat_H.size(); kflt < N_flt; ++kflt)
+  for(auto kflt = flt_hat_H.size(); kflt < N_flt; ++kflt){
     flt_hat_H.push_back(new blms_proc_t(filterlen_final, n_fragment, 1));
+    flt_hat_H.back()->H_long *= 0.0f;
+  }
 }
 
 // measure impulse responses using a sweep:
 void echoc_mod_t::ir_measure()
 {
   measuring = true;
-  std::lock_guard<std::mutex> lockguard(lock);
+  std::lock_guard<std::mutex> lockguard(lock_filter);
   // IR length magic:
   // 10 ms for AD/DA and aliasing filters
   // 4 fragment sizes for block processing and poor sound card design
@@ -412,7 +495,7 @@ void echoc_mod_t::ir_measure()
     all_ir.insert(all_ir.end(), ir.begin(), ir.end());
   }
   // store all impulse responses on disk:
-  TASCAR::audiowrite(TASCAR::env_expand(path + name + ".wav"), all_ir, fs,
+  TASCAR::audiowrite(TASCAR::env_expand(filepath + name + ".wav"), all_ir, fs,
                      SF_FORMAT_WAV | SF_FORMAT_FLOAT | SF_ENDIAN_FILE);
   measuring = false;
 }
@@ -425,7 +508,7 @@ int echoc_mod_t::process(jack_nframes_t nframes,
   for(auto pOut : outBuffer)
     memset(pOut, 0, sizeof(float) * nframes);
   if((!bypass) && configured) {
-    if(lock.try_lock()) {
+    if(lock_filter.try_lock()) {
       size_t flt_idx = 0;
       for(uint32_t cin = 0; cin < N_in; ++cin) {
         auto p_in = inBuffer[cin];
@@ -438,12 +521,19 @@ int echoc_mod_t::process(jack_nframes_t nframes,
           flt_hat_H[flt_idx]->process(w_u_delayed, w_out);
           if(adaptive) {
             TASCAR::wave_t w_adapt(nframes, inBuffer[N_in + cout]);
-            flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt);
+            flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt, mu);
           }
           ++flt_idx;
         }
       }
-      lock.unlock();
+      lock_filter.unlock();
+      if(lock_send.try_lock()) {
+        for(size_t k = 0; k < flt_hat_H.size(); ++k)
+          v_H[k].copy(flt_hat_H[k]->H_long);
+        has_data = true;
+        lock_send.unlock();
+        cond.notify_one();
+      }
     }
   }
   return 0;

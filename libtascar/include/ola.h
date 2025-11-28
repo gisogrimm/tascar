@@ -113,7 +113,11 @@ namespace TASCAR {
 
   private:
     uint32_t irslen_;
+
+  public:
     TASCAR::spec_t H_long;
+
+  private:
     TASCAR::wave_t out;
   };
 
