@@ -545,12 +545,14 @@ int echoc_mod_t::process(jack_nframes_t nframes,
         }
       }
       lock_filter.unlock();
-      if(lock_send.try_lock()) {
-        for(size_t k = 0; k < flt_hat_H.size(); ++k)
-          v_H[k].copy(flt_hat_H[k]->H_long);
-        has_data = true;
-        lock_send.unlock();
-        cond.notify_one();
+      if(adaptive) {
+        if(lock_send.try_lock()) {
+          for(size_t k = 0; k < flt_hat_H.size(); ++k)
+            v_H[k].copy(flt_hat_H[k]->H_long);
+          has_data = true;
+          lock_send.unlock();
+          cond.notify_one();
+        }
       }
     }
   }
