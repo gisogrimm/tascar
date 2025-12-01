@@ -374,7 +374,6 @@ void TASCAR::reset_tuid_list()
   TASCAR::tuidlist.clear();
 }
 
-
 void TASCAR::validate_tuid(const std::string& id, const tsccfg::node_t& e)
 {
   std::lock_guard<std::mutex> lk{TASCAR::tuidlistmtx};
@@ -699,7 +698,7 @@ std::string TASCAR::to_string_dbspl(float value)
   return ctmp;
 }
 
-bool file_exists_ov(const std::string& fname)
+bool TASCAR::file_exists(const std::string& fname)
 {
   if(access(fname.c_str(), F_OK) != -1)
     return true;
@@ -726,7 +725,7 @@ void TASCAR::globalconfig_t::readconfig(const std::string& fname)
 {
   try {
     std::string lfname(TASCAR::env_expand(fname));
-    if(file_exists_ov(lfname)) {
+    if(TASCAR::file_exists(lfname)) {
       setlocale(LC_ALL, "C");
       xml_doc_t doc(lfname, xml_doc_t::LOAD_FILE);
       readconfig("", doc.root());
@@ -761,7 +760,7 @@ void TASCAR::globalconfig_t::writeconfig(const std::vector<std::string>& keys)
 {
   std::string lfname(TASCAR::env_expand("${HOME}/.tascardefaults.xml"));
   auto xml_mode = xml_doc_t::LOAD_FILE;
-  if(!file_exists_ov(lfname)) {
+  if(!TASCAR::file_exists(lfname)) {
     lfname = "<tascar/>";
     xml_mode = xml_doc_t::LOAD_STRING;
   }

@@ -32,7 +32,6 @@
 #include "ola.h"
 #include "session.h"
 #include <condition_variable>
-#include <filesystem>
 #include <fstream>
 
 using namespace std::chrono_literals;
@@ -393,7 +392,7 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
   // load recorded IR:
   float fs = 0;
   try {
-    if(std::filesystem::exists(TASCAR::env_expand(filepath + name + ".wav"))) {
+    if(TASCAR::file_exists(TASCAR::env_expand(filepath + name + ".wav"))) {
       auto all_ir =
           TASCAR::audioread(TASCAR::env_expand(filepath + name + ".wav"), fs);
       if(fs != f_sample)

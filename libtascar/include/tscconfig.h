@@ -385,6 +385,11 @@ namespace TASCAR {
 
   std::string env_expand(std::string s);
 
+  /** Test if a file can be accessed
+   *
+   */
+  bool file_exists(const std::string& fname);
+
   std::vector<TASCAR::pos_t> str2vecpos(const std::string& s);
 
   /** Split a string into tokens at spaces.
@@ -423,7 +428,7 @@ namespace TASCAR {
       virtual void warning(const xercesc::SAXParseException& exc);
       virtual void error(const xercesc::SAXParseException& exc);
       virtual void fatalError(const xercesc::SAXParseException& exc);
-      virtual void resetErrors(){};
+      virtual void resetErrors() {};
     };
     tscerrorhandler_t errh;
   };
