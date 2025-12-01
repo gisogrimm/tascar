@@ -45,7 +45,7 @@ protected:
   std::string connect;
   std::vector<std::string> pattern;
   std::string mainctl;
-  uint32_t banksize = 8;
+  int32_t banksize = 8;
 };
 
 midictl_vars_t::midictl_vars_t(const TASCAR::module_cfg_t& cfg)
@@ -67,6 +67,8 @@ public:
   void configure();
   void release();
   virtual void emit_event(int channel, int param, int value);
+  virtual void emit_event_note(int, int, int);
+  virtual void emit_event_mmc(uint8_t, uint8_t);
 
 private:
   void send_service();
@@ -79,7 +81,7 @@ private:
   bool run_service;
   bool upload;
   std::mutex mtx;
-  uint32_t bank_ofs = 0;
+  int32_t bank_ofs = 0;
 };
 
 mcu_ctl_t::mcu_ctl_t(const TASCAR::module_cfg_t& cfg)
@@ -100,9 +102,9 @@ void mcu_ctl_t::configure()
   ports.clear();
   routes.clear();
   sounds.clear();
-  if(session){
+  if(session) {
     auto aports = session->find_audio_ports(pattern);
-    for( const auto& p:aports){
+    for(const auto& p : aports) {
       DEBUG(p->get_ctlname());
     }
   }
@@ -162,7 +164,7 @@ void mcu_ctl_t::send_service()
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     if(run_service) {
       std::lock_guard<std::mutex> lock{mtx};
-      for(uint32_t k = 0; k < ports.size(); ++k) {
+      for(int32_t k = 0; k < (int)(ports.size()); ++k) {
         // gain:
         if((k - bank_ofs < banksize) && (k >= bank_ofs)) {
           float g(ports[k]->get_gain_db());
@@ -171,6 +173,8 @@ void mcu_ctl_t::send_service()
           int v = g;
           if((v != fader_state[k]) || upload) {
             fader_state[k] = v;
+            send_midi_pitchbend(k - bank_ofs, 0, v);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             send_midi_pitchbend(k - bank_ofs, 0, v);
           }
         }
@@ -196,8 +200,53 @@ void mcu_ctl_t::send_service()
     }
   }
   // reset all faders to zero:
-  for(uint32_t k = 0; k < banksize; ++k) {
+  for(int32_t k = 0; k < banksize; ++k) {
     send_midi_pitchbend(k, 0, -8192);
+  }
+}
+
+void mcu_ctl_t::emit_event_note(int a, int b, int c)
+{
+  bool known = false;
+  if((a == 0) && (b == 48) && (c > 0)) {
+    if(bank_ofs > 0)
+      --bank_ofs;
+    upload = true;
+    known = true;
+  }
+  if((a == 0) && (b == 49) && (c > 0)) {
+    if(bank_ofs + banksize < (int)ports.size())
+      ++bank_ofs;
+    upload = true;
+    known = true;
+  }
+  if((a == 0) && (b == 46) && (c > 0)) {
+    if(bank_ofs > 0)
+      bank_ofs -= std::min(bank_ofs, banksize);
+    upload = true;
+    known = true;
+  }
+  if((a == 0) && (b == 47) && (c > 0)) {
+    DEBUG(bank_ofs);
+    DEBUG(banksize);
+    DEBUG(ports.size());
+    DEBUG(std::min((int)ports.size() - bank_ofs - banksize, banksize));
+    if(bank_ofs + banksize < (int)ports.size())
+      bank_ofs += std::min((int)ports.size() - bank_ofs - banksize, banksize);
+    DEBUG(bank_ofs);
+    DEBUG(std::min((int)ports.size() - bank_ofs - banksize, banksize));
+    upload = true;
+    known = true;
+  }
+  if(!known && dumpmsg) {
+    std::cout << "note " << a << "/" << b << "/" << c << std::endl;
+  }
+}
+
+void mcu_ctl_t::emit_event_mmc(uint8_t a, uint8_t b)
+{
+  if(dumpmsg) {
+    std::cout << "MMC " << a << "/" << b << std::endl;
   }
 }
 
@@ -205,6 +254,13 @@ void mcu_ctl_t::emit_event(int channel, int param, int value)
 {
   // uint32_t ctl(256 * channel + param);
   bool known = false;
+  // gain faders:
+  if((param == 0) && (channel < banksize) &&
+     (channel + bank_ofs < (int)ports.size())) {
+    known = true;
+    auto gain = gui_to_gain((value + 8192.0f) / 16384.0f);
+    ports[channel + bank_ofs]->set_gain_db(gain);
+  }
   // for(uint32_t k = 0; k < controllers_.size(); ++k) {
   //  if(controllers_[k] == ctl) {
   //    if(k < ports.size()) {
