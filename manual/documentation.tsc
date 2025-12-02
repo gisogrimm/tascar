@@ -163,6 +163,7 @@
     <accmovement actor="/*/nav"/>
     <accrotator actor="/*/nav"/>
     <tuner/>
+    <joystick actor="/*/nav"/>
   </modules>
   <connect src="a" dest="b"/>
   <range/>
