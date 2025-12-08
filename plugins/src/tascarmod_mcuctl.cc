@@ -74,19 +74,23 @@ private:
   void send_service();
   std::vector<int> fader_state;
   std::vector<int> fader_is_moving;
+  std::vector<int> meter_state;
   std::vector<TASCAR::Scene::audio_port_t*> ports;
   std::vector<TASCAR::Scene::route_t*> routes;
   std::vector<TASCAR::Scene::sound_t*> sounds;
   std::thread srv;
-  bool run_service;
-  bool upload;
+  bool run_service = true;
+  bool upload = true;
   std::mutex mtx;
   int32_t bank_ofs = 0;
+  std::set<float> vu_thresholds = {-100.0f, -60.0f, -50.0f, -40.0f, -30.0f,
+                                   -20.0f,  -14.0f, -10.0f, -8.0f,  -6.0f,
+                                   -4.0f,   -2.0f,  -0.0f};
+  char msg_sysex[1024];
 };
 
 mcu_ctl_t::mcu_ctl_t(const TASCAR::module_cfg_t& cfg)
-    : midictl_vars_t(cfg), TASCAR::midi_ctl_t(name), run_service(true),
-      upload(false)
+    : midictl_vars_t(cfg), TASCAR::midi_ctl_t(name)
 {
   if(!connect.empty()) {
     connect_input(connect, true);
@@ -135,10 +139,13 @@ void mcu_ctl_t::configure()
   }
   fader_state.resize(routes.size());
   fader_is_moving.resize(routes.size());
+  meter_state.resize(routes.size());
   for(auto& state : fader_state)
     state = -8193;
   for(auto& ismov : fader_is_moving)
     ismov = false;
+  for(auto& mstat : meter_state)
+    mstat = -2000;
   start_service();
   TASCAR::module_base_t::configure();
 }
@@ -158,8 +165,8 @@ mcu_ctl_t::~mcu_ctl_t()
 void mcu_ctl_t::send_service()
 {
   while(run_service) {
-    // wait for 20 ms:
-    for(uint32_t k = 0; k < 20; ++k)
+    // wait for 10 ms:
+    for(uint32_t k = 0; k < 10; ++k)
       if(run_service)
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     if(run_service) {
@@ -167,6 +174,7 @@ void mcu_ctl_t::send_service()
       for(int32_t k = 0; k < (int)(ports.size()); ++k) {
         // gain:
         if((k - bank_ofs < banksize) && (k >= bank_ofs)) {
+          // fader states:
           float g(ports[k]->get_gain_db());
           g = std::max(-8191.0f,
                        std::min(8191.0f, 16384.0f * gain_to_gui(g) - 8192.0f));
@@ -176,6 +184,45 @@ void mcu_ctl_t::send_service()
             send_midi_pitchbend(k - bank_ofs, 0, v);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             send_midi_pitchbend(k - bank_ofs, 0, v);
+          }
+          // level display:
+          if(routes[k]) {
+            float lrms = -200;
+            if(sounds[k])
+              lrms = sounds[k]->read_meter_maxval();
+            else
+              lrms = routes[k]->read_meter_maxval();
+            lrms = lrms - TASCAR::lin2dbspl(ports[k]->caliblevel);
+            int mval = 0;
+            for(const auto& th : vu_thresholds) {
+              if(th < lrms)
+                ++mval;
+              else
+                break;
+            }
+            // if(mval != meter_state[k]) {
+            {
+              meter_state[k] = mval;
+              send_midi_channel_pressure(0, 0, mval + 16 * (k - bank_ofs));
+            }
+          }
+
+          // names:
+          if(upload) {
+            msg_sysex[0] = 0xf0;
+            msg_sysex[1] = 0;
+            msg_sysex[2] = 0;
+            msg_sysex[3] = 0x66;
+            msg_sysex[4] = 0x14;
+            msg_sysex[5] = 0x12;
+            msg_sysex[6] = 6*(k-bank_ofs);
+            msg_sysex[7] = 'x';
+            msg_sysex[8] = 'B';
+            msg_sysex[9] = 'C';
+            msg_sysex[10] = 'D';
+            msg_sysex[11] = 0xf7;
+            send_midi_sysex(12, msg_sysex);
+            DEBUG(k);
           }
         }
         //// mute:
@@ -250,6 +297,10 @@ void mcu_ctl_t::emit_event_mmc(uint8_t a, uint8_t b)
   }
 }
 
+/*
+ * This function will be called when a MIDI event is sent by the MCU
+ * device.
+ */
 void mcu_ctl_t::emit_event(int channel, int param, int value)
 {
   // uint32_t ctl(256 * channel + param);
@@ -283,6 +334,7 @@ void mcu_ctl_t::emit_event(int channel, int param, int value)
   //    known = true;
   //  }
   //}
+
   if((!known) && dumpmsg) {
     char ctmp[256];
     snprintf(ctmp, 256, "%d/%d: %d", channel, param, value);

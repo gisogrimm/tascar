@@ -63,6 +63,8 @@ namespace TASCAR {
        \param value MIDI value
     */
     void send_midi(int channel, int param, int value);
+    void send_midi_sysex(int len, char* data);
+    void send_midi_channel_pressure(int channel, int param, int value);
     /**
        \brief Send a pitchbend event to output (14bit)
        \param channel MIDI channel number
@@ -99,7 +101,7 @@ namespace TASCAR {
        \brief Callback to be called for incoming MIDI events
     */
     virtual void emit_event(int channel, int param, int value) = 0;
-    virtual void emit_event_note(int, int, int){};
+    virtual void emit_event_note(int, int, int) {};
     virtual void emit_event_mmc(uint8_t, uint8_t){};
 
   private:

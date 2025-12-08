@@ -812,11 +812,31 @@ float route_t::read_meter_max()
   return rv;
 }
 
+
+float route_t::read_meter_maxval()
+{
+  float rv(std::numeric_limits<float>::lowest());
+  for(uint32_t k = 0; k < rmsmeter.size(); k++) {
+    float l(rmsmeter[k]->maxabsdb());
+    if(!(l < rv))
+      rv = l;
+  }
+  return rv;
+}
+
 float sound_t::read_meter()
 {
   if(meter.size() > 0)
     if(meter[0])
       return meter[0]->spldb();
+  return std::numeric_limits<float>::lowest();
+}
+
+float sound_t::read_meter_maxval()
+{
+  if(meter.size() > 0)
+    if(meter[0])
+      return meter[0]->maxabsdb();
   return std::numeric_limits<float>::lowest();
 }
 

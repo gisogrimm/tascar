@@ -106,6 +106,7 @@ namespace TASCAR {
       void reset_meters();
       const std::vector<float>& readmeter();
       float read_meter_max();
+      float read_meter_maxval();
       float get_meterval(uint32_t k) const { return meterval[k]; };
       std::string get_type() const;
       /**
@@ -336,6 +337,7 @@ namespace TASCAR {
       // void release();
       void add_meter(TASCAR::levelmeter_t*);
       float read_meter();
+      float read_meter_maxval();
       void validate_attributes(std::string& msg) const;
       void set_mute(bool m) { b_mute = m; };
       bool get_mute() const { return b_mute; };

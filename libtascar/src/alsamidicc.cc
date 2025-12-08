@@ -134,6 +134,40 @@ void TASCAR::midi_ctl_t::send_midi(int channel, int param, int value)
   snd_seq_sync_output_queue(seq);
 }
 
+void TASCAR::midi_ctl_t::send_midi_sysex(int len, char* data)
+{
+  snd_seq_event_t ev;
+  memset(&ev, 0, sizeof(ev));
+  snd_seq_ev_clear(&ev);
+  snd_seq_ev_set_source(&ev, port_out.port);
+  snd_seq_ev_set_subs(&ev);
+  snd_seq_ev_set_direct(&ev);
+  ev.type = SND_SEQ_EVENT_SYSEX;
+  ev.data.ext.len = len;
+  ev.data.ext.ptr = data;
+  snd_seq_event_output_direct(seq, &ev);
+  snd_seq_drain_output(seq);
+  snd_seq_sync_output_queue(seq);
+}
+
+void TASCAR::midi_ctl_t::send_midi_channel_pressure(int channel, int param,
+                                                    int value)
+{
+  snd_seq_event_t ev;
+  memset(&ev, 0, sizeof(ev));
+  snd_seq_ev_clear(&ev);
+  snd_seq_ev_set_source(&ev, port_out.port);
+  snd_seq_ev_set_subs(&ev);
+  snd_seq_ev_set_direct(&ev);
+  ev.type = SND_SEQ_EVENT_CHANPRESS;
+  ev.data.control.channel = (unsigned char)(channel);
+  ev.data.control.param = (unsigned char)(param);
+  ev.data.control.value = (unsigned char)(value);
+  snd_seq_event_output_direct(seq, &ev);
+  snd_seq_drain_output(seq);
+  snd_seq_sync_output_queue(seq);
+}
+
 void TASCAR::midi_ctl_t::send_midi_pitchbend(int channel, int param, int value)
 {
   snd_seq_event_t ev;
