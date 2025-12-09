@@ -26,6 +26,12 @@
  * 3749–3763.
  */
 
+
+/*
+ * todo: create ports to allow properly ordered signal graph also in
+ * feedback canceller configuration.
+ */
+
 #include "jackclient.h"
 #include "jackiowav.h"
 #include "mutex"
@@ -74,6 +80,7 @@ blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay)
       w_e(chunksize), w_e_long(get_fftlen()), w_u_long(get_fftlen()),
       fft_e(get_fftlen()), fft_u(get_fftlen()), w_Pu(fft_e.s.n_)
 {
+  DEBUG(irslen);
 }
 
 void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
@@ -99,10 +106,20 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   fft_u.s.conj();
   fft_e.s *= fft_u.s;
   // apply constraints:
+  fft_e.execute(fft_e.s);
+  for(uint32_t k = irslen_ + 1; k < fft_e.w.n; ++k)
+    fft_e.w[k] = 0.0f;
+  fft_e.execute(fft_e.w);
   // scale gradient:
   fft_e.s *= -mu;
   // update filter:
   H_long += fft_e.s;
+  // apply constraints to estimated filter;:
+  for(uint32_t k = 0; k < fft_e.s.n_; ++k) {
+    auto a = std::fabs(H_long.b[k]);
+    if(a > 1.0f)
+      H_long.b[k] /= a;
+  }
 }
 
 class echoc_var_t : public TASCAR::module_base_t {
@@ -210,6 +227,7 @@ private:
   std::condition_variable cond;
   std::atomic_bool has_data = false;
   std::vector<TASCAR::spec_t> v_H;
+  uint32_t filterlen_final = 0u;
 };
 
 echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
@@ -266,6 +284,7 @@ void echoc_mod_t::add_variables(TASCAR::osc_server_t* srv)
   srv->add_method("/measure", "", &echoc_mod_t::osc_measure, this);
   srv->add_method("/connect", "", &echoc_mod_t::osc_connect, this);
   srv->add_bool("/bypass", &bypass);
+  srv->add_bool("/adaptive", &adaptive);
   srv->add_float("/mu", &mu, "", "step size coefficient");
   srv->set_prefix(prefix_);
   srv->unset_variable_owner();
@@ -289,21 +308,41 @@ void echoc_mod_t::ports_connect()
 
 void echoc_mod_t::configure()
 {
+  DEBUG(1);
   {
     std::lock_guard<std::mutex> lockguard(lock_filter);
     // temporary storage for delayed signal:
     w_u_delayed.resize(n_fragment);
   }
   //
+  DEBUG(1);
   if(measureatstart)
     ir_measure();
+  DEBUG(1);
   ir_update_from_file_and_truncate();
+  DEBUG(1);
   v_H.clear();
+  DEBUG(1);
   for(const auto& H : flt_hat_H)
     v_H.push_back(TASCAR::spec_t(H->H_long.n_));
+  DEBUG(1);
+  DEBUG(1);
+  if(lock_send.try_lock()) {
+    DEBUG(1);
+    for(size_t k = 0; k < flt_hat_H.size(); ++k)
+      v_H[k].copy(flt_hat_H[k]->H_long);
+    DEBUG(1);
+    has_data = true;
+    DEBUG(1);
+    lock_send.unlock();
+    DEBUG(1);
+    cond.notify_one();
+    DEBUG(1);
+  }
   ports_connect();
   reconnect = true;
   configured = true;
+  DEBUG(1);
 }
 
 // periodically reconnect ports:
@@ -363,19 +402,27 @@ void echoc_mod_t::send_service()
 
 echoc_mod_t::~echoc_mod_t()
 {
+  DEBUG(1);
   run_port_service = false;
   run_send_service = false;
+  DEBUG(1);
   deactivate();
+  DEBUG(1);
   if(port_thread.joinable())
     port_thread.join();
+  DEBUG(1);
   if(send_thread.joinable())
     send_thread.join();
+  DEBUG(1);
   // clear all filters and delays:
   for(auto& obj : flt_hat_H)
     delete obj;
+  DEBUG(1);
   flt_hat_H.clear();
+  DEBUG(1);
   if(lo_addr)
     lo_address_free(lo_addr);
+  DEBUG(1);
 }
 
 void echoc_mod_t::ir_update_from_file_and_truncate()
@@ -388,7 +435,9 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
   if(n_fragment == 0)
     return;
   auto fftlen = pow(2.0, ceil(log2(n_fragment + filterlen - 1)));
-  auto filterlen_final = fftlen - n_fragment + 1;
+  filterlen_final = fftlen - n_fragment + 1;
+  DEBUG(fftlen);
+  DEBUG(filterlen_final);
   // load recorded IR:
   float fs = 0;
   try {
@@ -422,8 +471,11 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
               std::to_string(ch) +
               TASCAR::to_string(100.0f * aratio.back(), " (%1.0f%%)"));
         ++ch;
+        DEBUG(idxmax.back());
         uint32_t predelay = std::max(idxmax.back(), premax) - premax;
+        DEBUG(predelay);
         predelay = 2 * n_fragment;
+        predelay = 0;
         DEBUG(predelay);
         filterir.clear();
         for(uint32_t k = 0; k < filterir.n; ++k)
@@ -521,24 +573,25 @@ int echoc_mod_t::process(jack_nframes_t nframes,
   // clear output samples:
   for(auto pOut : outBuffer)
     memset(pOut, 0, sizeof(float) * nframes);
-  if((!bypass) && configured) {
+  if(configured) {
     if(lock_filter.try_lock()) {
       size_t flt_idx = 0;
       for(uint32_t cin = 0; cin < N_in; ++cin) {
         auto p_in = inBuffer[cin];
         for(uint32_t cout = 0; cout < N_out; ++cout) {
           // create a delayed copy of the input signal:
-          for(uint32_t k = 0; k < nframes; ++k)
-            w_u_delayed.d[k] = flt_hat_H[flt_idx]->delayline(p_in[k]);
+          // for(uint32_t k = 0; k < nframes; ++k)
+          //  w_u_delayed.d[k] = flt_hat_H[flt_idx]->delayline(p_in[k]);
           TASCAR::wave_t w_out(nframes, outBuffer[cout]);
-          // TASCAR::wave_t w_u(nframes, p_in);
+          TASCAR::wave_t w_u(nframes, p_in);
           // filter signal and store in pOut (referenced by w_out):
-          flt_hat_H[flt_idx]->process(w_u_delayed, w_out);
-          // flt_hat_H[flt_idx]->process(w_u, w_out);
+          // flt_hat_H[flt_idx]->process(w_u_delayed, w_out);
+          flt_hat_H[flt_idx]->process(w_u, w_out);
           if(adaptive) {
             TASCAR::wave_t w_adapt(nframes, inBuffer[N_in + cout]);
-            flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt, mu, delta);
-            // flt_hat_H[flt_idx]->adapt(w_u, w_out, w_adapt, mu);
+            // flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt, mu,
+            // delta);
+            flt_hat_H[flt_idx]->adapt(w_u, w_out, w_adapt, mu, delta);
           }
           ++flt_idx;
         }
@@ -552,6 +605,11 @@ int echoc_mod_t::process(jack_nframes_t nframes,
           lock_send.unlock();
           cond.notify_one();
         }
+      }
+      if(bypass) {
+        // clear output samples:
+        for(auto pOut : outBuffer)
+          memset(pOut, 0, sizeof(float) * nframes);
       }
     }
   }

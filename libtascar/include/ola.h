@@ -111,10 +111,8 @@ namespace TASCAR {
     void process(const TASCAR::wave_t& inchunk, TASCAR::wave_t& outchunk,
                  bool add = true);
 
-  private:
-    uint32_t irslen_;
+    const uint32_t irslen_;
 
-  public:
     TASCAR::spec_t H_long;
 
   private:
