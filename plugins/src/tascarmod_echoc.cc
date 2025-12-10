@@ -26,7 +26,6 @@
  * 3749–3763.
  */
 
-
 /*
  * todo: create ports to allow properly ordered signal graph also in
  * feedback canceller configuration.
@@ -57,16 +56,22 @@ uint32_t get_idxmaxabs(const TASCAR::wave_t& ir)
   return imax;
 }
 
+// block-wise adaptive filter with frequency-domain normalized LMS
+// adaptation
 class blms_proc_t : public TASCAR::overlap_save_t {
 public:
   blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay);
+  ~blms_proc_t();
   void adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
              const TASCAR::wave_t& w_adapt, float mu, float delta);
-  TASCAR::static_delay_t delayline;
+  TASCAR::static_delay_t delay1;
+  TASCAR::static_delay_t delay2;
 
 private:
   // container for error signal:
   TASCAR::wave_t w_e;
+  // container for delayed u signal:
+  TASCAR::wave_t w_u_delay2;
   // container for full length error and u signal:
   TASCAR::wave_t w_e_long;
   TASCAR::wave_t w_u_long;
@@ -75,21 +80,33 @@ private:
   TASCAR::wave_t w_Pu;
 };
 
+blms_proc_t::~blms_proc_t()
+{
+  DEBUG(1);
+}
+
 blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay)
-    : TASCAR::overlap_save_t(irslen, chunksize), delayline(delay),
-      w_e(chunksize), w_e_long(get_fftlen()), w_u_long(get_fftlen()),
+    : TASCAR::overlap_save_t(irslen, chunksize),
+      delay1(std::max(delay, chunksize) - chunksize), delay2(chunksize),
+      w_e(chunksize), w_u_delay2(chunksize),w_e_long(get_fftlen()), w_u_long(get_fftlen()),
       fft_e(get_fftlen()), fft_u(get_fftlen()), w_Pu(fft_e.s.n_)
 {
   DEBUG(irslen);
+  DEBUG(delay);
+  DEBUG(chunksize);
 }
 
 void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
                         const TASCAR::wave_t& w_adapt, float mu, float delta)
 {
   w_e.copy(w_out);
+  w_u_delay2.copy(w_u);
+  delay2(w_u_delay2);
+  //delay2(w_e);
   w_e += w_adapt;
   w_e_long.insert_at_end(w_e);
-  w_u_long.insert_at_end(w_u);
+  w_u_long.insert_at_end(w_u_delay2);
+  //w_u_long.insert_at_end(w_u);
   // apply whitening filter on w_e and w_u
   // Fourier-transform of w_e and w_u
   fft_e.execute(w_e_long);
@@ -122,6 +139,7 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   }
 }
 
+// configuration variables of echo/feedback cancellation
 class echoc_var_t : public TASCAR::module_base_t {
 public:
   echoc_var_t(const TASCAR::module_cfg_t& cfg);
@@ -176,6 +194,22 @@ echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
         "At least one loudspeaker (filter input) port must be given");
 }
 
+class jackoutput_t : public jackc_t {
+public:
+  jackoutput_t(const std::vector<std::string>& micports,
+               const std::string& name, bool& bypass_);
+  ~jackoutput_t();
+
+  std::vector<TASCAR::wave_t> v_out;
+  std::atomic_bool configured = false;
+private:
+  int process(jack_nframes_t nframes, const std::vector<float*>& inBuffer,
+              const std::vector<float*>& outBuffer);
+  const size_t N_out = 0;
+  bool& bypass;
+};
+
+// main class of echo/feedback cancellation
 class echoc_mod_t : public echoc_var_t, public jackc_t {
 public:
   echoc_mod_t(const TASCAR::module_cfg_t& cfg);
@@ -205,6 +239,7 @@ public:
   void jack_port_connect_cb();
 
 private:
+  jackoutput_t joutput;
   void port_service();
   std::atomic_bool run_port_service = true;
   std::thread port_thread;
@@ -215,7 +250,7 @@ private:
   std::mutex lock_send;
   std::vector<blms_proc_t*> flt_hat_H;
   //  temporary storage for delayed signal:
-  TASCAR::wave_t w_u_delayed;
+  TASCAR::wave_t w_u_delay1;
   std::atomic_bool connecting_ports = false;
   std::atomic_bool reconnect = false;
   std::atomic_bool measuring = false;
@@ -228,14 +263,13 @@ private:
   std::atomic_bool has_data = false;
   std::vector<TASCAR::spec_t> v_H;
   uint32_t filterlen_final = 0u;
+  //std::vector<TASCAR::wave_t> v_out;
 };
 
 echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
-    : echoc_var_t(cfg), jackc_t(name), N_in(loudspeakerports.size()),
-      N_out(micports.size()), N_flt(N_in * N_out)
+    : echoc_var_t(cfg), jackc_t(name), joutput(micports, name, bypass),
+      N_in(loudspeakerports.size()), N_out(micports.size()), N_flt(N_in * N_out)
 {
-  // create output ports which will send the phase-inverted signal, to
-  // be added to the microphone signals by jack:
   for(size_t ch = 0; ch < N_out; ++ch)
     add_output_port("out." + std::to_string(ch));
   // create input ports which receive a copy of the loudspeaker
@@ -246,6 +280,7 @@ echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
   // addition of the phase inverted copy:
   for(size_t ch = 0; ch < N_out; ++ch)
     add_input_port("adapt." + std::to_string(ch));
+  add_input_port("sync");
   if(autoreconnect) {
     // update port connections upon any jack port change:
     jack_set_port_connect_callback(jc, &echoc_mod_t::jack_port_connect_cb,
@@ -294,39 +329,42 @@ void echoc_mod_t::ports_connect()
 {
   connecting_ports = true;
   for(size_t ch = 0; ch < micports.size(); ++ch)
-    disconnect_out(ch);
+    joutput.disconnect_out(ch);
   for(size_t ch = 0; ch < N_in + N_out; ++ch)
     disconnect_in(ch);
+  disconnect_in(N_in + N_out);
   for(size_t ch = 0; ch < N_out; ++ch)
-    connect_out(ch, micports[ch], true, true, true);
+    joutput.connect_out(ch, micports[ch], true, true, true);
   for(size_t ch = 0; ch < N_in; ++ch)
     connect_in(ch, loudspeakerports[ch], true, true, true);
   for(size_t ch = N_in; ch < N_in + N_out; ++ch)
     connect_in(ch, micports[ch - N_in], true, false, true);
+  connect_in(N_in + N_out, name + ".o:sync", true);
   connecting_ports = false;
 }
 
 void echoc_mod_t::configure()
 {
-  DEBUG(1);
+  joutput.configured = false;
   {
     std::lock_guard<std::mutex> lockguard(lock_filter);
     // temporary storage for delayed signal:
-    w_u_delayed.resize(n_fragment);
+    w_u_delay1.resize(n_fragment);
   }
   //
-  DEBUG(1);
   if(measureatstart)
     ir_measure();
-  DEBUG(1);
   ir_update_from_file_and_truncate();
-  DEBUG(1);
   v_H.clear();
-  DEBUG(1);
   for(const auto& H : flt_hat_H)
     v_H.push_back(TASCAR::spec_t(H->H_long.n_));
-  DEBUG(1);
-  DEBUG(1);
+  ports_connect();
+  reconnect = true;
+  configured = true;
+  joutput.v_out.resize(N_out);
+  for(auto& w : joutput.v_out)
+    w.resize(n_fragment);
+  joutput.configured = true;
   if(lock_send.try_lock()) {
     DEBUG(1);
     for(size_t k = 0; k < flt_hat_H.size(); ++k)
@@ -339,10 +377,6 @@ void echoc_mod_t::configure()
     cond.notify_one();
     DEBUG(1);
   }
-  ports_connect();
-  reconnect = true;
-  configured = true;
-  DEBUG(1);
 }
 
 // periodically reconnect ports:
@@ -402,7 +436,7 @@ void echoc_mod_t::send_service()
 
 echoc_mod_t::~echoc_mod_t()
 {
-  DEBUG(1);
+  joutput.configured = false;
   run_port_service = false;
   run_send_service = false;
   DEBUG(1);
@@ -475,7 +509,7 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
         uint32_t predelay = std::max(idxmax.back(), premax) - premax;
         DEBUG(predelay);
         predelay = 2 * n_fragment;
-        predelay = 0;
+        // predelay = 0;
         DEBUG(predelay);
         filterir.clear();
         for(uint32_t k = 0; k < filterir.n; ++k)
@@ -568,11 +602,8 @@ void echoc_mod_t::ir_measure()
 
 int echoc_mod_t::process(jack_nframes_t nframes,
                          const std::vector<float*>& inBuffer,
-                         const std::vector<float*>& outBuffer)
+                         const std::vector<float*>&)
 {
-  // clear output samples:
-  for(auto pOut : outBuffer)
-    memset(pOut, 0, sizeof(float) * nframes);
   if(configured) {
     if(lock_filter.try_lock()) {
       size_t flt_idx = 0;
@@ -580,18 +611,20 @@ int echoc_mod_t::process(jack_nframes_t nframes,
         auto p_in = inBuffer[cin];
         for(uint32_t cout = 0; cout < N_out; ++cout) {
           // create a delayed copy of the input signal:
-          // for(uint32_t k = 0; k < nframes; ++k)
-          //  w_u_delayed.d[k] = flt_hat_H[flt_idx]->delayline(p_in[k]);
-          TASCAR::wave_t w_out(nframes, outBuffer[cout]);
-          TASCAR::wave_t w_u(nframes, p_in);
+          for(uint32_t k = 0; k < nframes; ++k)
+            w_u_delay1.d[k] = flt_hat_H[flt_idx]->delay1(p_in[k]);
+          // TASCAR::wave_t w_out(nframes, outBuffer[cout]);
+          // TASCAR::wave_t w_u(nframes, p_in);
           // filter signal and store in pOut (referenced by w_out):
           // flt_hat_H[flt_idx]->process(w_u_delayed, w_out);
-          flt_hat_H[flt_idx]->process(w_u, w_out);
+          joutput.v_out[cout].clear();
+          flt_hat_H[flt_idx]->process(w_u_delay1, joutput.v_out[cout]);
           if(adaptive) {
             TASCAR::wave_t w_adapt(nframes, inBuffer[N_in + cout]);
             // flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt, mu,
             // delta);
-            flt_hat_H[flt_idx]->adapt(w_u, w_out, w_adapt, mu, delta);
+            flt_hat_H[flt_idx]->adapt(w_u_delay1, joutput.v_out[cout], w_adapt, mu,
+                                      delta);
           }
           ++flt_idx;
         }
@@ -606,11 +639,41 @@ int echoc_mod_t::process(jack_nframes_t nframes,
           cond.notify_one();
         }
       }
-      if(bypass) {
-        // clear output samples:
-        for(auto pOut : outBuffer)
-          memset(pOut, 0, sizeof(float) * nframes);
-      }
+    }
+  }
+  return 0;
+}
+
+jackoutput_t::jackoutput_t(const std::vector<std::string>& micports,
+                           const std::string& name, bool& bypass_)
+    : jackc_t(name + ".o"), N_out(micports.size()), bypass(bypass_)
+{
+  // create output ports which will send the phase-inverted signal, to
+  // be added to the microphone signals by jack:
+  for(size_t ch = 0; ch < N_out; ++ch)
+    add_output_port("out." + std::to_string(ch));
+  // add output port to ensure correct scheduling graph:
+  add_output_port("sync");
+  activate();
+}
+
+jackoutput_t::~jackoutput_t()
+{
+  deactivate();
+  DEBUG(1);
+}
+
+int jackoutput_t::process(jack_nframes_t nframes, const std::vector<float*>&,
+                          const std::vector<float*>& outBuffer)
+{
+  for(auto pOut : outBuffer)
+    memset(pOut, 0, sizeof(float) * nframes);
+  if( !configured )
+    return 0;
+  if(!bypass) {
+    for(size_t cout = 0; cout < std::min(outBuffer.size(), v_out.size());
+        ++cout) {
+      v_out[cout].copy_to(outBuffer[cout], nframes);
     }
   }
   return 0;

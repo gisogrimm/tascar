@@ -4,7 +4,11 @@
     <source name="in">
       <sound name="0"/>
       <sound name="1"/>
-      <sound name="2"/>
+      <sound name="2">
+	<plugins>
+	  <pink alpha="1" level="70"/>
+	</plugins>
+      </sound>
       <sound name="3"/>
     </source>
     <source name="in2">
