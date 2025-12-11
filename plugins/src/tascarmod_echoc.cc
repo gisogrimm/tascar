@@ -56,14 +56,57 @@ uint32_t get_idxmaxabs(const TASCAR::wave_t& ir)
   return imax;
 }
 
+class burg_lattice_section_t {
+public:
+  burg_lattice_section_t(){};
+  inline void update_samples(float& x, float& x2, float expectedvalcoeff)
+  {
+    // update inputs:
+    o = x;
+    u = x_b_prev;
+    x_b_prev = x;
+    o2 = x2;
+    u2 = x_b_prev2;
+    x_b_prev2 = x2;
+    // update coefficients:
+    float expectedvalcoeff1 = 1.0f - expectedvalcoeff;
+    E_ou *= expectedvalcoeff;
+    E_ou += expectedvalcoeff1 * o * u;
+    E_o2_u2 *= expectedvalcoeff;
+    E_o2_u2 += expectedvalcoeff1 * (o * o + u * u);
+    if(E_o2_u2 > 0.0f)
+      r = -2.0f * E_ou / E_o2_u2;
+    else
+      r = -1.0f;
+    // update outputs:
+    x += r * u;
+    // x_b = u + r * o;
+    x2 += r * u2;
+    // x_b2 = u2 + r * o2;
+  }
+
+private:
+  float o = 0.0f;
+  float u = 0.0f;
+  float x_b_prev = 0.0f;
+  float o2 = 0.0f;
+  float u2 = 0.0f;
+  float x_b_prev2 = 0.0f;
+  float r = -1.0f;
+  float E_ou = 0.0f;
+  float E_o2_u2 = 0.0f;
+};
+
 // block-wise adaptive filter with frequency-domain normalized LMS
 // adaptation
 class blms_proc_t : public TASCAR::overlap_save_t {
 public:
-  blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay);
+  blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay,
+              uint32_t num_bl_sections);
   ~blms_proc_t();
   void adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
-             const TASCAR::wave_t& w_adapt, float mu, float delta);
+             const TASCAR::wave_t& w_adapt, float mu, float delta,
+             bool b_white);
   TASCAR::static_delay_t delay1;
   TASCAR::static_delay_t delay2a;
   TASCAR::static_delay_t delay2b;
@@ -79,39 +122,46 @@ private:
   TASCAR::fft_t fft_e;
   TASCAR::fft_t fft_u;
   TASCAR::wave_t w_Pu;
+  std::vector<burg_lattice_section_t> burg_lattice_sections;
 };
 
-blms_proc_t::~blms_proc_t()
-{
-  DEBUG(1);
-}
+blms_proc_t::~blms_proc_t() {}
 
-blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay)
+blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay,
+                         uint32_t num_bl_sections)
     : TASCAR::overlap_save_t(irslen, chunksize),
-      delay1(std::max(delay, chunksize) - chunksize), delay2a(chunksize),delay2b(chunksize),
-      w_e(chunksize), w_u_delay2(chunksize),w_e_long(get_fftlen()), w_u_long(get_fftlen()),
-      fft_e(get_fftlen()), fft_u(get_fftlen()), w_Pu(fft_e.s.n_)
+      delay1(std::max(delay, chunksize) - chunksize), delay2a(chunksize),
+      delay2b(chunksize), w_e(chunksize), w_u_delay2(chunksize),
+      w_e_long(get_fftlen()), w_u_long(get_fftlen()), fft_e(get_fftlen()),
+      fft_u(get_fftlen()), w_Pu(fft_e.s.n_)
 {
-  DEBUG(irslen);
-  DEBUG(delay);
-  DEBUG(chunksize);
+  burg_lattice_sections.resize(num_bl_sections);
 }
 
 void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
-                        const TASCAR::wave_t& w_adapt, float mu, float delta)
+                        const TASCAR::wave_t& w_adapt, float mu, float delta,
+                        bool b_white)
 {
   w_e.copy(w_out);
   w_u_delay2.copy(w_u);
   // compensate block delay:
   delay2a(w_u_delay2);
   delay2b(w_e);
+  // level constraint:
+  auto levelratio = w_e.rms() / (w_adapt.rms() + delta);
   // add adaption inputs:
   w_e += w_adapt;
+  //  apply whitening filter on w_e and w_u
+  if(b_white) {
+    for(uint32_t k = 0; k < w_e.n; ++k) {
+      for(auto& blsec : burg_lattice_sections)
+        blsec.update_samples(w_e.d[k], w_u.d[k], 0.99);
+    }
+  }
+  // append to long versions for overlap-save:
   w_e_long.insert_at_end(w_e);
   w_u_long.insert_at_end(w_u_delay2);
-  //w_u_long.insert_at_end(w_u);
-  // apply whitening filter on w_e and w_u
-  // Fourier-transform of w_e and w_u
+  //  Fourier-transform of w_e and w_u
   fft_e.execute(w_e_long);
   fft_u.execute(w_u_long);
   // normalization:
@@ -127,6 +177,10 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   fft_e.s *= fft_u.s;
   // apply constraints:
   fft_e.execute(fft_e.s);
+  uint32_t n_mid = fft_e.w.n / 2;
+  float scale = TASCAR_PIf / (irslen_ - n_mid);
+  for(uint32_t k = n_mid; k < irslen_ + 1; ++k)
+    fft_e.w[k] *= 0.5 + 0.5 * cos((k - n_mid) * scale);
   for(uint32_t k = irslen_ + 1; k < fft_e.w.n; ++k)
     fft_e.w[k] = 0.0f;
   fft_e.execute(fft_e.w);
@@ -134,12 +188,14 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   fft_e.s *= -mu;
   // update filter:
   H_long += fft_e.s;
-  // apply constraints to estimated filter;:
+  // apply constraints to estimated filter:
+  float amax = levelratio;
   for(uint32_t k = 0; k < fft_e.s.n_; ++k) {
     auto a = std::abs(H_long.b[k]);
-    if(a > 1.0f)
-      H_long.b[k] /= a;
+    amax = std::max(amax, a);
   }
+  if(amax > 1.0f)
+    H_long *= 1.0f / amax;
 }
 
 // configuration variables of echo/feedback cancellation
@@ -163,6 +219,8 @@ public:
   float sendperiod = 0.1f;
   float mu = 1e-5f;
   float delta = 1e-6f;
+  uint32_t num_burg_lattice_sections = 1;
+  bool whitening = false;
   // std::string url = "osc.udp://localhost:9999/";
   // std::string sendpath = "/echoc/ir";
 };
@@ -189,6 +247,8 @@ echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
   // GET_ATTRIBUTE(url, "", "Target URL");
   // GET_ATTRIBUTE(sendpath, "", "Target path");
   GET_ATTRIBUTE(sendperiod, "s", "IR sending period");
+  GET_ATTRIBUTE(num_burg_lattice_sections, "", "Numer of LPC filter stages");
+  GET_ATTRIBUTE_BOOL(whitening, "Use Burg lattice LPC filter for whitening");
   if(micports.empty())
     throw TASCAR::ErrMsg(
         "At least one microphone (filter output) port must be given");
@@ -205,6 +265,7 @@ public:
 
   std::vector<TASCAR::wave_t> v_out;
   std::atomic_bool configured = false;
+
 private:
   int process(jack_nframes_t nframes, const std::vector<float*>& inBuffer,
               const std::vector<float*>& outBuffer);
@@ -266,7 +327,7 @@ private:
   std::atomic_bool has_data = false;
   std::vector<TASCAR::spec_t> v_H;
   uint32_t filterlen_final = 0u;
-  //std::vector<TASCAR::wave_t> v_out;
+  // std::vector<TASCAR::wave_t> v_out;
 };
 
 echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
@@ -324,6 +385,7 @@ void echoc_mod_t::add_variables(TASCAR::osc_server_t* srv)
   srv->add_bool("/bypass", &bypass);
   srv->add_bool("/adaptive", &adaptive);
   srv->add_float("/mu", &mu, "", "step size coefficient");
+  srv->add_bool("/whitening", &whitening);
   srv->set_prefix(prefix_);
   srv->unset_variable_owner();
 }
@@ -369,16 +431,11 @@ void echoc_mod_t::configure()
     w.resize(n_fragment);
   joutput.configured = true;
   if(lock_send.try_lock()) {
-    DEBUG(1);
     for(size_t k = 0; k < flt_hat_H.size(); ++k)
       v_H[k].copy(flt_hat_H[k]->H_long);
-    DEBUG(1);
     has_data = true;
-    DEBUG(1);
     lock_send.unlock();
-    DEBUG(1);
     cond.notify_one();
-    DEBUG(1);
   }
 }
 
@@ -442,24 +499,17 @@ echoc_mod_t::~echoc_mod_t()
   joutput.configured = false;
   run_port_service = false;
   run_send_service = false;
-  DEBUG(1);
   deactivate();
-  DEBUG(1);
   if(port_thread.joinable())
     port_thread.join();
-  DEBUG(1);
   if(send_thread.joinable())
     send_thread.join();
-  DEBUG(1);
   // clear all filters and delays:
   for(auto& obj : flt_hat_H)
     delete obj;
-  DEBUG(1);
   flt_hat_H.clear();
-  DEBUG(1);
   if(lo_addr)
     lo_address_free(lo_addr);
-  DEBUG(1);
 }
 
 void echoc_mod_t::ir_update_from_file_and_truncate()
@@ -473,8 +523,6 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
     return;
   auto fftlen = pow(2.0, ceil(log2(n_fragment + filterlen - 1)));
   filterlen_final = fftlen - n_fragment + 1;
-  DEBUG(fftlen);
-  DEBUG(filterlen_final);
   // load recorded IR:
   float fs = 0;
   try {
@@ -508,17 +556,14 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
               std::to_string(ch) +
               TASCAR::to_string(100.0f * aratio.back(), " (%1.0f%%)"));
         ++ch;
-        DEBUG(idxmax.back());
         uint32_t predelay = std::max(idxmax.back(), premax) - premax;
-        DEBUG(predelay);
         predelay = 2 * n_fragment;
         // predelay = 0;
-        DEBUG(predelay);
         filterir.clear();
         for(uint32_t k = 0; k < filterir.n; ++k)
           filterir.d[k] = -ir.d[k + predelay];
-        flt_hat_H.push_back(
-            new blms_proc_t(filterlen_final, n_fragment, predelay));
+        flt_hat_H.push_back(new blms_proc_t(
+            filterlen_final, n_fragment, predelay, num_burg_lattice_sections));
         flt_hat_H.back()->set_irs(filterir);
       }
     }
@@ -528,8 +573,9 @@ void echoc_mod_t::ir_update_from_file_and_truncate()
                         tsccfg::node_get_path(e) + "): " + ex.what());
   }
   for(auto kflt = flt_hat_H.size(); kflt < N_flt; ++kflt) {
-    flt_hat_H.push_back(
-        new blms_proc_t(filterlen_final, n_fragment, 2 * n_fragment));
+    flt_hat_H.push_back(new blms_proc_t(filterlen_final, n_fragment,
+                                        2 * n_fragment,
+                                        num_burg_lattice_sections));
     flt_hat_H.back()->H_long *= 0.0f;
   }
 }
@@ -626,8 +672,8 @@ int echoc_mod_t::process(jack_nframes_t nframes,
             TASCAR::wave_t w_adapt(nframes, inBuffer[N_in + cout]);
             // flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt, mu,
             // delta);
-            flt_hat_H[flt_idx]->adapt(w_u_delay1, joutput.v_out[cout], w_adapt, mu,
-                                      delta);
+            flt_hat_H[flt_idx]->adapt(w_u_delay1, joutput.v_out[cout], w_adapt,
+                                      mu, delta, whitening);
           }
           ++flt_idx;
         }
@@ -663,7 +709,6 @@ jackoutput_t::jackoutput_t(const std::vector<std::string>& micports,
 jackoutput_t::~jackoutput_t()
 {
   deactivate();
-  DEBUG(1);
 }
 
 int jackoutput_t::process(jack_nframes_t nframes, const std::vector<float*>&,
@@ -671,7 +716,7 @@ int jackoutput_t::process(jack_nframes_t nframes, const std::vector<float*>&,
 {
   for(auto pOut : outBuffer)
     memset(pOut, 0, sizeof(float) * nframes);
-  if( !configured )
+  if(!configured)
     return 0;
   if(!bypass) {
     for(size_t cout = 0; cout < std::min(outBuffer.size(), v_out.size());
