@@ -22,8 +22,12 @@
     <facegroup name="room" shoebox="25 13 7.5"/>
   </scene>
   <modules>
-    <mcuctl name="master" dumpmsg="true" connect="20:1" banksize="8" pattern="/scene/in*/* /test*" mainctl="/scene/out"/>
-    <route name="test1" channels="2"/>
+    <mcuctl name="master" dumpmsg="true" connect="24:1" banksize="8" pattern="/scene/in*/* /test*" mainctl="/scene/out"/>
+    <route name="test1" channels="2">
+      <plugins>
+	<sine a="70" f="150"/>
+      </plugins>
+    </route>
     <route name="test2" channels="2"/>
   </modules>
 </session>

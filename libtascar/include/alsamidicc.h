@@ -94,6 +94,7 @@ namespace TASCAR {
     std::vector<int> client_get_ports(int client, unsigned int cap = 0);
     std::vector<int> get_client_ids();
     int get_client_id();
+    void set_nonblock(bool nonblock);
 
   protected:
     void service();

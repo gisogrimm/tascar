@@ -85,6 +85,7 @@
 "plugins/build/tascar_ltcgen.so","usr/lib/"
 "plugins/build/tascar_mask_*.so","usr/lib/"
 "plugins/build/tascar_matrix.so","usr/lib/"
+"plugins/build/tascar_mcuctl.so","usr/lib/"
 "plugins/build/tascar_midicc2osc.so","usr/lib/"
 "plugins/build/tascar_midictl.so","usr/lib/"
 "plugins/build/tascar_mididispatch.so","usr/lib/"

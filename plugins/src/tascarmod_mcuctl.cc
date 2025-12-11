@@ -73,11 +73,14 @@ public:
 private:
   void send_service();
   std::vector<int> fader_state;
+  int mainfader_state = -8193;
   std::vector<int> fader_is_moving;
   std::vector<int> meter_state;
+  std::vector<int> mute_state;
   std::vector<TASCAR::Scene::audio_port_t*> ports;
   std::vector<TASCAR::Scene::route_t*> routes;
   std::vector<TASCAR::Scene::sound_t*> sounds;
+  std::vector<TASCAR::Scene::audio_port_t*> mainport;
   std::thread srv;
   bool run_service = true;
   bool upload = true;
@@ -92,6 +95,7 @@ private:
 mcu_ctl_t::mcu_ctl_t(const TASCAR::module_cfg_t& cfg)
     : midictl_vars_t(cfg), TASCAR::midi_ctl_t(name)
 {
+  set_nonblock(true);
   if(!connect.empty()) {
     connect_input(connect, true);
     connect_output(connect, true);
@@ -108,12 +112,15 @@ void mcu_ctl_t::configure()
   sounds.clear();
   if(session) {
     auto aports = session->find_audio_ports(pattern);
-    for(const auto& p : aports) {
-      DEBUG(p->get_ctlname());
-    }
+    // for(const auto& p : aports) {
+    //   DEBUG(p->get_ctlname());
+    // }
   }
-  if(session)
+  if(session) {
     ports = session->find_audio_ports(pattern);
+    mainport = session->find_audio_ports({mainctl});
+    DEBUG(mainport.size());
+  }
   for(auto& it : ports) {
     TASCAR::Scene::route_t* r(dynamic_cast<TASCAR::Scene::route_t*>(it));
     TASCAR::Scene::sound_t* s = NULL;
@@ -125,23 +132,26 @@ void mcu_ctl_t::configure()
     routes.push_back(r);
     sounds.push_back(s);
   }
-  for(const auto& r : routes) {
-    if(r)
-      DEBUG(r->get_name());
-    else
-      DEBUG("");
-  }
-  for(const auto& r : sounds) {
-    if(r)
-      DEBUG(r->get_ctlname());
-    else
-      DEBUG("");
-  }
+  // for(const auto& r : routes) {
+  //   if(r)
+  //     DEBUG(r->get_name());
+  //   else
+  //     DEBUG("");
+  // }
+  // for(const auto& r : sounds) {
+  //   if(r)
+  //     DEBUG(r->get_ctlname());
+  //   else
+  //     DEBUG("");
+  // }
   fader_state.resize(routes.size());
   fader_is_moving.resize(routes.size());
   meter_state.resize(routes.size());
+  mute_state.resize(routes.size());
   for(auto& state : fader_state)
     state = -8193;
+  for(auto& state : mute_state)
+    state = false;
   for(auto& ismov : fader_is_moving)
     ismov = false;
   for(auto& mstat : meter_state)
@@ -171,6 +181,20 @@ void mcu_ctl_t::send_service()
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     if(run_service) {
       std::lock_guard<std::mutex> lock{mtx};
+      if(mainport.size()) {
+        // main:
+        // fader states:
+        float g(mainport[0]->get_gain_db());
+        g = std::max(-8191.0f,
+                     std::min(8191.0f, 16384.0f * gain_to_gui(g) - 8192.0f));
+        int v = g;
+        if((v != mainfader_state) || upload) {
+          mainfader_state = v;
+          send_midi_pitchbend(8, 0, v);
+          std::this_thread::sleep_for(std::chrono::milliseconds(20));
+          send_midi_pitchbend(8, 0, v);
+        }
+      }
       for(int32_t k = 0; k < (int)(ports.size()); ++k) {
         // gain:
         if((k - bank_ofs < banksize) && (k >= bank_ofs)) {
@@ -184,6 +208,19 @@ void mcu_ctl_t::send_service()
             send_midi_pitchbend(k - bank_ofs, 0, v);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             send_midi_pitchbend(k - bank_ofs, 0, v);
+          }
+          // mute state:
+          bool mutestate = false;
+          if(sounds[k])
+            mutestate = sounds[k]->get_mute();
+          else
+            mutestate = routes[k]->get_mute();
+          if((mutestate != mute_state[k]) || upload) {
+            mute_state[k] = mutestate;
+            if(mutestate)
+              send_midi_note(0, 16 + k - bank_ofs, 127);
+            else
+              send_midi_note(0, 16 + k - bank_ofs, 0);
           }
           // level display:
           if(routes[k]) {
@@ -208,40 +245,23 @@ void mcu_ctl_t::send_service()
           }
 
           // names:
-          if(upload) {
-            msg_sysex[0] = 0xf0;
-            msg_sysex[1] = 0;
-            msg_sysex[2] = 0;
-            msg_sysex[3] = 0x66;
-            msg_sysex[4] = 0x14;
-            msg_sysex[5] = 0x12;
-            msg_sysex[6] = 6*(k-bank_ofs);
-            msg_sysex[7] = 'x';
-            msg_sysex[8] = 'B';
-            msg_sysex[9] = 'C';
-            msg_sysex[10] = 'D';
-            msg_sysex[11] = 0xf7;
-            send_midi_sysex(12, msg_sysex);
-            DEBUG(k);
-          }
+          // if(upload) {
+          //  msg_sysex[0] = 0xf0;
+          //  msg_sysex[1] = 0;
+          //  msg_sysex[2] = 0;
+          //  msg_sysex[3] = 0x66;
+          //  msg_sysex[4] = 0x14;
+          //  msg_sysex[5] = 0x12;
+          //  msg_sysex[6] = 6 * (k - bank_ofs);
+          //  msg_sysex[7] = 'x';
+          //  msg_sysex[8] = 'B';
+          //  msg_sysex[9] = 'C';
+          //  msg_sysex[10] = 'D';
+          //  msg_sysex[11] = 0xf7;
+          //  send_midi_sysex(12, msg_sysex);
+          //  DEBUG(k);
+          //}
         }
-        //// mute:
-        // uint32_t k1 = k + ports.size();
-        // if((k1 < controllers_.size())) {
-        //  uint8_t v = 0;
-        //  if(sounds[k]) {
-        //    v = 127 * sounds[k]->get_mute();
-        //  } else {
-        //    if(routes[k])
-        //      v = 127 * routes[k]->get_mute();
-        //  }
-        //  if((v != values[k1]) || upload) {
-        //    values[k1] = v;
-        //    int channel(controllers_[k1] >> 8);
-        //    int param(controllers_[k1] & 0xff);
-        //    send_midi(channel, param, v);
-        //  }
-        //}
       }
       upload = false;
     }
@@ -252,28 +272,28 @@ void mcu_ctl_t::send_service()
   }
 }
 
-void mcu_ctl_t::emit_event_note(int a, int b, int c)
+void mcu_ctl_t::emit_event_note(int channel, int note, int vel)
 {
   bool known = false;
-  if((a == 0) && (b == 48) && (c > 0)) {
+  if((channel == 0) && (note == 48) && (vel > 0)) {
     if(bank_ofs > 0)
       --bank_ofs;
     upload = true;
     known = true;
   }
-  if((a == 0) && (b == 49) && (c > 0)) {
+  if((channel == 0) && (note == 49) && (vel > 0)) {
     if(bank_ofs + banksize < (int)ports.size())
       ++bank_ofs;
     upload = true;
     known = true;
   }
-  if((a == 0) && (b == 46) && (c > 0)) {
+  if((channel == 0) && (note == 46) && (vel > 0)) {
     if(bank_ofs > 0)
       bank_ofs -= std::min(bank_ofs, banksize);
     upload = true;
     known = true;
   }
-  if((a == 0) && (b == 47) && (c > 0)) {
+  if((channel == 0) && (note == 47) && (vel > 0)) {
     DEBUG(bank_ofs);
     DEBUG(banksize);
     DEBUG(ports.size());
@@ -285,8 +305,28 @@ void mcu_ctl_t::emit_event_note(int a, int b, int c)
     upload = true;
     known = true;
   }
+  if((channel == 0) && (note >= 16) && (note < 24)) {
+    known = true;
+    auto idx = note - 16 + bank_ofs;
+    if(((size_t)idx < ports.size()) && (vel > 0)) {
+      bool mutestate = false;
+      if(sounds[idx])
+        mutestate = sounds[idx]->get_mute();
+      else
+        mutestate = routes[idx]->get_mute();
+      mutestate = !mutestate;
+      if(sounds[idx])
+        sounds[idx]->set_mute(mutestate);
+      else
+        routes[idx]->set_mute(mutestate);
+      if(mutestate)
+        send_midi_note(channel, note, 127);
+      else
+        send_midi_note(channel, note, 0);
+    }
+  }
   if(!known && dumpmsg) {
-    std::cout << "note " << a << "/" << b << "/" << c << std::endl;
+    std::cout << "note " << channel << "/" << note << "/" << vel << std::endl;
   }
 }
 
@@ -311,6 +351,12 @@ void mcu_ctl_t::emit_event(int channel, int param, int value)
     known = true;
     auto gain = gui_to_gain((value + 8192.0f) / 16384.0f);
     ports[channel + bank_ofs]->set_gain_db(gain);
+  }
+  // main gain faders:
+  if((param == 0) && (channel == 8) && mainport.size()) {
+    known = true;
+    auto gain = gui_to_gain((value + 8192.0f) / 16384.0f);
+    mainport[0]->set_gain_db(gain);
   }
   // for(uint32_t k = 0; k < controllers_.size(); ++k) {
   //  if(controllers_[k] == ctl) {

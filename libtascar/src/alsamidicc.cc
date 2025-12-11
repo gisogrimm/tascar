@@ -41,6 +41,11 @@ TASCAR::midi_ctl_t::midi_ctl_t(const std::string& cname) : seq(NULL)
   // todo: error handling!
 }
 
+void TASCAR::midi_ctl_t::set_nonblock(bool nonblock)
+{
+  snd_seq_nonblock(seq, nonblock);
+}
+
 void TASCAR::midi_ctl_t::connect_input(int src_client, int src_port)
 {
   snd_seq_addr_t src_port_;
