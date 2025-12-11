@@ -65,7 +65,8 @@ public:
   void adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
              const TASCAR::wave_t& w_adapt, float mu, float delta);
   TASCAR::static_delay_t delay1;
-  TASCAR::static_delay_t delay2;
+  TASCAR::static_delay_t delay2a;
+  TASCAR::static_delay_t delay2b;
 
 private:
   // container for error signal:
@@ -87,7 +88,7 @@ blms_proc_t::~blms_proc_t()
 
 blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay)
     : TASCAR::overlap_save_t(irslen, chunksize),
-      delay1(std::max(delay, chunksize) - chunksize), delay2(chunksize),
+      delay1(std::max(delay, chunksize) - chunksize), delay2a(chunksize),delay2b(chunksize),
       w_e(chunksize), w_u_delay2(chunksize),w_e_long(get_fftlen()), w_u_long(get_fftlen()),
       fft_e(get_fftlen()), fft_u(get_fftlen()), w_Pu(fft_e.s.n_)
 {
@@ -101,8 +102,10 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
 {
   w_e.copy(w_out);
   w_u_delay2.copy(w_u);
-  delay2(w_u_delay2);
-  //delay2(w_e);
+  // compensate block delay:
+  delay2a(w_u_delay2);
+  delay2b(w_e);
+  // add adaption inputs:
   w_e += w_adapt;
   w_e_long.insert_at_end(w_e);
   w_u_long.insert_at_end(w_u_delay2);
@@ -133,7 +136,7 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   H_long += fft_e.s;
   // apply constraints to estimated filter;:
   for(uint32_t k = 0; k < fft_e.s.n_; ++k) {
-    auto a = std::fabs(H_long.b[k]);
+    auto a = std::abs(H_long.b[k]);
     if(a > 1.0f)
       H_long.b[k] /= a;
   }
