@@ -104,6 +104,7 @@ namespace TASCAR {
     virtual void emit_event(int channel, int param, int value) = 0;
     virtual void emit_event_note(int, int, int) {};
     virtual void emit_event_mmc(uint8_t, uint8_t){};
+    void drain_and_sync_output();
 
   private:
     // MIDI sequencer:

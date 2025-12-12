@@ -325,7 +325,9 @@ void osc_scene_t::add_diffuse_methods(TASCAR::osc_server_t* srv,
                                       TASCAR::Scene::diff_snd_field_obj_t* s)
 {
   std::string oldpref(srv->get_prefix());
-  srv->set_prefix("/" + scene->name + "/" + s->object_t::get_name());
+  std::string ctlname("/" + scene->name + "/" + s->object_t::get_name());
+  srv->set_prefix(ctlname);
+  s->set_ctlname(ctlname);
   srv->add_method("/gain", "f", osc_set_diffuse_gain, s);
   srv->add_method("/lingain", "f", osc_set_diffuse_gain_lin, s);
   srv->add_float_dbspl("/caliblevel", &(s->caliblevel));

@@ -12,17 +12,25 @@
       <sound name="3"/>
     </source>
     <source name="in2">
-      <sound name="0"/>
-      <sound name="1"/>
-      <sound name="2"/>
-      <sound name="3"/>
+      <sound name="left"/>
+      <sound name="right"/>
     </source>
+    <diffuse name="diff">
+      <plugins>
+	<pink level="50"/>
+      </plugins>
+    </diffuse>
+    <diffuse name="diff2">
+      <plugins>
+	<pink level="50"/>
+      </plugins>
+    </diffuse>
+    <reverb type="simplefdn" name="reverb"/>
     <receiver name="out" type="ortf" broadband="true"/>
-    <reverb absorption="0.6" damping="0.7" dw="60" fdnorder="5" forwardstages="0" gain="-20.2" gainmethod="original" id="reverb" image="false" lowcut="125" name="reverb" truncate_forward="true" type="simplefdn" volumetric="25 13 7.5" volumetricgainwithdistance="true"/>
     <facegroup name="room" shoebox="25 13 7.5"/>
   </scene>
   <modules>
-    <mcuctl name="master" dumpmsg="true" connect="24:1" banksize="8" pattern="/scene/in*/* /test*" mainctl="/scene/out"/>
+    <mcuctl name="master" dumpmsg="true" connect="iCON:0" banksize="8" pattern="/scene/in*/* /test* /*/diff /scene/reverb /scene/room" mainctl="/scene/out"/>
     <route name="test1" channels="2">
       <plugins>
 	<sine a="70" f="150"/>

@@ -23,7 +23,13 @@
 
 #include "alsamidicc.h"
 #include "session.h"
+#include "tascar_os.h"
+#include <fstream>
 #include <thread>
+
+std::set<float> vu_thresholds = {-100.0f, -60.0f, -50.0f, -40.0f, -30.0f,
+                                 -20.0f,  -14.0f, -10.0f, -8.0f,  -6.0f,
+                                 -4.0f,   -2.0f,  -0.0f};
 
 float gain_to_gui(float dbGain)
 {
@@ -33,6 +39,12 @@ float gain_to_gui(float dbGain)
 float gui_to_gain(float guiGain)
 {
   return 210.0f * (powf(guiGain, 1.0f / 6.0f)) - 200.0f;
+}
+
+int db_gain_to_midi14(float dbGain)
+{
+  return std::max(-8192.0f,
+                  std::min(8191.0f, 16384.0f * gain_to_gui(dbGain) - 8192.0f));
 }
 
 class midictl_vars_t : public TASCAR::module_base_t {
@@ -60,6 +72,110 @@ midictl_vars_t::midictl_vars_t(const TASCAR::module_cfg_t& cfg)
   GET_ATTRIBUTE(banksize, "", "Number of faders per bank");
 }
 
+class controllable_t {
+public:
+  controllable_t(){};
+  controllable_t(TASCAR::Scene::audio_port_t* p);
+  float get_gain_db() const;
+  bool get_mute() const;
+  int get_gain_midi() const;
+  int get_level_midi() const;
+  void set_mute(bool m);
+  void set_gain_db(float g);
+  void set_gain_midi(int m);
+  std::string get_name();
+
+  int fader_state = -8193;
+  int fader_is_moving = 0;
+  int meter_state = -2000;
+  int mute_state = -1;
+
+private:
+  TASCAR::Scene::audio_port_t* p_port = NULL;
+  TASCAR::Scene::route_t* p_route = NULL;
+  TASCAR::Scene::sound_t* p_sound = NULL;
+};
+
+int controllable_t::get_level_midi() const
+{
+  int mval = 0;
+  if(p_port) {
+    float lrms = -200;
+    if(p_sound)
+      lrms = p_sound->read_meter_maxval();
+    else if(p_route)
+      lrms = p_route->read_meter_maxval();
+    lrms = lrms - TASCAR::lin2dbspl(p_port->caliblevel);
+    for(const auto& th : vu_thresholds) {
+      if(th < lrms)
+        ++mval;
+      else
+        break;
+    }
+  }
+  return mval;
+}
+
+std::string controllable_t::get_name()
+{
+  if(p_port)
+    return p_port->get_ctlname();
+  return "";
+}
+
+float controllable_t::get_gain_db() const
+{
+  if(p_port)
+    return p_port->get_gain_db();
+  return 0.0f;
+}
+
+int controllable_t::get_gain_midi() const
+{
+  return db_gain_to_midi14(get_gain_db());
+}
+
+bool controllable_t::get_mute() const
+{
+  if(p_sound)
+    return p_sound->get_mute();
+  if(p_route)
+    return p_route->get_mute();
+  return false;
+}
+
+void controllable_t::set_gain_db(float g)
+{
+  if(p_port)
+    p_port->set_gain_db(g);
+}
+
+void controllable_t::set_gain_midi(int m)
+{
+  set_gain_db(gui_to_gain((m + 8192.0f) / 16384.0f));
+}
+
+void controllable_t::set_mute(bool m)
+{
+  if(p_sound) {
+    p_sound->set_mute(m);
+    return;
+  }
+  if(p_route)
+    p_route->set_mute(m);
+}
+
+controllable_t::controllable_t(TASCAR::Scene::audio_port_t* p)
+{
+  p_port = p;
+  p_route = dynamic_cast<TASCAR::Scene::route_t*>(p_port);
+  if(!p_route) {
+    p_sound = dynamic_cast<TASCAR::Scene::sound_t*>(p_port);
+    if(p_sound)
+      p_route = dynamic_cast<TASCAR::Scene::route_t*>(p_sound->parent);
+  }
+}
+
 class mcu_ctl_t : public midictl_vars_t, public TASCAR::midi_ctl_t {
 public:
   mcu_ctl_t(const TASCAR::module_cfg_t& cfg);
@@ -72,23 +188,17 @@ public:
 
 private:
   void send_service();
-  std::vector<int> fader_state;
-  int mainfader_state = -8193;
-  std::vector<int> fader_is_moving;
-  std::vector<int> meter_state;
-  std::vector<int> mute_state;
-  std::vector<TASCAR::Scene::audio_port_t*> ports;
-  std::vector<TASCAR::Scene::route_t*> routes;
-  std::vector<TASCAR::Scene::sound_t*> sounds;
-  std::vector<TASCAR::Scene::audio_port_t*> mainport;
+  // std::vector<TASCAR::Scene::audio_port_t*> ports;
+  // std::vector<TASCAR::Scene::route_t*> routes;
+  // std::vector<TASCAR::Scene::sound_t*> sounds;
+  // std::vector<TASCAR::Scene::audio_port_t*> mainport;
+  std::vector<controllable_t> controllers;
+  controllable_t main;
   std::thread srv;
   bool run_service = true;
   bool upload = true;
   std::mutex mtx;
   int32_t bank_ofs = 0;
-  std::set<float> vu_thresholds = {-100.0f, -60.0f, -50.0f, -40.0f, -30.0f,
-                                   -20.0f,  -14.0f, -10.0f, -8.0f,  -6.0f,
-                                   -4.0f,   -2.0f,  -0.0f};
   char msg_sysex[1024];
 };
 
@@ -101,76 +211,37 @@ mcu_ctl_t::mcu_ctl_t(const TASCAR::module_cfg_t& cfg)
     connect_output(connect, true);
   }
   session->add_bool_true(std::string("/") + name + "/upload", &upload);
-  srv = std::thread(&mcu_ctl_t::send_service, this);
 }
 
 void mcu_ctl_t::configure()
 {
   std::lock_guard<std::mutex> lock{mtx};
-  ports.clear();
-  routes.clear();
-  sounds.clear();
+  controllers.clear();
+  main = controllable_t();
   if(session) {
-    auto aports = session->find_audio_ports(pattern);
-    // for(const auto& p : aports) {
-    //   DEBUG(p->get_ctlname());
-    // }
+    auto ports = session->find_audio_ports(pattern);
+    for(const auto& p : ports)
+      controllers.push_back(p);
+    auto mainport = session->find_audio_ports({mainctl});
+    if(!mainport.empty())
+      main = controllable_t(mainport[0]);
   }
-  if(session) {
-    ports = session->find_audio_ports(pattern);
-    mainport = session->find_audio_ports({mainctl});
-    DEBUG(mainport.size());
-  }
-  for(auto& it : ports) {
-    TASCAR::Scene::route_t* r(dynamic_cast<TASCAR::Scene::route_t*>(it));
-    TASCAR::Scene::sound_t* s = NULL;
-    if(!r) {
-      s = dynamic_cast<TASCAR::Scene::sound_t*>(it);
-      if(s)
-        r = dynamic_cast<TASCAR::Scene::route_t*>(s->parent);
-    }
-    routes.push_back(r);
-    sounds.push_back(s);
-  }
-  // for(const auto& r : routes) {
-  //   if(r)
-  //     DEBUG(r->get_name());
-  //   else
-  //     DEBUG("");
-  // }
-  // for(const auto& r : sounds) {
-  //   if(r)
-  //     DEBUG(r->get_ctlname());
-  //   else
-  //     DEBUG("");
-  // }
-  fader_state.resize(routes.size());
-  fader_is_moving.resize(routes.size());
-  meter_state.resize(routes.size());
-  mute_state.resize(routes.size());
-  for(auto& state : fader_state)
-    state = -8193;
-  for(auto& state : mute_state)
-    state = false;
-  for(auto& ismov : fader_is_moving)
-    ismov = false;
-  for(auto& mstat : meter_state)
-    mstat = -2000;
   start_service();
   TASCAR::module_base_t::configure();
+  run_service = true;
+  srv = std::thread(&mcu_ctl_t::send_service, this);
 }
 
 void mcu_ctl_t::release()
 {
+  run_service = false;
+  if(srv.joinable())
+    srv.join();
   stop_service();
   TASCAR::module_base_t::release();
 }
 
-mcu_ctl_t::~mcu_ctl_t()
-{
-  run_service = false;
-  srv.join();
-}
+mcu_ctl_t::~mcu_ctl_t() {}
 
 void mcu_ctl_t::send_service()
 {
@@ -181,94 +252,66 @@ void mcu_ctl_t::send_service()
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     if(run_service) {
       std::lock_guard<std::mutex> lock{mtx};
-      if(mainport.size()) {
-        // main:
-        // fader states:
-        float g(mainport[0]->get_gain_db());
-        g = std::max(-8191.0f,
-                     std::min(8191.0f, 16384.0f * gain_to_gui(g) - 8192.0f));
-        int v = g;
-        if((v != mainfader_state) || upload) {
-          mainfader_state = v;
-          send_midi_pitchbend(8, 0, v);
-          std::this_thread::sleep_for(std::chrono::milliseconds(20));
-          send_midi_pitchbend(8, 0, v);
+      // main gain:
+      if(!main.fader_is_moving) {
+        int main_midigain = main.get_gain_midi();
+        if((main_midigain != main.fader_state) || upload) {
+          main.fader_state = main_midigain;
+          send_midi_pitchbend(8, 0, main_midigain);
         }
       }
-      for(int32_t k = 0; k < (int)(ports.size()); ++k) {
-        // gain:
+      for(int32_t k = 0; k < (int32_t)controllers.size(); ++k) {
+        // channel gain:
         if((k - bank_ofs < banksize) && (k >= bank_ofs)) {
           // fader states:
-          float g(ports[k]->get_gain_db());
-          g = std::max(-8191.0f,
-                       std::min(8191.0f, 16384.0f * gain_to_gui(g) - 8192.0f));
-          int v = g;
-          if((v != fader_state[k]) || upload) {
-            fader_state[k] = v;
-            send_midi_pitchbend(k - bank_ofs, 0, v);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            send_midi_pitchbend(k - bank_ofs, 0, v);
+          if(!controllers[k].fader_is_moving) {
+            int midigain = controllers[k].get_gain_midi();
+            if((midigain != controllers[k].fader_state) || upload) {
+              controllers[k].fader_state = midigain;
+              send_midi_pitchbend(k - bank_ofs, 0, midigain);
+            }
           }
           // mute state:
-          bool mutestate = false;
-          if(sounds[k])
-            mutestate = sounds[k]->get_mute();
-          else
-            mutestate = routes[k]->get_mute();
-          if((mutestate != mute_state[k]) || upload) {
-            mute_state[k] = mutestate;
-            if(mutestate)
-              send_midi_note(0, 16 + k - bank_ofs, 127);
-            else
-              send_midi_note(0, 16 + k - bank_ofs, 0);
+          bool mute = controllers[k].get_mute();
+          if((mute != controllers[k].mute_state) || upload) {
+            controllers[k].mute_state = mute;
+            send_midi_note(0, 16 + k - bank_ofs, 127 * mute);
           }
           // level display:
-          if(routes[k]) {
-            float lrms = -200;
-            if(sounds[k])
-              lrms = sounds[k]->read_meter_maxval();
-            else
-              lrms = routes[k]->read_meter_maxval();
-            lrms = lrms - TASCAR::lin2dbspl(ports[k]->caliblevel);
-            int mval = 0;
-            for(const auto& th : vu_thresholds) {
-              if(th < lrms)
-                ++mval;
-              else
-                break;
-            }
-            // if(mval != meter_state[k]) {
-            {
-              meter_state[k] = mval;
-              send_midi_channel_pressure(0, 0, mval + 16 * (k - bank_ofs));
-            }
-          }
+          int mval = controllers[k].get_level_midi();
+          send_midi_channel_pressure(0, 0, mval + 16 * (k - bank_ofs));
 
           // names:
-          // if(upload) {
-          //  msg_sysex[0] = 0xf0;
-          //  msg_sysex[1] = 0;
-          //  msg_sysex[2] = 0;
-          //  msg_sysex[3] = 0x66;
-          //  msg_sysex[4] = 0x14;
-          //  msg_sysex[5] = 0x12;
-          //  msg_sysex[6] = 6 * (k - bank_ofs);
-          //  msg_sysex[7] = 'x';
-          //  msg_sysex[8] = 'B';
-          //  msg_sysex[9] = 'C';
-          //  msg_sysex[10] = 'D';
-          //  msg_sysex[11] = 0xf7;
-          //  send_midi_sysex(12, msg_sysex);
-          //  DEBUG(k);
-          //}
+          if(upload) {
+            // workaround:
+            std::string msg_sysex_;
+            // std::ofstream ofh("tmp_mctctl.sys");
+            msg_sysex_.resize(7);
+            msg_sysex_[0] = 0xf0;
+            msg_sysex_[1] = 0;
+            msg_sysex_[2] = 0;
+            msg_sysex_[3] = 0x66;
+            msg_sysex_[4] = 0x14;
+            msg_sysex_[5] = 0x12;
+            msg_sysex_[6] = 6 * (k - bank_ofs);
+            msg_sysex_ += controllers[k].get_name();
+            msg_sysex_ += 0xf7;
+            // ofh << msg_sysex;
+            // }
+            // TASCAR::system("amidi -p hw:1,0,0 -s tmp_mctctl.sys", false);
+
+            send_midi_sysex(msg_sysex_.size(), msg_sysex_.data());
+            // DEBUG(k);
+          }
         }
       }
       upload = false;
     }
   }
-  // reset all faders to zero:
+  // on exit, reset all faders to zero:
   for(int32_t k = 0; k < banksize; ++k) {
     send_midi_pitchbend(k, 0, -8192);
+    send_midi_channel_pressure(0, 0, 16 * k);
   }
 }
 
@@ -282,7 +325,7 @@ void mcu_ctl_t::emit_event_note(int channel, int note, int vel)
     known = true;
   }
   if((channel == 0) && (note == 49) && (vel > 0)) {
-    if(bank_ofs + banksize < (int)ports.size())
+    if(bank_ofs + banksize < (int)controllers.size())
       ++bank_ofs;
     upload = true;
     known = true;
@@ -294,36 +337,32 @@ void mcu_ctl_t::emit_event_note(int channel, int note, int vel)
     known = true;
   }
   if((channel == 0) && (note == 47) && (vel > 0)) {
-    DEBUG(bank_ofs);
-    DEBUG(banksize);
-    DEBUG(ports.size());
-    DEBUG(std::min((int)ports.size() - bank_ofs - banksize, banksize));
-    if(bank_ofs + banksize < (int)ports.size())
-      bank_ofs += std::min((int)ports.size() - bank_ofs - banksize, banksize);
-    DEBUG(bank_ofs);
-    DEBUG(std::min((int)ports.size() - bank_ofs - banksize, banksize));
+    if(bank_ofs + banksize < (int)controllers.size())
+      bank_ofs +=
+          std::min((int)controllers.size() - bank_ofs - banksize, banksize);
     upload = true;
     known = true;
   }
-  if((channel == 0) && (note >= 16) && (note < 24)) {
+  if((channel == 0) && (note >= 16) && (note < 16 + banksize)) {
     known = true;
     auto idx = note - 16 + bank_ofs;
-    if(((size_t)idx < ports.size()) && (vel > 0)) {
-      bool mutestate = false;
-      if(sounds[idx])
-        mutestate = sounds[idx]->get_mute();
-      else
-        mutestate = routes[idx]->get_mute();
-      mutestate = !mutestate;
-      if(sounds[idx])
-        sounds[idx]->set_mute(mutestate);
-      else
-        routes[idx]->set_mute(mutestate);
-      if(mutestate)
-        send_midi_note(channel, note, 127);
-      else
-        send_midi_note(channel, note, 0);
+    if(((size_t)idx < controllers.size()) && (vel > 0)) {
+      bool mute = controllers[idx].get_mute();
+      mute = !mute;
+      controllers[idx].set_mute(mute);
+      send_midi_note(channel, note, mute * 127);
     }
+  }
+  if((channel == 0) && (note >= 104) && (note < 104 + banksize)) {
+    known = true;
+    auto idx = note - 104 + bank_ofs;
+    if((size_t)idx < controllers.size()) {
+      controllers[idx].fader_is_moving = vel > 0;
+    }
+  }
+  if((channel == 0) && (note == 104 + banksize)) {
+    known = true;
+    main.fader_is_moving = vel > 0;
   }
   if(!known && dumpmsg) {
     std::cout << "note " << channel << "/" << note << "/" << vel << std::endl;
@@ -347,47 +386,20 @@ void mcu_ctl_t::emit_event(int channel, int param, int value)
   bool known = false;
   // gain faders:
   if((param == 0) && (channel < banksize) &&
-     (channel + bank_ofs < (int)ports.size())) {
+     (channel + bank_ofs < (int)controllers.size())) {
     known = true;
-    auto gain = gui_to_gain((value + 8192.0f) / 16384.0f);
-    ports[channel + bank_ofs]->set_gain_db(gain);
+    controllers[channel + bank_ofs].set_gain_midi(value);
   }
   // main gain faders:
-  if((param == 0) && (channel == 8) && mainport.size()) {
+  if((param == 0) && (channel == 8)) {
     known = true;
-    auto gain = gui_to_gain((value + 8192.0f) / 16384.0f);
-    mainport[0]->set_gain_db(gain);
+    main.set_gain_midi(value);
   }
-  // for(uint32_t k = 0; k < controllers_.size(); ++k) {
-  //  if(controllers_[k] == ctl) {
-  //    if(k < ports.size()) {
-  //      values[k] = value;
-  //      ports[k]->set_gain_db(gui_to_gain(value / 127.0f));
-  //    } else {
-  //      uint32_t k1(k - ports.size());
-  //      if(k1 < routes.size()) {
-  //        if(sounds[k1]) {
-  //          values[k] = value;
-  //          sounds[k1]->set_mute(value > 0);
-  //        } else {
-  //          if(routes[k1]) {
-  //            values[k] = value;
-  //            routes[k1]->set_mute(value > 0);
-  //          }
-  //        }
-  //      }
-  //    }
-  //    known = true;
-  //  }
-  //}
-
   if((!known) && dumpmsg) {
     char ctmp[256];
     snprintf(ctmp, 256, "%d/%d: %d", channel, param, value);
     ctmp[255] = 0;
     std::cout << ctmp << std::endl;
-  } else {
-    //
   }
 }
 

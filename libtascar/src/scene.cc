@@ -812,7 +812,6 @@ float route_t::read_meter_max()
   return rv;
 }
 
-
 float route_t::read_meter_maxval()
 {
   float rv(std::numeric_limits<float>::lowest());
