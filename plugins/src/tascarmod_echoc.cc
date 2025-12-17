@@ -105,8 +105,8 @@ public:
               uint32_t num_bl_sections);
   ~blms_proc_t();
   void adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
-             const TASCAR::wave_t& w_adapt, float mu, float delta,
-             bool b_white);
+             const TASCAR::wave_t& w_adapt, float mu, float delta, bool b_white,
+             uint32_t idx_min, uint32_t idx_max, float maxgain);
   TASCAR::static_delay_t delay1;
   TASCAR::static_delay_t delay2a;
   TASCAR::static_delay_t delay2b;
@@ -140,7 +140,8 @@ blms_proc_t::blms_proc_t(uint32_t irslen, uint32_t chunksize, uint32_t delay,
 
 void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
                         const TASCAR::wave_t& w_adapt, float mu, float delta,
-                        bool b_white)
+                        bool b_white, uint32_t idx_min, uint32_t idx_max,
+                        float maxgain)
 {
   w_e.copy(w_out);
   w_u_delay2.copy(w_u);
@@ -175,6 +176,11 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   // update filter based on E{s_e * conj(s_u)}
   fft_u.s.conj();
   fft_e.s *= fft_u.s;
+  // band limit:
+  for(uint32_t k = 0; k < idx_min; ++k)
+    fft_e.s.b[k] = 0.0f;
+  for(uint32_t k = idx_max; k < fft_e.s.n_; ++k)
+    fft_e.s.b[k] = 0.0f;
   // apply constraints:
   fft_e.execute(fft_e.s);
   uint32_t n_mid = fft_e.w.n / 2;
@@ -188,13 +194,18 @@ void blms_proc_t::adapt(const TASCAR::wave_t& w_u, const TASCAR::wave_t& w_out,
   fft_e.s *= -mu;
   // update filter:
   H_long += fft_e.s;
-  // apply constraints to estimated filter:
+  //// band limit:
+  // for(uint32_t k = 0; k < idx_min; ++k)
+  //   H_long.b[k] = 0.0f;
+  // for(uint32_t k = idx_max; k < fft_e.s.n_; ++k)
+  //   H_long.b[k] = 0.0f;
+  //  apply constraints to estimated filter:
   float amax = levelratio;
   for(uint32_t k = 0; k < fft_e.s.n_; ++k) {
     auto a = std::abs(H_long.b[k]);
     amax = std::max(amax, a);
   }
-  if(amax > 1.0f)
+  if(amax > maxgain)
     H_long *= 1.0f / amax;
 }
 
@@ -221,6 +232,9 @@ public:
   float delta = 1e-6f;
   uint32_t num_burg_lattice_sections = 1;
   bool whitening = false;
+  float fmin = 0.0f;
+  float fmax = 24000.0f;
+  float maxgain = 2.0f;
   // std::string url = "osc.udp://localhost:9999/";
   // std::string sendpath = "/echoc/ir";
 };
@@ -249,6 +263,9 @@ echoc_var_t::echoc_var_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
   GET_ATTRIBUTE(sendperiod, "s", "IR sending period");
   GET_ATTRIBUTE(num_burg_lattice_sections, "", "Numer of LPC filter stages");
   GET_ATTRIBUTE_BOOL(whitening, "Use Burg lattice LPC filter for whitening");
+  GET_ATTRIBUTE(fmin, "Hz", "Minimum frequency for band-limited adaptation");
+  GET_ATTRIBUTE(fmax, "Hz", "Maximum frequency for band-limited adaptation");
+  GET_ATTRIBUTE_DB(maxgain, "Maximum gain of estimated transfer function");
   if(micports.empty())
     throw TASCAR::ErrMsg(
         "At least one microphone (filter output) port must be given");
@@ -329,6 +346,7 @@ private:
   std::vector<TASCAR::spec_t> v_H;
   uint32_t filterlen_final = 0u;
   // std::vector<TASCAR::wave_t> v_out;
+  uint32_t fftlen = 1024u;
 };
 
 echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
@@ -379,6 +397,10 @@ void echoc_mod_t::add_variables(TASCAR::osc_server_t* srv)
   srv->add_bool("/bypass", &bypass);
   srv->add_bool("/adaptive", &adaptive);
   srv->add_float("/mu", &mu, "", "step size coefficient");
+  srv->add_float("/fmin", &fmin, "[0,24000]",
+                 "Minimum frequency in Hz for bandlimited adaptation");
+  srv->add_float("/fmax", &fmax, "[0,24000]",
+                 "Maximum frequency in Hz for bandlimited adaptation");
   srv->add_bool("/whitening", &whitening);
   srv->set_prefix(prefix_);
   srv->unset_variable_owner();
@@ -431,6 +453,10 @@ void echoc_mod_t::configure()
     lock_send.unlock();
     cond.notify_one();
   }
+  if(flt_hat_H.empty())
+    fftlen = 1024;
+  else
+    fftlen = flt_hat_H[0]->get_fftlen();
   configured = true;
   if(autoreconnect) {
     port_thread = std::thread(&echoc_mod_t::port_service, this);
@@ -668,8 +694,9 @@ int echoc_mod_t::process(jack_nframes_t nframes,
             TASCAR::wave_t w_adapt(nframes, inBuffer[N_in + cout]);
             // flt_hat_H[flt_idx]->adapt(w_u_delayed, w_out, w_adapt, mu,
             // delta);
-            flt_hat_H[flt_idx]->adapt(w_u_delay1, joutput.v_out[cout], w_adapt,
-                                      mu, delta, whitening);
+            flt_hat_H[flt_idx]->adapt(
+                w_u_delay1, joutput.v_out[cout], w_adapt, mu, delta, whitening,
+                fftlen * fmin / f_sample, fftlen * fmax / f_sample, maxgain);
           }
           ++flt_idx;
         }
