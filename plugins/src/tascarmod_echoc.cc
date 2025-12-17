@@ -278,6 +278,7 @@ class echoc_mod_t : public echoc_var_t, public jackc_t {
 public:
   echoc_mod_t(const TASCAR::module_cfg_t& cfg);
   void configure();
+  void release();
   void ir_measure();
   void ir_update_from_file_and_truncate();
   void ports_connect();
@@ -334,10 +335,10 @@ echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
     : echoc_var_t(cfg), jackc_t(name), joutput(micports, name, bypass),
       N_in(loudspeakerports.size()), N_out(micports.size()), N_flt(N_in * N_out)
 {
-  for(size_t ch = 0; ch < N_out; ++ch)
-    add_output_port("out." + std::to_string(ch));
-  // create input ports which receive a copy of the loudspeaker
-  // signal:
+  // for(size_t ch = 0; ch < N_out; ++ch)
+  //   add_output_port("out." + std::to_string(ch));
+  //  create input ports which receive a copy of the loudspeaker
+  //  signal:
   for(size_t ch = 0; ch < N_in; ++ch)
     add_input_port("in." + std::to_string(ch));
   // for adaptation, add a copy of the microphone signals before
@@ -353,13 +354,6 @@ echoc_mod_t::echoc_mod_t(const TASCAR::module_cfg_t& cfg)
   activate();
   ports_connect();
   add_variables(session);
-  if(autoreconnect) {
-    port_thread = std::thread(&echoc_mod_t::port_service, this);
-  }
-  // if(!url.empty()) {
-  // lo_addr = lo_address_new_from_url(url.c_str());
-  send_thread = std::thread(&echoc_mod_t::send_service, this);
-  //}
 }
 
 void echoc_mod_t::jack_port_connect_cb(jack_port_id_t, jack_port_id_t, int,
@@ -410,6 +404,7 @@ void echoc_mod_t::ports_connect()
 
 void echoc_mod_t::configure()
 {
+  module_base_t::configure();
   joutput.configured = false;
   {
     std::lock_guard<std::mutex> lockguard(lock_filter);
@@ -425,7 +420,6 @@ void echoc_mod_t::configure()
     v_H.push_back(TASCAR::spec_t(H->H_long.n_));
   ports_connect();
   reconnect = true;
-  configured = true;
   joutput.v_out.resize(N_out);
   for(auto& w : joutput.v_out)
     w.resize(n_fragment);
@@ -437,6 +431,26 @@ void echoc_mod_t::configure()
     lock_send.unlock();
     cond.notify_one();
   }
+  configured = true;
+  if(autoreconnect) {
+    port_thread = std::thread(&echoc_mod_t::port_service, this);
+  }
+  // if(!url.empty()) {
+  // lo_addr = lo_address_new_from_url(url.c_str());
+  send_thread = std::thread(&echoc_mod_t::send_service, this);
+  //}
+}
+
+void echoc_mod_t::release()
+{
+  run_port_service = false;
+  run_send_service = false;
+  if(port_thread.joinable())
+    port_thread.join();
+  if(send_thread.joinable())
+    send_thread.join();
+  configured = false;
+  module_base_t::release();
 }
 
 // periodically reconnect ports:
@@ -465,30 +479,18 @@ void echoc_mod_t::send_service()
   std::unique_lock<std::mutex> lk(lock_send);
   while(run_send_service) {
     cond.wait_for(lk, 100ms);
-    if(has_data && !v_H.empty() && (tictoc.toc() > sendperiod)) {
+    if(has_data && !v_H.empty() && (tictoc.toc() > sendperiod) && configured) {
       tictoc.tic();
       auto fftlen = flt_hat_H[0]->get_fftlen();
       TASCAR::fft_t fft(fftlen);
-      // lo_message ir_msg;
-      // lo_arg** ir_oscmsgargv;
-      // ir_msg = lo_message_new();
-      // add data to message
-      // for(size_t k = 0; k < fftlen; ++k)
-      //  lo_message_add_float(ir_msg, 0.0f);
-      // ir_oscmsgargv = lo_message_get_argv(ir_msg);
       std::vector<TASCAR::wave_t> all_ir;
       for(size_t kflt = 0; kflt < v_H.size(); ++kflt) {
         fft.execute(v_H[kflt]);
-        // for(size_t k = 0; k < fftlen; ++k)
-        //  ir_oscmsgargv[k]->f = fft.w.d[k];
-        // lo_send_message(lo_addr, (sendpath + std::to_string(kflt)).c_str(),
-        //                ir_msg);
         all_ir.push_back(fft.w);
       }
       TASCAR::audiowrite(TASCAR::env_expand(filepath + name + "_adapt.wav"),
                          all_ir, f_sample,
                          SF_FORMAT_WAV | SF_FORMAT_FLOAT | SF_ENDIAN_FILE);
-      // lo_message_free(ir_msg);
       has_data = false;
     }
   }
@@ -497,13 +499,7 @@ void echoc_mod_t::send_service()
 echoc_mod_t::~echoc_mod_t()
 {
   joutput.configured = false;
-  run_port_service = false;
-  run_send_service = false;
   deactivate();
-  if(port_thread.joinable())
-    port_thread.join();
-  if(send_thread.joinable())
-    send_thread.join();
   // clear all filters and delays:
   for(auto& obj : flt_hat_H)
     delete obj;
