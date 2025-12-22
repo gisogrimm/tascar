@@ -61,6 +61,7 @@
 "plugins/build/tascar_ap_pulse.so","usr/lib/"
 "plugins/build/tascar_ap_reclevelanalyzer.so","usr/lib/"
 "plugins/build/tascar_ap_ringmodulator.so","usr/lib/"
+"plugins/build/tascar_ap_sawtooth.so","usr/lib/"
 "plugins/build/tascar_ap_sessiontime.so","usr/lib/"
 "plugins/build/tascar_ap_simplesynth.so","usr/lib/"
 "plugins/build/tascar_ap_sine.so","usr/lib/"

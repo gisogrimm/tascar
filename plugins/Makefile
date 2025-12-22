@@ -32,7 +32,7 @@ AUDIOPLUGINS = delay dummy gate hannenv identity lipsync		\
   level2osc const noise loopmachine pos2osc gain sndfileasync		\
   addchannel tubesim spkcalib sessiontime flanger timestamp		\
   burglatticelpc fence transportramp allpass bandlevel2osc level2hsv	\
-  ringmodulator reclevelanalyzer pareq4band
+  ringmodulator reclevelanalyzer pareq4band sawtooth
 
 MASKPLUGINS = fig8 multibeam sampledgain
 
