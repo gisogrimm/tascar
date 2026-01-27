@@ -5,6 +5,7 @@
  * Copyright (c) 2019 Giso Grimm
  * Copyright (c) 2020 Giso Grimm
  * Copyright (c) 2021 Giso Grimm
+ * Copyright (c) 2026 Giso Grimm
  */
 /* License (GPL)
  *
@@ -384,7 +385,7 @@ int jackc_t::process_(jack_nframes_t nframes)
   return 0;
 }
 
-void jackc_t::add_input_port(const std::string& name)
+jack_port_t* jackc_t::add_input_port(const std::string& name, bool is_midi)
 {
   if(shutdown)
     throw TASCAR::ErrMsg("Jack server has shut down");
@@ -393,8 +394,12 @@ void jackc_t::add_input_port(const std::string& name)
     throw TASCAR::ErrMsg(std::string("Port name \"" + get_client_name() + ":" +
                                      name + "\" is too long."));
   jack_port_t* p;
-  p = jack_port_register(jc, name.c_str(), JACK_DEFAULT_AUDIO_TYPE,
-                         JackPortIsInput, 0);
+  if(is_midi)
+    p = jack_port_register(jc, name.c_str(), JACK_DEFAULT_MIDI_TYPE,
+                           JackPortIsInput, 0);
+  else
+    p = jack_port_register(jc, name.c_str(), JACK_DEFAULT_AUDIO_TYPE,
+                           JackPortIsInput, 0);
   if(!p) {
     p = jack_port_by_name(jc, name.c_str());
     if(p)
@@ -408,9 +413,10 @@ void jackc_t::add_input_port(const std::string& name)
   inBuffer.push_back(NULL);
   input_port_names.push_back(std::string(jack_get_client_name(jc)) + ":" +
                              name);
+  return p;
 }
 
-void jackc_t::add_output_port(const std::string& name)
+jack_port_t* jackc_t::add_output_port(const std::string& name, bool is_midi)
 {
   if(shutdown)
     throw TASCAR::ErrMsg("Jack server has shut down");
@@ -419,8 +425,12 @@ void jackc_t::add_output_port(const std::string& name)
     throw TASCAR::ErrMsg(std::string("Port name \"" + get_client_name() + ":" +
                                      name + "\" is too long."));
   jack_port_t* p;
-  p = jack_port_register(jc, name.c_str(), JACK_DEFAULT_AUDIO_TYPE,
-                         JackPortIsOutput, 0);
+  if(is_midi)
+    p = jack_port_register(jc, name.c_str(), JACK_DEFAULT_MIDI_TYPE,
+                           JackPortIsOutput, 0);
+  else
+    p = jack_port_register(jc, name.c_str(), JACK_DEFAULT_AUDIO_TYPE,
+                           JackPortIsOutput, 0);
   if(!p) {
     p = jack_port_by_name(jc, name.c_str());
     if(p)
@@ -434,6 +444,7 @@ void jackc_t::add_output_port(const std::string& name)
   outBuffer.push_back(NULL);
   output_port_names.push_back(std::string(jack_get_client_name(jc)) + ":" +
                               name);
+  return p;
 }
 
 int jackc_portless_t::xrun_callback(void* arg)
@@ -636,7 +647,7 @@ jackc_db_t::~jackc_db_t()
   }
 }
 
-void jackc_db_t::add_input_port(const std::string& name)
+jack_port_t* jackc_db_t::add_input_port(const std::string& name, bool is_midi)
 {
   if(inner_is_larger) {
     // allocate buffer:
@@ -650,10 +661,10 @@ void jackc_db_t::add_input_port(const std::string& name)
     for(uint32_t k = 0; k < 2; k++)
       dbinBuffer[k].push_back(NULL);
   }
-  jackc_t::add_input_port(name);
+  return jackc_t::add_input_port(name, is_midi);
 }
 
-void jackc_db_t::add_output_port(const std::string& name)
+jack_port_t* jackc_db_t::add_output_port(const std::string& name, bool is_midi)
 {
   if(inner_is_larger) {
     // allocate buffer:
@@ -667,7 +678,7 @@ void jackc_db_t::add_output_port(const std::string& name)
     for(uint32_t k = 0; k < 2; k++)
       dboutBuffer[k].push_back(NULL);
   }
-  jackc_t::add_output_port(name);
+  return jackc_t::add_output_port(name, is_midi);
 }
 
 int jackc_db_t::process(jack_nframes_t, const std::vector<float*>& inBuffer,

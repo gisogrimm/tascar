@@ -58,6 +58,7 @@ protected:
   std::vector<std::string> pattern;
   std::string mainctl;
   int32_t banksize = 8;
+  int32_t minwait = 0;
 };
 
 midictl_vars_t::midictl_vars_t(const TASCAR::module_cfg_t& cfg)
@@ -70,6 +71,7 @@ midictl_vars_t::midictl_vars_t(const TASCAR::module_cfg_t& cfg)
   GET_ATTRIBUTE(pattern, "", "TASCAR controllers");
   GET_ATTRIBUTE(mainctl, "", "TASCAR main controller");
   GET_ATTRIBUTE(banksize, "", "Number of faders per bank");
+  GET_ATTRIBUTE(minwait, "ms", "Wait after each MIDI send");
 }
 
 class controllable_t {
@@ -258,6 +260,8 @@ void mcu_ctl_t::send_service()
         if((main_midigain != main.fader_state) || upload) {
           main.fader_state = main_midigain;
           send_midi_pitchbend(8, 0, main_midigain);
+          if(minwait)
+            std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
         }
       }
       for(int32_t k = 0; k < (int32_t)controllers.size(); ++k) {
@@ -269,6 +273,8 @@ void mcu_ctl_t::send_service()
             if((midigain != controllers[k].fader_state) || upload) {
               controllers[k].fader_state = midigain;
               send_midi_pitchbend(k - bank_ofs, 0, midigain);
+              if(minwait)
+                std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
             }
           }
           // mute state:
@@ -276,10 +282,14 @@ void mcu_ctl_t::send_service()
           if((mute != controllers[k].mute_state) || upload) {
             controllers[k].mute_state = mute;
             send_midi_note(0, 16 + k - bank_ofs, 127 * mute);
+            if(minwait)
+              std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
           }
           // level display:
           int mval = controllers[k].get_level_midi();
           send_midi_channel_pressure(0, 0, mval + 16 * (k - bank_ofs));
+          if(minwait)
+            std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
 
           // names:
           if(upload) {
@@ -301,6 +311,8 @@ void mcu_ctl_t::send_service()
             // TASCAR::system("amidi -p hw:1,0,0 -s tmp_mctctl.sys", false);
 
             send_midi_sysex(msg_sysex_.size(), msg_sysex_.data());
+            if(minwait)
+              std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
             // DEBUG(k);
           }
         }
@@ -311,7 +323,11 @@ void mcu_ctl_t::send_service()
   // on exit, reset all faders to zero:
   for(int32_t k = 0; k < banksize; ++k) {
     send_midi_pitchbend(k, 0, -8192);
+    if(minwait)
+      std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
     send_midi_channel_pressure(0, 0, 16 * k);
+    if(minwait)
+      std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
   }
 }
 
@@ -351,6 +367,8 @@ void mcu_ctl_t::emit_event_note(int channel, int note, int vel)
       mute = !mute;
       controllers[idx].set_mute(mute);
       send_midi_note(channel, note, mute * 127);
+      if(minwait)
+        std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
     }
   }
   if((channel == 0) && (note >= 104) && (note < 104 + banksize)) {

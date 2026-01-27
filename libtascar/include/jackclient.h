@@ -91,8 +91,10 @@ class jackc_t : public jackc_portless_t {
 public:
   jackc_t(const std::string& clientname);
   virtual ~jackc_t();
-  virtual void add_input_port(const std::string& name);
-  virtual void add_output_port(const std::string& name);
+  virtual jack_port_t* add_input_port(const std::string& name,
+                                      bool is_midi = false);
+  virtual jack_port_t* add_output_port(const std::string& name,
+                                       bool is_midi = false);
   void connect_in(unsigned int port, const std::string& pname,
                   bool btry = false, bool allowoutputsource = false,
                   bool noconnecttoself = false);
@@ -137,8 +139,10 @@ class jackc_db_t : public jackc_t {
 public:
   jackc_db_t(const std::string& clientname, jack_nframes_t fragsize);
   virtual ~jackc_db_t();
-  virtual void add_input_port(const std::string& name);
-  virtual void add_output_port(const std::string& name);
+  virtual jack_port_t* add_input_port(const std::string& name,
+                                      bool is_midi = false);
+  virtual jack_port_t* add_output_port(const std::string& name,
+                                       bool is_midi = false);
 
 protected:
   virtual int inner_process(jack_nframes_t, const std::vector<float*>&,

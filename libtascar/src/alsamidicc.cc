@@ -150,7 +150,10 @@ void TASCAR::midi_ctl_t::send_midi(int channel, int param, int value)
   ev.data.control.channel = (unsigned char)(channel);
   ev.data.control.param = (unsigned char)(param);
   ev.data.control.value = (unsigned char)(value);
-  snd_seq_event_output_direct(seq, &ev);
+  int err = snd_seq_event_output_direct(seq, &ev);
+  if( err < 0 ){
+    DEBUG(err);
+  }
   drain_and_sync_output();
 }
 
