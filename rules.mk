@@ -39,7 +39,7 @@ ifeq ($(UNAME_S),Darwin)
   CXXFLAGS += -I/opt/homebrew/include -DISMACOS
   CPPFLAGS += -I/opt/homebrew/include
   LDFLAGS += -L/opt/homebrew/lib
-  CXXFLAGS += -I$(wildcard /opt/homebrew/Cellar/lsl/*/Frameworks/lsl.framework/Versions/*/include/)
+  CXXFLAGS += $(addprefix -I,$(dir $(shell find /opt/homebrew/ -name lsl_cpp.h)))
 endif
 endif
 
