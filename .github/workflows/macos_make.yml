@@ -17,8 +17,14 @@ jobs:
       run: git fetch --unshallow --tags
     - name: github-cmake workaround
       run: brew uninstall cmake
-    - name: dependencies
-      run: brew install pkgconfig glibmm jack liblo libsndfile gtkmm3 eigen boost gsl fftw libsamplerate xerces-c libltc gtksourceviewmm3 coreutils adwaita-icon-theme jpeg libmatio cunit labstreaminglayer/tap/lsl
+    - name: dependencies1
+      run: brew install pkgconfig coreutils labstreaminglayer/tap/lsl
+    - name: dependencies2
+      run: brew install jack liblo libsndfile eigen boost gsl fftw libsamplerate xerces-c libltc libmatio cunit
+    - name: dependencies3
+      run: brew install glibmm gtkmm3 gtksourceviewmm3 adwaita-icon-theme
+    - name: dependencies4
+      run: brew install jpeg
     - name: lookforlsl in usr
       run: find /usr/ -name lsl_cpp.h || true
     - name: lookforlsl in opt
