@@ -20,9 +20,9 @@ jobs:
     - name: dependencies
       run: brew install pkgconfig glibmm jack liblo libsndfile gtkmm3 eigen boost gsl fftw libsamplerate xerces-c libltc gtksourceviewmm3 coreutils adwaita-icon-theme jpeg libmatio cunit labstreaminglayer/tap/lsl
     - name: lookforlsl in usr
-      run: find /usr/ -name lsl_cpp.h
+      run: find /usr/ -name lsl_cpp.h || true
     - name: lookforlsl in opt
-      run: find /opt/ -name lsl_cpp.h
+      run: find /opt/ -name lsl_cpp.h || true
     - name: make
       run: make -j 4
     - name: test
