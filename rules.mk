@@ -39,7 +39,7 @@ ifeq ($(UNAME_S),Darwin)
   CXXFLAGS += -I/opt/homebrew/include -DISMACOS
   CPPFLAGS += -I/opt/homebrew/include
   LDFLAGS += -L/opt/homebrew/lib
-  CXXFLAGS += -framework lsl
+  CXXFLAGS += -framework LSL
 endif
 endif
 
