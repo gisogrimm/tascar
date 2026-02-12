@@ -30,7 +30,7 @@ jobs:
     - name: lookforlsl in opt
       run: find /opt/ -name lsl_cpp.h || true
     - name: lookforlsllib in opt
-      run: find /opt/ -name "liblsl*" || true
+      run: find /opt/ -name "lsl" || true
     - name: lookforlsl ver
       run: lslver
     - name: make
