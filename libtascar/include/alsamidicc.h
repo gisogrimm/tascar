@@ -95,6 +95,7 @@ namespace TASCAR {
     std::vector<int> get_client_ids();
     int get_client_id();
     void set_nonblock(bool nonblock);
+    int32_t minwait = 0;
 
   protected:
     void service();

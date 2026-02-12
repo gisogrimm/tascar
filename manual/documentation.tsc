@@ -164,6 +164,7 @@
     <accrotator actor="/*/nav"/>
     <tuner/>
     <joystick actor="/*/nav"/>
+    <mcuctl/>
   </modules>
   <connect src="a" dest="b"/>
   <range/>

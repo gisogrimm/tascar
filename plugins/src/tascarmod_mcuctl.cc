@@ -59,6 +59,7 @@ protected:
   std::string mainctl;
   int32_t banksize = 8;
   int32_t minwait = 0;
+  bool is_icon = false;
 };
 
 midictl_vars_t::midictl_vars_t(const TASCAR::module_cfg_t& cfg)
@@ -72,6 +73,7 @@ midictl_vars_t::midictl_vars_t(const TASCAR::module_cfg_t& cfg)
   GET_ATTRIBUTE(mainctl, "", "TASCAR main controller");
   GET_ATTRIBUTE(banksize, "", "Number of faders per bank");
   GET_ATTRIBUTE(minwait, "ms", "Wait after each MIDI send");
+  GET_ATTRIBUTE_BOOL(is_icon, "Is iCON V1-M or compatible?");
 }
 
 class controllable_t {
@@ -86,6 +88,7 @@ public:
   void set_gain_db(float g);
   void set_gain_midi(int m);
   std::string get_name();
+  TASCAR::Scene::rgb_color_t get_color() const;
 
   int fader_state = -8193;
   int fader_is_moving = 0;
@@ -144,6 +147,13 @@ bool controllable_t::get_mute() const
   if(p_route)
     return p_route->get_mute();
   return false;
+}
+
+TASCAR::Scene::rgb_color_t controllable_t::get_color() const
+{
+  if(p_sound)
+    return p_sound->get_color();
+  return TASCAR::Scene::rgb_color_t(0, 0, 0);
 }
 
 void controllable_t::set_gain_db(float g)
@@ -207,6 +217,7 @@ private:
 mcu_ctl_t::mcu_ctl_t(const TASCAR::module_cfg_t& cfg)
     : midictl_vars_t(cfg), TASCAR::midi_ctl_t(name)
 {
+  TASCAR::midi_ctl_t::minwait = midictl_vars_t::minwait;
   set_nonblock(true);
   if(!connect.empty()) {
     connect_input(connect, true);
@@ -260,8 +271,6 @@ void mcu_ctl_t::send_service()
         if((main_midigain != main.fader_state) || upload) {
           main.fader_state = main_midigain;
           send_midi_pitchbend(8, 0, main_midigain);
-          if(minwait)
-            std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
         }
       }
       for(int32_t k = 0; k < (int32_t)controllers.size(); ++k) {
@@ -273,8 +282,6 @@ void mcu_ctl_t::send_service()
             if((midigain != controllers[k].fader_state) || upload) {
               controllers[k].fader_state = midigain;
               send_midi_pitchbend(k - bank_ofs, 0, midigain);
-              if(minwait)
-                std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
             }
           }
           // mute state:
@@ -282,39 +289,56 @@ void mcu_ctl_t::send_service()
           if((mute != controllers[k].mute_state) || upload) {
             controllers[k].mute_state = mute;
             send_midi_note(0, 16 + k - bank_ofs, 127 * mute);
-            if(minwait)
-              std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
           }
           // level display:
           int mval = controllers[k].get_level_midi();
           send_midi_channel_pressure(0, 0, mval + 16 * (k - bank_ofs));
-          if(minwait)
-            std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
 
           // names:
           if(upload) {
-            // workaround:
-            std::string msg_sysex_;
-            // std::ofstream ofh("tmp_mctctl.sys");
-            msg_sysex_.resize(7);
-            msg_sysex_[0] = 0xf0;
-            msg_sysex_[1] = 0;
-            msg_sysex_[2] = 0;
-            msg_sysex_[3] = 0x66;
-            msg_sysex_[4] = 0x14;
-            msg_sysex_[5] = 0x12;
-            msg_sysex_[6] = 6 * (k - bank_ofs);
-            msg_sysex_ += controllers[k].get_name();
-            msg_sysex_ += 0xf7;
-            // ofh << msg_sysex;
-            // }
-            // TASCAR::system("amidi -p hw:1,0,0 -s tmp_mctctl.sys", false);
-
-            send_midi_sysex(msg_sysex_.size(), msg_sysex_.data());
-            if(minwait)
-              std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
-            // DEBUG(k);
+            auto vstr = TASCAR::str2vecstr(controllers[k].get_name(), "/");
+            for(size_t row = 0; row < std::min((size_t)2u, vstr.size());
+                ++row) {
+              std::string msg = vstr[vstr.size()-row-1u];
+              msg += "          ";
+              // if(msg.size() > 7)
+              msg.resize(7);
+              std::string msg_sysex_;
+              msg_sysex_.resize(7);
+              msg_sysex_[0] = 0xf0;
+              msg_sysex_[1] = 0;
+              msg_sysex_[2] = 0;
+              msg_sysex_[3] = 0x66;
+              msg_sysex_[4] = 0x14;
+              msg_sysex_[5] = 0x12;
+              msg_sysex_[6] = 7 * (k - bank_ofs) + row * 0x38;
+              msg_sysex_ += msg;
+              msg_sysex_ += 0xf7;
+              send_midi_sysex(msg_sysex_.size(), msg_sysex_.data());
+            }
           }
+        }
+      }
+      if(upload) {
+        if(is_icon) {
+          std::string msg_sysex_;
+          msg_sysex_.resize(6);
+          msg_sysex_[0] = 0xf0;
+          msg_sysex_[1] = 0;
+          msg_sysex_[2] = 2;
+          msg_sysex_[3] = 0x4e;
+          msg_sysex_[4] = 0x16;
+          msg_sysex_[5] = 0x14;
+          for(int32_t k = 0; k < (int32_t)controllers.size(); ++k) {
+            if((k - bank_ofs < banksize) && (k >= bank_ofs)) {
+              auto col = controllers[k].get_color();
+              msg_sysex_ += uint8_t(col.r * 127);
+              msg_sysex_ += uint8_t(col.g * 127);
+              msg_sysex_ += uint8_t(col.b * 127);
+            }
+          }
+          msg_sysex_ += 0xf7;
+          send_midi_sysex(msg_sysex_.size(), msg_sysex_.data());
         }
       }
       upload = false;
@@ -323,11 +347,7 @@ void mcu_ctl_t::send_service()
   // on exit, reset all faders to zero:
   for(int32_t k = 0; k < banksize; ++k) {
     send_midi_pitchbend(k, 0, -8192);
-    if(minwait)
-      std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
     send_midi_channel_pressure(0, 0, 16 * k);
-    if(minwait)
-      std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
   }
 }
 
@@ -367,8 +387,6 @@ void mcu_ctl_t::emit_event_note(int channel, int note, int vel)
       mute = !mute;
       controllers[idx].set_mute(mute);
       send_midi_note(channel, note, mute * 127);
-      if(minwait)
-        std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
     }
   }
   if((channel == 0) && (note >= 104) && (note < 104 + banksize)) {

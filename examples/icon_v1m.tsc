@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <session license="CC0" levelmeter_tc="0.5">
   <scene name="scene">
-    <source name="in">
+    <source name="in" color="#ff0000">
       <sound name="0"/>
       <sound name="1"/>
       <sound name="2">
@@ -11,7 +11,7 @@
       </sound>
       <sound name="3"/>
     </source>
-    <source name="in2">
+    <source name="in2" color="#00ff00">
       <sound name="left"/>
       <sound name="right"/>
     </source>
@@ -30,7 +30,7 @@
     <facegroup name="room" shoebox="25 13 7.5"/>
   </scene>
   <modules>
-    <mcuctl name="master" dumpmsg="true" connect="iCON:0" banksize="8" pattern="/scene/in*/* /test* /*/diff /scene/reverb /scene/room" mainctl="/scene/out" minwait="2"/>
+    <mcuctl name="master" dumpmsg="true" connect="iCON:0" banksize="8" pattern="/scene/in*/* /test* /*/diff /scene/reverb /scene/room" mainctl="/scene/out" minwait="2" is_icon="true"/>
     <route name="test1" channels="2">
       <plugins>
 	<sine a="70" f="150"/>

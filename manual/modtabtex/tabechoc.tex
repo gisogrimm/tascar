@@ -18,11 +18,17 @@ name & description (type, unit) & def.\\
 \hline
 \indattr{filterlen} & Minimal length of filters (uint32, samples) & 65\\
 \hline
+\indattr{fmax} & Maximum frequency for band-limited adaptation (float, Hz) & 24000\\
+\hline
+\indattr{fmin} & Minimum frequency for band-limited adaptation (float, Hz) & 0\\
+\hline
 \indattr{level} & Playback level (float, dB SPL) & 70\\
 \hline
 \indattr{loudspeakerports} & Loudspeaker ports (string array) & {\tiny system:playback\_1 system:playback\_2}\\
 \hline
 \indattr{maxdist} & Maximum distance between microphone and loudspeaker (float, m) & 2\\
+\hline
+\indattr{maxgain} & Maximum gain of estimated transfer function (float, dB) & 6.0206\\
 \hline
 \indattr{measureatstart} & Perform a measurement when the plugin is loaded (bool) & false\\
 \hline
@@ -34,9 +40,13 @@ name & description (type, unit) & def.\\
 \hline
 \indattr{nrep} & Number of measurement repetitions (uint32) & 16\\
 \hline
+\indattr{num\_burg\_lattice\_sections} & Numer of LPC filter stages (uint32) & 1\\
+\hline
 \indattr{premax} & Time before IR maximum to add to filter (uint32, samples) & 8\\
 \hline
 \indattr{sendperiod} & IR sending period (float, s) & 0.1\\
+\hline
+\indattr{whitening} & Use Burg lattice LPC filter for whitening (bool) & false\\
 \hline
 \end{tabularx}
 }

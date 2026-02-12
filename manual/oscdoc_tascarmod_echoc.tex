@@ -8,10 +8,14 @@ OSC variables:
 \hline
 path & fmt. & range & readable & description\\
 \hline
+\attr{/.../adaptive} & i & bool & yes & \\
 \attr{/.../bypass} & i & bool & yes & \\
 \attr{/.../connect} &  &  & no & \\
+\attr{/.../fmax} & f & [0,24000] & yes & Maximum frequency in Hz for bandlimited adaptation\\
+\attr{/.../fmin} & f & [0,24000] & yes & Minimum frequency in Hz for bandlimited adaptation\\
 \attr{/.../measure} &  &  & no & \\
 \attr{/.../mu} & f &  & yes & step size coefficient\\
+\attr{/.../whitening} & i & bool & yes & \\
 \hline
 \end{tabularx}
 }
