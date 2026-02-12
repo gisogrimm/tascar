@@ -29,6 +29,8 @@ jobs:
       run: find /usr/ -name lsl_cpp.h || true
     - name: lookforlsl in opt
       run: find /opt/ -name lsl_cpp.h || true
+    - name: lookforlsl ver
+      run: lslver
     - name: make
       run: make -j 4
     - name: test
