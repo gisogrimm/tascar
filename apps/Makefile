@@ -97,8 +97,9 @@ build/%: build/%.o
 
 # The additional build/.directory dependency ensures subdirectory creation
 build/%.o: src/%.cc build/.directory
-	$(CPP) $(CPPFLAGS) -MM -MF $(@:.o=.mk) $<
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+#	$(CPP) $(CPPFLAGS) -MM -MF $(@:.o=.mk) $<
 
 # Local Variables:
 # compile-command: "make"
