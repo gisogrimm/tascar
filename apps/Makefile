@@ -62,17 +62,20 @@ EXTERNALLIBS := $(shell pkg-config --libs $(EXTERNALS))
 EXTERNALCFLAGS := $(shell pkg-config --cflags $(EXTERNALS))
 ALSALIBS := $(shell pkg-config --libs alsa)
 ALSACFLAGS := $(shell pkg-config --cflags alsa)
+GTKCFLAGS := $(shell pkg-config --cflags $(GTKEXT))
+GTKLIBS := $(shell pkg-config --libs $(GTKEXT))
 
 LDLIBS += $(EXTERNALLIBS)
 CXXFLAGS += $(EXTERNALCFLAGS)
 
 bin: $(BUILD_BINS)
 
-build/tascar_hoadisplay: EXTERNALS += $(GTKEXT)
+build/tascar_hoadisplay: LDLIBS += $(GTKLIBS)
+build/tascar_hoadisplay: CXXFLAGS += $(GTKCFLAGS)
 build/tascar_hdspmixer build/tascar_hdspmixer.o: LDLIBS += $(ALSALIBS)
 build/tascar_hdspmixer build/tascar_hdspmixer.o: CXXFLAGS += $(ALSACFLAGS)
-build/tascar_pdf build/tascar_pdf.o: EXTERNALS += $(GTKEXT)
-build/tascar_pdf build/tascar_pdf.o: LDLIBS += -ltascargui $(EXTERNALLIBS)
+build/tascar_pdf build/tascar_pdf.o: CXXFLAGS += $(GTKCFLAGS)
+build/tascar_pdf build/tascar_pdf.o: LDLIBS += -ltascargui $(EXTERNALLIBS) $(GTKLIBS)
 build/tascar_ambdecoder: LDLIBS += `pkg-config --libs gsl`
 build/tascar_lslsl build/tascar_lsljacktime build/tascar_osc2lsl build/tascar_genrandlsl: LDLIBS+= $(LSLLIBS)
 
