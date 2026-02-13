@@ -53,36 +53,32 @@ endif
 CXXFLAGS += $(GTKDEF) $(LTRDEF)
 # add libtascar/src for main headers, and libtascar/build for version number:
 CXXFLAGS += -I../libtascar/include -I../libtascar/build
-CPPFLAGS += -I../libtascar/include -I../libtascar/build
 LDFLAGS += -L../libtascar/build 
 
 LDLIBS += -ldl -ltascar -lfftw3f
 
 EXTERNALS = jack liblo sndfile xerces-c fftw3
+EXTERNALLIBS := $(shell pkg-config --libs $(EXTERNALS))
+EXTERNALCFLAGS := $(shell pkg-config --cflags $(EXTERNALS))
+ALSALIBS := $(shell pkg-config --libs alsa)
+ALSACFLAGS := $(shell pkg-config --cflags alsa)
 
-LDLIBS += `pkg-config --libs $(EXTERNALS)`
-CXXFLAGS += `pkg-config --cflags $(EXTERNALS)`
-CPPFLAGS += `pkg-config --cflags $(EXTERNALS)`
+LDLIBS += $(EXTERNALLIBS)
+CXXFLAGS += $(EXTERNALCFLAGS)
 
 bin: $(BUILD_BINS)
 
 build/tascar_hoadisplay: EXTERNALS += $(GTKEXT)
-build/tascar_hdspmixer build/tascar_hdspmixer.o: EXTERNALS += alsa
+build/tascar_hdspmixer build/tascar_hdspmixer.o: LDLIBS += $(ALSALIBS)
+build/tascar_hdspmixer build/tascar_hdspmixer.o: CXXFLAGS += $(ALSACFLAGS)
 build/tascar_pdf build/tascar_pdf.o: EXTERNALS += $(GTKEXT)
-build/tascar_pdf build/tascar_pdf.o: LDLIBS += -ltascargui `pkg-config --libs $(EXTERNALS)`
+build/tascar_pdf build/tascar_pdf.o: LDLIBS += -ltascargui $(EXTERNALLIBS)
 build/tascar_ambdecoder: LDLIBS += `pkg-config --libs gsl`
-ifeq ($(UNAME_S),Darwin)
-build/tascar_lslsl build/tascar_lsljacktime build/tascar_osc2lsl build/tascar_genrandlsl: LDLIBS+=-F/opt/homebrew/Cellar/lsl/1.17.4/Frameworks -framework lsl
-else
-build/tascar_lslsl build/tascar_lsljacktime build/tascar_osc2lsl build/tascar_genrandlsl: LDLIBS+=-llsl
-endif
-#build/tascar_renderfile: LDLIBS += -lboost_program_options
-#build/tascar_renderir: LDLIBS += -lboost_program_options
+build/tascar_lslsl build/tascar_lsljacktime build/tascar_osc2lsl build/tascar_genrandlsl: LDLIBS+= $(LSLLIBS)
 
 ifeq "$(COVERAGE)" "yes"
 LDLIBS += -lgcov -lgmock_main
 endif
-
 
 clean:
 	rm -Rf *~ src/*~ build doc/html
@@ -98,8 +94,6 @@ build/%: build/%.o
 # The additional build/.directory dependency ensures subdirectory creation
 build/%.o: src/%.cc build/.directory
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-#	$(CPP) $(CPPFLAGS) -MM -MF $(@:.o=.mk) $<
 
 # Local Variables:
 # compile-command: "make"

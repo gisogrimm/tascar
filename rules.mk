@@ -22,7 +22,10 @@ unit_tests_test_files = $(wildcard $(SOURCE_DIR)/*_unit_tests.cc)
 
 $(BUILD_DIR)/unit-test-runner: CXXFLAGS += -I../libtascar/src -I../libtascar/build
 $(BUILD_DIR)/unit-test-runner: CPPFLAGS += -I../libtascar/src -I../libtascar/build
-$(BUILD_DIR)/unit-test-runner: LDFLAGS += -L../libtascar/build 
+$(BUILD_DIR)/unit-test-runner: LDFLAGS += -L../libtascar/build
+
+LSLCFLAGS =
+LSLLIBS = -llsl
 
 ifeq ($(OS),Windows_NT)
   CXXFLAGS += -DISWINDOWS
@@ -43,6 +46,9 @@ ifeq ($(UNAME_S),Darwin)
 #  LDFLAGS += -F/opt/homebrew/Cellar/lsl/1.17.4/Frameworks -framework lsl
 #  $(addprefix -I,$(dir $(shell find /opt/homebrew/ -name lsl_cpp.h)))
 # -framework Lsl
+LSLCFLAGS := -I$(shell brew --prefix)/Frameworks/lsl.framework/Headers
+LSLLIBS := -F$(shell brew --prefix)/Frameworks/ -framework lsl
+CXXFLAGS += $(LSLCFLAGS)
 endif
 endif
 

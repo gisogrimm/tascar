@@ -150,19 +150,14 @@ endif
 
 build/$(PLUGINPREFIX)glabsensor_%$(DLLEXT): EXTERNALS += gtkmm-3.0
 
-ifeq ($(UNAME_S),Darwin)
-LDLIBSLSL = -F/opt/homebrew/Cellar/lsl/1.17.4/Frameworks -framework lsl
-else
-LDLIBSLSL = -llsl
-endif
 
 ifeq "$(HAS_LSL)" "yes"
-build/$(PLUGINPREFIX)glabsensor_%$(DLLEXT): LDLIBS+=$(LDLIBSLSL)
-build/$(PLUGINPREFIX)tascar_ap_periodogram$(DLLEXT): LDLIBS+=$(LDLIBSLSL)
-build/$(PLUGINPREFIX)tascar_ap_speechactivity$(DLLEXT): LDLIBS+=$(LDLIBSLSL)
-build/$(PLUGINPREFIX)tascar_lsl2osc$(DLLEXT): LDLIBS+=$(LDLIBSLSL)
-build/$(PLUGINPREFIX)tascar_datalogging$(DLLEXT):  LDLIBS += $(LDLIBSLSL)
-build/$(PLUGINPREFIX)tascar_lsljacktime$(DLLEXT) build/$(PLUGINPREFIX)tascar_pos2lsl$(DLLEXT) build/$(PLUGINPREFIX)tascar_levels2osc$(DLLEXT) build/$(PLUGINPREFIX)tascar_lslactor$(DLLEXT) build/$(PLUGINPREFIX)tascar_osc2lsl$(DLLEXT): LDLIBS+=$(LDLIBSLSL)
+build/$(PLUGINPREFIX)glabsensor_%$(DLLEXT): LDLIBS+=$(LSLLIBS)
+build/$(PLUGINPREFIX)tascar_ap_periodogram$(DLLEXT): LDLIBS+=$(LSLLIBS)
+build/$(PLUGINPREFIX)tascar_ap_speechactivity$(DLLEXT): LDLIBS+=$(LSLLIBS)
+build/$(PLUGINPREFIX)tascar_lsl2osc$(DLLEXT): LDLIBS+=$(LSLLIBS)
+build/$(PLUGINPREFIX)tascar_datalogging$(DLLEXT):  LDLIBS += $(LSLLIBS)
+build/$(PLUGINPREFIX)tascar_lsljacktime$(DLLEXT) build/$(PLUGINPREFIX)tascar_pos2lsl$(DLLEXT) build/$(PLUGINPREFIX)tascar_levels2osc$(DLLEXT) build/$(PLUGINPREFIX)tascar_lslactor$(DLLEXT) build/$(PLUGINPREFIX)tascar_osc2lsl$(DLLEXT): LDLIBS+=$(LSLLIBS)
 endif
 
 build/$(PLUGINPREFIX)tascar_ap_lipsync$(DLLEXT): LDLIBS+=-lfftw3f
@@ -175,7 +170,7 @@ build/$(PLUGINPREFIX)tascar_lightctl$(DLLEXT) build/$(PLUGINPREFIX)tascar_ovhead
 build/$(PLUGINPREFIX)tascar_ltcgen$(DLLEXT): EXTERNALS+=ltc
 build/$(PLUGINPREFIX)tascar_simplecontroller$(DLLEXT): build/simplecontroller_glade.h
 build/$(PLUGINPREFIX)tascar_timedisplay$(DLLEXT): build/timedisplay_glade.h
-build/$(PLUGINPREFIX)tascar_waitforlslstream$(DLLEXT): LDLIBS+=$(LDLIBSLSL)
+build/$(PLUGINPREFIX)tascar_waitforlslstream$(DLLEXT): LDLIBS+=$(LSLLIBS)
 build/$(PLUGINPREFIX)tascarreceiver_hoa2d$(DLLEXT): LDLIBS+=-lfftw3f
 build/$(PLUGINPREFIX)tascarreceiver_hoa3d$(DLLEXT): EXTERNALS+=gsl eigen3
 build/$(PLUGINPREFIX)tascarreceiver_hoa3d_enc$(DLLEXT): EXTERNALS+=gsl
@@ -193,7 +188,7 @@ build/glabsensors.o: EXTERNALS += gtkmm-3.0
 build/glabsensors.o: build/glabsensors_glade.h
 build/$(PLUGINPREFIX)tascar_glabsensors$(DLLEXT): build/glabsensors_glade.h
 build/$(PLUGINPREFIX)tascar_glabsensors$(DLLEXT): build/glabsensorplugin.o build/glabsensors_glade.h src/glabsensorplugin.h
-build/$(PLUGINPREFIX)tascar_glabsensors$(DLLEXT): LDLIBS += $(LDLIBSLSL) build/glabsensorplugin.o
+build/$(PLUGINPREFIX)tascar_glabsensors$(DLLEXT): LDLIBS += $(LSLLIBS) build/glabsensorplugin.o
 
 build/$(PLUGINPREFIX)tascarreceiver_%$(DLLEXT): src/receivermod_%.cc
 	$(CXX) -shared -o $@ $< $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
