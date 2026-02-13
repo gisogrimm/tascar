@@ -46,9 +46,6 @@ object_t::object_t(tsccfg::node_t src)
 {
   dynobject_t::get_attribute("end", endtime, "s",
                              "end of render activity, or 0 to render always");
-  std::string scol;
-  dynobject_t::get_attribute("color", scol, "", "html color string");
-  color = rgb_color_t(scol);
   dynobject_t::GET_ATTRIBUTE(scale, "", "scale of local coordinates");
 }
 
@@ -865,6 +862,9 @@ route_t::route_t(tsccfg::node_t xmlsrc)
 {
   GET_ATTRIBUTE_BOOL(mute, "Mute flag of route");
   GET_ATTRIBUTE_BOOL(solo, "Solo flag of route");
+  std::string scol;
+  get_attribute("color", scol, "", "html color string");
+  color = rgb_color_t(scol);
 }
 
 void route_t::set_solo(bool b, uint32_t& anysolo)

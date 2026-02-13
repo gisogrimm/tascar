@@ -151,6 +151,8 @@ bool controllable_t::get_mute() const
 
 TASCAR::Scene::rgb_color_t controllable_t::get_color() const
 {
+  if(p_route)
+    return p_route->color;
   if(p_sound)
     return p_sound->get_color();
   return TASCAR::Scene::rgb_color_t(0, 0, 0);
@@ -299,7 +301,7 @@ void mcu_ctl_t::send_service()
             auto vstr = TASCAR::str2vecstr(controllers[k].get_name(), "/");
             for(size_t row = 0; row < std::min((size_t)2u, vstr.size());
                 ++row) {
-              std::string msg = vstr[vstr.size()-row-1u];
+              std::string msg = vstr[vstr.size() - row - 1u];
               msg += "          ";
               // if(msg.size() > 7)
               msg.resize(7);

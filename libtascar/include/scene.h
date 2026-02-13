@@ -35,6 +35,15 @@ namespace TASCAR {
    */
   namespace Scene {
 
+    class rgb_color_t {
+    public:
+      rgb_color_t(double r_, double g_, double b_) : r(r_), g(g_), b(b_){};
+      rgb_color_t(const std::string& webc);
+      rgb_color_t() : r(0), g(0), b(0){};
+      std::string str();
+      double r, g, b;
+    };
+
     class material_t : public xml_element_t {
     public:
       material_t(tsccfg::node_t);
@@ -119,6 +128,7 @@ namespace TASCAR {
       {
         return *(rmsmeter[k]);
       };
+      TASCAR::Scene::rgb_color_t color;
 
     public:
       bool mute;
@@ -139,22 +149,12 @@ namespace TASCAR {
       std::vector<float> meterval;
     };
 
-    class rgb_color_t {
-    public:
-      rgb_color_t(double r_, double g_, double b_) : r(r_), g(g_), b(b_){};
-      rgb_color_t(const std::string& webc);
-      rgb_color_t() : r(0), g(0), b(0){};
-      std::string str();
-      double r, g, b;
-    };
-
     class object_t : public dynobject_t, public route_t {
     public:
       object_t(tsccfg::node_t);
       virtual ~object_t(){};
       bool isactive(double time) const;
       bool is_active(uint32_t anysolo, double t);
-      rgb_color_t color;
       double endtime;
       float scale = 1.0f;
     };
