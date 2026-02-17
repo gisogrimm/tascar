@@ -30,7 +30,7 @@
     <facegroup name="room" shoebox="25 13 7.5"/>
   </scene>
   <modules>
-    <mcuctl name="master" dumpmsg="true" connect="iCON:0" banksize="8" pattern="/scene/in*/* /test* /*/diff /scene/reverb /scene/room" mainctl="/scene/out" minwait="2" is_icon="true"/>
+    <mcuctl name="master" dumpmsg="true" connect="iCON:0" banksize="8" pattern="/scene/in*/* /test* /*/diff /scene/reverb /scene/room" mainctl="/scene/out" minwait="1" is_icon="true"/>
     <route name="test1" channels="2">
       <plugins>
 	<sine a="70" f="150"/>

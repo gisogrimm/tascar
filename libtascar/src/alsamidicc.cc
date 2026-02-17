@@ -128,11 +128,15 @@ void TASCAR::midi_ctl_t::drain_and_sync_output()
   int err = 1;
   int cnt = 10;
   while((err > 0) && (cnt > 0)) {
+    if(minwait > 0)
+      std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
     err = snd_seq_drain_output(seq);
     --cnt;
     if(err != 0)
       DEBUG(err);
   }
+  if(minwait > 0)
+    std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
   err = snd_seq_sync_output_queue(seq);
   if(err < 0)
     DEBUG(err);
@@ -155,8 +159,6 @@ void TASCAR::midi_ctl_t::send_midi(int channel, int param, int value)
     DEBUG(err);
   }
   drain_and_sync_output();
-  if(minwait > 0)
-    std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
 }
 
 void TASCAR::midi_ctl_t::send_midi_sysex(int len, char* data)
@@ -168,17 +170,12 @@ void TASCAR::midi_ctl_t::send_midi_sysex(int len, char* data)
   snd_seq_ev_set_subs(&ev);
   snd_seq_ev_set_direct(&ev);
   snd_seq_ev_set_sysex(&ev, len, data);
-  // ev.type = SND_SEQ_EVENT_SYSEX;
-  // ev.data.ext.len = len;
-  // ev.data.ext.ptr = data;
   int err = snd_seq_event_output_direct(seq, &ev);
   if(err < 0) {
     DEBUG(err);
     DEBUG(strerror(-err));
   }
   drain_and_sync_output();
-  if(minwait > 0)
-    std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
 }
 
 void TASCAR::midi_ctl_t::send_midi_channel_pressure(int channel, int param,
@@ -194,10 +191,12 @@ void TASCAR::midi_ctl_t::send_midi_channel_pressure(int channel, int param,
   ev.data.control.channel = (unsigned char)(channel);
   ev.data.control.param = (unsigned char)(param);
   ev.data.control.value = (unsigned char)(value);
-  snd_seq_event_output_direct(seq, &ev);
+  int err = snd_seq_event_output_direct(seq, &ev);
+  if(err < 0) {
+    DEBUG(err);
+    DEBUG(strerror(-err));
+  }
   drain_and_sync_output();
-  if(minwait > 0)
-    std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
 }
 
 void TASCAR::midi_ctl_t::send_midi_pitchbend(int channel, int param, int value)
@@ -212,10 +211,12 @@ void TASCAR::midi_ctl_t::send_midi_pitchbend(int channel, int param, int value)
   ev.data.control.channel = (unsigned char)(channel);
   ev.data.control.param = (unsigned char)(param);
   ev.data.control.value = value;
-  snd_seq_event_output_direct(seq, &ev);
+  int err = snd_seq_event_output_direct(seq, &ev);
+  if(err < 0) {
+    DEBUG(err);
+    DEBUG(strerror(-err));
+  }
   drain_and_sync_output();
-  if(minwait > 0)
-    std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
 }
 
 void TASCAR::midi_ctl_t::send_midi_note(int channel, int param, int value)
@@ -230,10 +231,12 @@ void TASCAR::midi_ctl_t::send_midi_note(int channel, int param, int value)
   ev.data.note.channel = (unsigned char)(channel);
   ev.data.note.note = (unsigned char)(param);
   ev.data.note.velocity = (unsigned char)(value);
-  snd_seq_event_output_direct(seq, &ev);
+  int err = snd_seq_event_output_direct(seq, &ev);
+  if(err < 0) {
+    DEBUG(err);
+    DEBUG(strerror(-err));
+  }
   drain_and_sync_output();
-  if(minwait > 0)
-    std::this_thread::sleep_for(std::chrono::milliseconds(minwait));
 }
 
 void TASCAR::midi_ctl_t::connect_input(const std::string& src,
