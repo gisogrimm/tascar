@@ -1,3 +1,8 @@
+0.236.0:
+       - fix broken compilation on MacOS/homebrew (caused by an update of liblsl)
+       - add basic support for Mackie Control Protocol / iCON V1-M DAW controller
+       - basic support of adaptive echo/feedback cancellation
+
 0.235.2:
        - bug fix for speaker calibration filter optimisation to prevent unstable filters
 
