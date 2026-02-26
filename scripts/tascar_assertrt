@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# set variables:
+EXITV=0
+KERNELREL=$(uname -r)
+NUMCORES=$(lscpu --parse=core|sed '/^#/ d'|sort -u|wc -l)
+NUMCPUS=$(lscpu --parse=core|sed '/^#/ d'|wc -l)
+
+if cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor|grep -q powersave; then
+    echo "Problem: At least one CPU is running in powersave mode."
+    echo "Suggestion: Use \"sudo tascar_cpufreq\" to switch all CPUs to performance mode."
+    echo ""
+    let EXITV=$EXITV+1
+fi
+if !(echo $KERNELREL|grep -q -e realtime -e lowlatency); then
+    echo "Problem: The kernel release is ${KERNELREL}, which does not provide real-time scheduling."
+    echo "Suggestion: Install and boot realtime kernel."
+    echo ""
+    let EXITV=$EXITV+2
+fi
+if test "${NUMCORES}" -ne "${NUMCPUS}"; then
+    echo "Problem: The system reports ${NUMCPUS} CPUs, but only ${NUMCORES} physical cores."
+    echo "Suggestion: Disable HyperThreading in BIOS."
+    echo ""
+    let EXITV=$EXITV+4
+fi
+exit $EXITV

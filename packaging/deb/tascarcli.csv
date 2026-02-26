@@ -164,6 +164,7 @@
 "scripts/send_osc_tcp.m","usr/share/tascar/matlab/"
 "scripts/struct2mfile.m","usr/share/tascar/matlab/"
 "scripts/tascar_*.m","usr/share/tascar/matlab/"
+"scripts/tascar_assertrt","usr/bin/"
 "scripts/tascar_blend2raw","usr/bin/"
 "scripts/tascar_blenderexport","usr/bin/"
 "scripts/tascar_blenderobjpos","usr/bin/"

@@ -376,6 +376,10 @@ In the event that a space-separated list of filenames (optionally quoted to incl
 
 \subsection{Optimization of the operating system for audio processing}
 
+To achieve best performance for delay-critical setups, it is recommended to optimise the operating system. Below you will find some hints for such optimisations on debian-based Linux operating systems. To test the current system, you may use the script \verb!tascar_assertrt!.
+
+\subsubsection*{User and group settings}
+
 In multi-user desktop systems, it is important to assign real-time priority to the signal processing threads of audio software. To set up real-time scheduling on the system, users in the 'audio' group must be granted permission to acquire real-time priority and lock memory in RAM. To do this, edit the {\tt /etc/security/limits.conf} file with superuser privileges:
 \begin{verbatim}
 sudo gedit /etc/security/limits.conf
@@ -394,7 +398,11 @@ sudo adduser tascar audio
 Log out and log in again (typically, no re-boot is required).
 
 
-If you are aiming for low-latency processing, you should further optimize your system by installing a low-latency kernel and an IRQ priority management tool:
+If you are aiming for low-latency processing, you should further optimize your system by installing a realtime (if available) or low-latency kernel and an IRQ priority management tool:
+\begin{verbatim}
+sudo apt install linux-realtime rtirq-init
+\end{verbatim}
+Alternatively, if a realtime kernel is not available, type:
 \begin{verbatim}
 sudo apt install linux-lowlatency rtirq-init
 \end{verbatim}
@@ -452,6 +460,18 @@ or with the \tascar{} provided wrapper \verb!tascar_cpufreq!. If this doesn't wo
 \begin{verbatim}
 echo "performance" | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 \end{verbatim}
+
+\subsubsection*{Virtual CPUs}
+
+Most modern computers with Intel CPUs can use their physical CPUs to
+serve as multiple logical CPUs. This can potentially improve
+performance by splitting the load among independent instruction
+sets. However, this disrupts real-time scheduling because multiple
+logical CPUs share the same physical core. This means that
+non-real-time scheduled code can run in parallel with real-time
+scheduled code on the same physical core and therefore block real-time
+code. Therefore, it is recommended that Hyper-Threading technology is
+disabled on computers used for delay-critical audio processing.
 
 \subsection{Overwriting application default values}\label{sec:globalconfig}
 
