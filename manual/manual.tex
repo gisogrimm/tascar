@@ -376,7 +376,21 @@ In the event that a space-separated list of filenames (optionally quoted to incl
 
 \subsection{Optimization of the operating system for audio processing}
 
-To achieve best performance for delay-critical setups, it is recommended to optimise the operating system. Below you will find some hints for such optimisations on debian-based Linux operating systems. To test the current system, you may use the script \verb!tascar_assertrt!.
+To achieve the best performance in delay-critical setups, it is recommended that you optimise the operating system. Below, you will find some tips for optimising Debian-based Linux operating systems. You can use the script \verb!tascar_assertrt! to test the current system. This script tests for real-time optimisations and reports warnings if any are missing from the current system.
+
+\paragraph{Hint:}
+
+Add a \elem{system} module to your session file with with script, to test for optimisations upon loading the session:
+
+\begin{lstlisting}[numbers=none]
+<?xml version="1.0"?>
+<session>
+  <scene> ... </scene>
+  <modules>
+    <system command="tascar_assertrt"/>
+  </modules>
+</session>
+\end{lstlisting}
 
 \subsubsection*{User and group settings}
 
@@ -394,6 +408,10 @@ Add these two lines if they are not already present:
 Now add the desired user of \tascar{} to the 'audio' group (in this example this user is called 'tascar'):
 \begin{verbatim}
 sudo adduser tascar audio
+\end{verbatim}
+Or, to add the current user to the audio group:
+\begin{verbatim}
+sudo adduser ${USER} audio
 \end{verbatim}
 Log out and log in again (typically, no re-boot is required).
 

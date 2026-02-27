@@ -24,4 +24,20 @@ if test "${NUMCORES}" -ne "${NUMCPUS}"; then
     echo ""
     let EXITV=$EXITV+4
 fi
+if id -nG | grep -v -q 'audio'; then
+    echo "Problem: You are not a member of the 'audio' group."
+    echo "Suggestion: Add user to 'audio' group (see tascar manual)."
+    echo ""
+    let EXITV=$EXITV+8
+fi
+if test $(ulimit -r) -le 90; then
+    echo "Problem: Your limit for real-time priority is $(ulimit -r)."
+    echo "Suggestion: Edit /etc/security/limits.conf accordingly and re-login."
+    echo ""
+    let EXITV=$EXITV+16  
+fi
+if test $EXITV == 0; then
+    echo "Congratulations!"
+    echo "Your system seems to be optimised for low-delay audio processing."
+fi
 exit $EXITV
