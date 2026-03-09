@@ -1,3 +1,6 @@
+0.236.1:
+       - add tool to test for real-time optimisations on Linux systems
+
 0.236.0:
        - fix broken compilation on MacOS/homebrew (caused by an update of liblsl)
        - add basic support for Mackie Control Protocol / iCON V1-M DAW controller
