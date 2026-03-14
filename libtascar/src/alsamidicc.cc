@@ -56,6 +56,37 @@ CFStringRef createCFStringFromString(const std::string& str)
                                  str.length(), kCFStringEncodingUTF8, false);
 }
 
+void list_coremidi_devices()
+{
+  ItemCount nSources = MIDIGetNumberOfSources();
+  
+  if(nSources == 0) {
+    std::cout << "No MIDI sources found." << std::endl;
+    return;
+  }
+
+  std::cout << "Available CoreMIDI Devices:" << std::endl;
+  std::cout << "----------------------------" << std::endl;
+
+  for(ItemCount i = 0; i < nSources; ++i) {
+    MIDIEndpointRef endpoint = MIDIGetSource(i);
+    if(endpoint) {
+      // Get the device name
+      CFStringRef name = NULL;
+      MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &name);
+      
+      if(name) {
+        char cName[256];
+        // Convert CFString to C string
+        if(CFStringGetCString(name, cName, sizeof(cName), kCFStringEncodingUTF8)) {
+          std::cout << cName << std::endl;
+        }
+        CFRelease(name);
+      }
+    }
+  }
+}
+
 // Static callback for CoreMIDI input
 static void midiReadCallback(const MIDIPacketList* pktlist,
                              void* readProcRefCon, void* srcConnRefCon)
@@ -96,6 +127,7 @@ TASCAR::midi_ctl_t::midi_ctl_t(const std::string& cname)
   port_in.client = snd_seq_client_id(seq);
   port_out.client = snd_seq_client_id(seq);
 #elif defined(__APPLE__)
+  list_coremidi_devices();
   // macOS CoreMIDI Initialization
   OSStatus status = MIDIClientCreate(createCFStringFromString(cname), NULL,
                                      NULL, &mac_client);
@@ -212,7 +244,7 @@ void TASCAR::midi_ctl_t::service()
 #elif defined(__APPLE__)
   // On macOS, process the queue populated by the callback
   while(run_service) {
-    std::vector<midi_event_data_t> local_queue;
+    std::deque<midi_event_data_t> local_queue;
     {
       std::lock_guard<std::mutex> lock(midi_queue_mutex);
       if(!midi_queue.empty()) {
@@ -713,14 +745,6 @@ std::vector<int> TASCAR::midi_ctl_t::client_get_ports(int client,
         }
       }
     }
-  }
-#elif defined(__APPLE__)
-  if(client < 1000) {
-    if(cap == 0 || cap & SND_SEQ_PORT_CAP_READ)
-      ports.push_back(0);
-  } else {
-    if(cap == 0 || cap & SND_SEQ_PORT_CAP_WRITE)
-      ports.push_back(0);
   }
 #endif
   return ports;

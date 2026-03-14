@@ -34,6 +34,9 @@ UNAME_S := $(shell uname -s)
 #ifeq ($(UNAME_S),Linux)
   OBJECTS +=  alsamidicc.o
 #endif
+ifeq ($(UNAME_S),Darwin)
+LDLIBS += -framework CoreMIDI -framework CoreFoundation
+endif
 endif
 
 DMXOBJECTS =  termsetbaud.o serialport.o dmxdriver.o
