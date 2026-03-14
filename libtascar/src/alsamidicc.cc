@@ -41,7 +41,6 @@
 #include "errorhandling.h"
 #include "tscconfig.h"
 #include <cstring>
-#include <deque>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -49,11 +48,7 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CFRunLoop.h>
 #include <CoreMIDI/MIDIServices.h>
-
-// Helper struct for queueing MIDI data from callback to service thread
-struct midi_event_data_t {
-  std::vector<uint8_t> data;
-};
+#include <CoreFoundation/CFString.h>
 
 // Static callback for CoreMIDI input
 static void midiReadCallback(const MIDIPacketList* pktlist,
@@ -76,7 +71,7 @@ static void midiReadCallback(const MIDIPacketList* pktlist,
 }
 #endif
 
-TASCAR::midi_ctl_t::midi_ctl_t(const std::string& cname) : seq(NULL)
+TASCAR::midi_ctl_t::midi_ctl_t(const std::string& cname)
 {
 #if defined(__linux__)
   if(snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, SND_SEQ_NONBLOCK) < 0)
@@ -96,8 +91,10 @@ TASCAR::midi_ctl_t::midi_ctl_t(const std::string& cname) : seq(NULL)
   port_out.client = snd_seq_client_id(seq);
 #elif defined(__APPLE__)
   // macOS CoreMIDI Initialization
+  CFStringRef clname_ref = CFStringCreateWithCString(NULL,cname.c_str(),CFStringBuiltInEncodings.UTF8);
+  
   OSStatus status =
-      MIDIClientCreate(CFSTR(cname.c_str()), NULL, NULL, &mac_client);
+      MIDIClientCreate(cname, NULL, NULL, &mac_client);
   if(status != noErr) {
     throw TASCAR::ErrMsg("Unable to create MIDI client.");
   }

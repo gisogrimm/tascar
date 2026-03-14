@@ -27,10 +27,24 @@
 #define ALSAMIDICC_H
 
 #include "serviceclass.h"
+#ifdef __linux__
 #include <alsa/asoundlib.h>
 #include <alsa/seq_event.h>
+#endif
+
 #include <string>
 #include <vector>
+#include <deque>
+
+// Helper struct for queueing MIDI data from callback to service thread
+struct midi_event_data_t {
+  std::vector<uint8_t> data;
+};
+
+#ifdef __APPLE__
+#include <CoreMIDI/CoreMIDI.h>
+MIDIClientRef mac_client;
+#endif
 
 namespace TASCAR {
 
@@ -107,13 +121,24 @@ namespace TASCAR {
     virtual void emit_event_mmc(uint8_t, uint8_t){};
     void drain_and_sync_output();
 
+#ifdef __linux__
   private:
     // MIDI sequencer:
-    snd_seq_t* seq;
+    snd_seq_t* seq = NULL;
     // input port:
     snd_seq_addr_t port_in;
     // output/feedback port:
     snd_seq_addr_t port_out;
+#endif
+#ifdef __APPLE__
+  public:
+    MIDIPortRef mac_port_in;
+    MIDIPortRef mac_port_out;
+    MIDIEndpointRef mac_endpoint_in;
+    MIDIEndpointRef mac_endpoint_out;
+    std::deque<midi_event_data_t> midi_queue;
+    std::mutex midi_queue_mutex;
+#endif
   };
 } // namespace TASCAR
 
