@@ -44,7 +44,8 @@ LIBTASCARDLL=../libtascar/$(BUILD_DIR)/libtascar.dylib
 CXXFLAGS += -I/opt/homebrew/include -DISMACOS
 CPPFLAGS += -I/opt/homebrew/include
 LDFLAGS += -L/opt/homebrew/lib
-CXXFLAGS += $(addprefix -I,$(dir $(shell find /opt/homebrew/ -name lsl_cpp.h)))
+LSLFLAGSFIND := $(addprefix -I,$(dir $(shell find /opt/homebrew/ -name lsl_cpp.h)))
+CXXFLAGS += $(LSLFLAGSFIND)
 #  LDFLAGS += -F/opt/homebrew/Cellar/lsl/1.17.4/Frameworks -framework lsl
 #  $(addprefix -I,$(dir $(shell find /opt/homebrew/ -name lsl_cpp.h)))
 # -framework Lsl
