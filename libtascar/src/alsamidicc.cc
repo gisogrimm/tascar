@@ -47,8 +47,14 @@
 
 #ifdef __APPLE__
 #include <CoreFoundation/CFRunLoop.h>
-#include <CoreMIDI/MIDIServices.h>
 #include <CoreFoundation/CFString.h>
+#include <CoreMIDI/MIDIServices.h>
+
+CFStringRef createCFStringFromString(const std::string& str)
+{
+  return CFStringCreateWithBytes(kCFAllocatorDefault, (const UInt8*)str.c_str(),
+                                 str.length(), kCFStringEncodingUTF8, false);
+}
 
 // Static callback for CoreMIDI input
 static void midiReadCallback(const MIDIPacketList* pktlist,
@@ -91,10 +97,8 @@ TASCAR::midi_ctl_t::midi_ctl_t(const std::string& cname)
   port_out.client = snd_seq_client_id(seq);
 #elif defined(__APPLE__)
   // macOS CoreMIDI Initialization
-  CFStringRef clname_ref = CFStringCreateWithCString(NULL,cname.c_str(),CFStringBuiltInEncodings.UTF8);
-  
-  OSStatus status =
-      MIDIClientCreate(cname, NULL, NULL, &mac_client);
+  OSStatus status = MIDIClientCreate(createCFStringFromString(cname), NULL,
+                                     NULL, &mac_client);
   if(status != noErr) {
     throw TASCAR::ErrMsg("Unable to create MIDI client.");
   }
