@@ -48,6 +48,9 @@ MIDIClientRef mac_client;
 
 namespace TASCAR {
 
+  std::vector<std::string> list_midi_input_devices();
+  std::vector<std::string> list_midi_output_devices();
+
   /**
      \brief Simple MIDI controller base class
   */

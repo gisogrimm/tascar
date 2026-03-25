@@ -17,26 +17,6 @@
  * Version 3 along with TASCAR. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * MacOS Support Extension:
- * To compile this code on macOS, you must add the following members to the
- * 'midi_ctl_t' class definition in 'alsamidicc.h'. Ensure they are public or
- * add appropriate friend declarations for the callback function.
- *
- * #ifdef __APPLE__
- *   MIDIClientRef mac_client;
- *   MIDIPortRef mac_port_in;
- *   MIDIPortRef mac_port_out;
- *   MIDIEndpointRef mac_endpoint_in;
- *   MIDIEndpointRef mac_endpoint_out;
- *   std::deque<midi_event_data_t> midi_queue;
- *   std::mutex midi_queue_mutex;
- * #endif
- *
- * Also define the helper struct in the header or before the class:
- * struct midi_event_data_t { std::vector<uint8_t> data; };
- */
-
 #include "alsamidicc.h"
 #include "errorhandling.h"
 #include "tscconfig.h"
@@ -59,7 +39,7 @@ CFStringRef createCFStringFromString(const std::string& str)
 void list_coremidi_devices()
 {
   ItemCount nSources = MIDIGetNumberOfSources();
-  
+
   if(nSources == 0) {
     std::cout << "No MIDI sources found." << std::endl;
     return;
@@ -74,11 +54,12 @@ void list_coremidi_devices()
       // Get the device name
       CFStringRef name = NULL;
       MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &name);
-      
+
       if(name) {
         char cName[256];
         // Convert CFString to C string
-        if(CFStringGetCString(name, cName, sizeof(cName), kCFStringEncodingUTF8)) {
+        if(CFStringGetCString(name, cName, sizeof(cName),
+                              kCFStringEncodingUTF8)) {
           std::cout << cName << std::endl;
         }
         CFRelease(name);
@@ -108,8 +89,156 @@ static void midiReadCallback(const MIDIPacketList* pktlist,
 }
 #endif
 
+std::vector<std::string> TASCAR::list_midi_input_devices()
+{
+  std::vector<std::string> devices;
+#if defined(__linux__)
+  snd_seq_client_info_t* cinfo;
+  snd_seq_port_info_t* pinfo;
+  // Open a temporary sequencer to query the system
+  snd_seq_t* seq;
+  if(snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) {
+    // If we can't open a sequencer, return empty list
+    return devices;
+  }
+
+  snd_seq_client_info_alloca(&cinfo);
+  snd_seq_port_info_alloca(&pinfo);
+  snd_seq_client_info_set_client(cinfo, -1);
+
+  // Iterate over all clients
+  while(snd_seq_query_next_client(seq, cinfo) >= 0) {
+    int client = snd_seq_client_info_get_client(cinfo);
+
+    // Set the port info to query ports for this client
+    snd_seq_port_info_set_client(pinfo, client);
+    snd_seq_port_info_set_port(pinfo, -1);
+
+    // Iterate over all ports for this client
+    while(snd_seq_query_next_port(seq, pinfo) >= 0) {
+      unsigned int cap = snd_seq_port_info_get_capability(pinfo);
+
+      // Check if the port can read (is a source/capture)
+      // SND_SEQ_PORT_CAP_READ corresponds to inputs to the application
+      // (sources)
+      if(cap & (SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ)) {
+        const char* name = snd_seq_client_info_get_name(cinfo);
+        const char* port_name = snd_seq_port_info_get_name(pinfo);
+
+        // Format: "ClientName:PortName" or "ClientName:PortNumber"
+        // Using "ClientName:PortName" is usually more user-friendly
+        std::string device_name =
+            std::string(name) + ":" + std::string(port_name);
+        devices.push_back(device_name);
+      }
+    }
+  }
+  snd_seq_close(seq);
+
+#elif defined(__APPLE__)
+  ItemCount nSources = MIDIGetNumberOfSources();
+  for(ItemCount i = 0; i < nSources; ++i) {
+    MIDIEndpointRef endpoint = MIDIGetSource(i);
+    if(endpoint) {
+      // Get the device name
+      CFStringRef name = NULL;
+      MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &name);
+      if(name) {
+        char cName[256];
+        // Convert CFString to C string
+        if(CFStringGetCString(name, cName, sizeof(cName),
+                              kCFStringEncodingUTF8)) {
+          devices.push_back(cName);
+        }
+        CFRelease(name);
+      }
+    }
+  }
+#endif
+  return devices;
+}
+
+std::vector<std::string> TASCAR::list_midi_output_devices()
+{
+  std::vector<std::string> devices;
+#if defined(__linux__)
+  snd_seq_client_info_t* cinfo;
+  snd_seq_port_info_t* pinfo;
+  // Open a temporary sequencer to query the system
+  snd_seq_t* seq;
+  if(snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) {
+    return devices;
+  }
+
+  snd_seq_client_info_alloca(&cinfo);
+  snd_seq_port_info_alloca(&pinfo);
+  snd_seq_client_info_set_client(cinfo, -1);
+
+  // Iterate over all clients
+  while(snd_seq_query_next_client(seq, cinfo) >= 0) {
+    int client = snd_seq_client_info_get_client(cinfo);
+
+    // Set the port info to query ports for this client
+    snd_seq_port_info_set_client(pinfo, client);
+    snd_seq_port_info_set_port(pinfo, -1);
+
+    // Iterate over all ports for this client
+    while(snd_seq_query_next_port(seq, pinfo) >= 0) {
+      unsigned int cap = snd_seq_port_info_get_capability(pinfo);
+
+      // Check if the port can write (is a destination/playback)
+      // SND_SEQ_PORT_CAP_WRITE corresponds to outputs from the application
+      // (destinations)
+      if(cap & (SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE)) {
+        const char* name = snd_seq_client_info_get_name(cinfo);
+        const char* port_name = snd_seq_port_info_get_name(pinfo);
+
+        // Format: "ClientName:PortName"
+        std::string device_name =
+            std::string(name) + ":" + std::string(port_name);
+        devices.push_back(device_name);
+      }
+    }
+  }
+  snd_seq_close(seq);
+
+#elif defined(__APPLE__)
+  ItemCount nDestinations = MIDIGetNumberOfDestinations();
+  for(ItemCount i = 0; i < nDestinations; ++i) {
+    MIDIEndpointRef endpoint = MIDIGetDestination(i);
+    if(endpoint) {
+      // Get the device name
+      CFStringRef name = NULL;
+      MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &name);
+      if(name) {
+        char cName[256];
+        // Convert CFString to C string
+        if(CFStringGetCString(name, cName, sizeof(cName),
+                              kCFStringEncodingUTF8)) {
+          devices.push_back(cName);
+        }
+        CFRelease(name);
+      }
+    }
+  }
+#endif
+  return devices;
+}
+
 TASCAR::midi_ctl_t::midi_ctl_t(const std::string& cname)
 {
+  auto dev_in = list_midi_input_devices();
+  if( dev_in.size() ){
+    std::cout << "-- input MIDI devices: --\n";
+    for( const auto& dev : dev_in )
+      std::cout << " " << dev << "\n";
+  }
+  auto dev_out = list_midi_output_devices();
+  if( dev_out.size() ){
+    std::cout << "-- output MIDI devices: --\n";
+    for( const auto& dev : dev_out )
+      std::cout << " " << dev << "\n";
+  }
 #if defined(__linux__)
   if(snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, SND_SEQ_NONBLOCK) < 0)
     throw TASCAR::ErrMsg("Unable to open MIDI sequencer.");
@@ -127,7 +256,6 @@ TASCAR::midi_ctl_t::midi_ctl_t(const std::string& cname)
   port_in.client = snd_seq_client_id(seq);
   port_out.client = snd_seq_client_id(seq);
 #elif defined(__APPLE__)
-  list_coremidi_devices();
   // macOS CoreMIDI Initialization
   OSStatus status = MIDIClientCreate(createCFStringFromString(cname), NULL,
                                      NULL, &mac_client);
