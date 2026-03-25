@@ -54,7 +54,6 @@ public:
 protected:
   bool dumpmsg = false;
   std::string name;
-  std::string connect;
   std::vector<std::string> pattern;
   std::string mainctl;
   int32_t banksize = 8;
@@ -68,7 +67,7 @@ midictl_vars_t::midictl_vars_t(const TASCAR::module_cfg_t& cfg)
   GET_ATTRIBUTE_BOOL(dumpmsg, "Show unused messages in concole");
   GET_ATTRIBUTE(name, "",
                 "Controller name used for MIDI port and OSC interface");
-  GET_ATTRIBUTE(connect, "", "ALSA midi port connection, e.g., BCF2000:0");
+  // GET_ATTRIBUTE(connect, "", "ALSA midi port connection, e.g., BCF2000:0");
   GET_ATTRIBUTE(pattern, "", "TASCAR controllers");
   GET_ATTRIBUTE(mainctl, "", "TASCAR main controller");
   GET_ATTRIBUTE(banksize, "", "Number of faders per bank");
@@ -229,10 +228,7 @@ mcu_ctl_t::mcu_ctl_t(const TASCAR::module_cfg_t& cfg)
 {
   TASCAR::midi_ctl_t::minwait = midictl_vars_t::minwait;
   set_nonblock(true);
-  if(!connect.empty()) {
-    connect_input(connect, true);
-    connect_output(connect, true);
-  }
+  parse_xml_connections(e);
   session->add_int(std::string("/") + name + "/upload", &upload);
 }
 

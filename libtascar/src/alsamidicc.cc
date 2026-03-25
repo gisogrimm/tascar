@@ -19,7 +19,6 @@
 
 #include "alsamidicc.h"
 #include "errorhandling.h"
-#include "tscconfig.h"
 #include <cstring>
 #include <mutex>
 #include <thread>
@@ -227,18 +226,6 @@ std::vector<std::string> TASCAR::list_midi_output_devices()
 
 TASCAR::midi_ctl_t::midi_ctl_t(const std::string& cname)
 {
-  auto dev_in = list_midi_input_devices();
-  if( dev_in.size() ){
-    std::cout << "-- input MIDI devices: --\n";
-    for( const auto& dev : dev_in )
-      std::cout << " " << dev << "\n";
-  }
-  auto dev_out = list_midi_output_devices();
-  if( dev_out.size() ){
-    std::cout << "-- output MIDI devices: --\n";
-    for( const auto& dev : dev_out )
-      std::cout << " " << dev << "\n";
-  }
 #if defined(__linux__)
   if(snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, SND_SEQ_NONBLOCK) < 0)
     throw TASCAR::ErrMsg("Unable to open MIDI sequencer.");
@@ -672,6 +659,11 @@ void TASCAR::midi_ctl_t::send_midi_note(int channel, int param, int value)
 void TASCAR::midi_ctl_t::connect_input(const std::string& src,
                                        bool warn_on_fail)
 {
+  std::string msg_not_found = "MIDI source not found: \"" + src +
+                              "\". Valid MIDI sources: " +
+                              TASCAR::vecstr2str(list_midi_input_devices());
+  std::string msg_connection_failed =
+      "Failed to connect to MIDI source \"" + src + "\"";
 #if defined(__linux__)
   snd_seq_addr_t sender;
   memset(&sender, 0, sizeof(sender));
@@ -679,14 +671,13 @@ void TASCAR::midi_ctl_t::connect_input(const std::string& src,
     connect_input(sender.client, sender.port);
   else {
     if(warn_on_fail)
-      TASCAR::add_warning("Invalid MIDI address " + src);
+      TASCAR::add_warning(msg_not_found);
     else
-      throw TASCAR::ErrMsg("Invalid MIDI address " + src);
+      throw TASCAR::ErrMsg(msg_not_found);
   }
 #elif defined(__APPLE__)
   ItemCount nSources = MIDIGetNumberOfSources();
   MIDIEndpointRef foundEndpoint = 0;
-
   for(ItemCount i = 0; i < nSources; ++i) {
     MIDIEndpointRef endpoint = MIDIGetSource(i);
     if(endpoint) {
@@ -703,22 +694,21 @@ void TASCAR::midi_ctl_t::connect_input(const std::string& src,
       }
     }
   }
-
   if(foundEndpoint != 0) {
     OSStatus status = MIDIPortConnectSource(mac_port_in, foundEndpoint, NULL);
     if(status != noErr) {
       if(warn_on_fail)
-        TASCAR::add_warning("Failed to connect to MIDI source " + src);
+        TASCAR::add_warning(msg_connection_failed);
       else
-        throw TASCAR::ErrMsg("Failed to connect to MIDI source " + src);
+        throw TASCAR::ErrMsg(msg_connection_failed);
     } else {
       mac_endpoint_in = foundEndpoint;
     }
   } else {
     if(warn_on_fail)
-      TASCAR::add_warning("MIDI source not found: " + src);
+      TASCAR::add_warning(msg_not_found);
     else
-      throw TASCAR::ErrMsg("MIDI source not found: " + src);
+      throw TASCAR::ErrMsg(msg_not_found);
   }
 #endif
 }
@@ -726,6 +716,11 @@ void TASCAR::midi_ctl_t::connect_input(const std::string& src,
 void TASCAR::midi_ctl_t::connect_output(const std::string& src,
                                         bool warn_on_fail)
 {
+  std::string msg_not_found = "MIDI destination not found: \"" + src +
+                              "\". Valid MIDI destinations: " +
+                              TASCAR::vecstr2str(list_midi_output_devices());
+  std::string msg_connection_failed =
+      "Failed to connect to MIDI destination \"" + src + "\"";
 #if defined(__linux__)
   snd_seq_addr_t sender;
   memset(&sender, 0, sizeof(sender));
@@ -733,14 +728,13 @@ void TASCAR::midi_ctl_t::connect_output(const std::string& src,
     connect_output(sender.client, sender.port);
   else {
     if(warn_on_fail)
-      TASCAR::add_warning("Invalid MIDI address " + src);
+      TASCAR::add_warning(msg_not_found);
     else
-      throw TASCAR::ErrMsg("Invalid MIDI address " + src);
+      throw TASCAR::ErrMsg(msg_not_found);
   }
 #elif defined(__APPLE__)
   ItemCount nDestinations = MIDIGetNumberOfDestinations();
   MIDIEndpointRef foundEndpoint = 0;
-
   for(ItemCount i = 0; i < nDestinations; ++i) {
     MIDIEndpointRef endpoint = MIDIGetDestination(i);
     if(endpoint) {
@@ -757,14 +751,13 @@ void TASCAR::midi_ctl_t::connect_output(const std::string& src,
       }
     }
   }
-
   if(foundEndpoint != 0) {
     mac_endpoint_out = foundEndpoint;
   } else {
     if(warn_on_fail)
-      TASCAR::add_warning("MIDI destination not found: " + src);
+      TASCAR::add_warning(msg_not_found);
     else
-      throw TASCAR::ErrMsg("MIDI destination not found: " + src);
+      throw TASCAR::ErrMsg(msg_not_found);
   }
 #endif
 }
@@ -895,6 +888,32 @@ int TASCAR::midi_ctl_t::get_client_id()
 #elif defined(__APPLE__)
   return 0;
 #endif
+}
+
+void TASCAR::midi_ctl_t::parse_xml_connections(TASCAR::xml_element_t node)
+{
+  if(node.has_attribute("connect_in") || node.has_attribute("connect_out")) {
+    if(node.has_attribute("connect"))
+      throw TASCAR::ErrMsg("Both the 'connect' attribute and the 'connect_in' "
+                           "or 'connect_out' attributes were used.");
+    std::string connect_in;
+    std::string connect_out;
+    node.GET_ATTRIBUTE(connect_in, "", "Connect MIDI client to this source");
+    node.GET_ATTRIBUTE(connect_out, "",
+                       "Connect MIDI client to this destination");
+    if(connect_in.size())
+      connect_input(connect_in, true);
+    if(connect_out.size())
+      connect_output(connect_out, true);
+  } else {
+    std::string connect;
+    node.GET_ATTRIBUTE(connect, "",
+                       "Connect MIDI client to this source/destination");
+    if(connect.size()) {
+      connect_input(connect, true);
+      connect_output(connect, true);
+    }
+  }
 }
 
 /*

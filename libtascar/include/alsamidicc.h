@@ -27,14 +27,15 @@
 #define ALSAMIDICC_H
 
 #include "serviceclass.h"
+#include "tscconfig.h"
 #ifdef __linux__
 #include <alsa/asoundlib.h>
 #include <alsa/seq_event.h>
 #endif
 
+#include <deque>
 #include <string>
 #include <vector>
-#include <deque>
 
 // Helper struct for queueing MIDI data from callback to service thread
 struct midi_event_data_t {
@@ -97,6 +98,12 @@ namespace TASCAR {
     */
     void send_midi_note(int channel, int pitch, int velocity);
     /**
+       \brief Parse XML node for attributes "connect" or "connect_in" and
+       "connect_out", and establish connections. \param node XML node to read
+       attributes from.
+     */
+    void parse_xml_connections(TASCAR::xml_element_t node);
+    /**
        \brief Get current number of clients
     */
     int get_cur_clients();
@@ -120,7 +127,7 @@ namespace TASCAR {
        \brief Callback to be called for incoming MIDI events
     */
     virtual void emit_event(int channel, int param, int value) = 0;
-    virtual void emit_event_note(int, int, int) {};
+    virtual void emit_event_note(int, int, int){};
     virtual void emit_event_mmc(uint8_t, uint8_t){};
     void drain_and_sync_output();
 

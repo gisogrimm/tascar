@@ -186,7 +186,6 @@ public:
 protected:
   bool dumpmsg = true;
   std::string name = "mididispatch";
-  std::string connect;
   std::string copyurl = "";
   std::string copynotepath = "/note";
   std::string copyccpath = "/cc";
@@ -198,7 +197,6 @@ mididispatch_vars_t::mididispatch_vars_t(const TASCAR::module_cfg_t& cfg)
 {
   GET_ATTRIBUTE_BOOL(dumpmsg, "Dump all unrecognized messages to console");
   GET_ATTRIBUTE(name, "", "ALSA MIDI name");
-  GET_ATTRIBUTE(connect, "", "ALSA device name to connect to");
   if(name.empty())
     throw TASCAR::ErrMsg("Invalid (empty) ALSA MIDI name");
   GET_ATTRIBUTE(copyurl, "", "OSC URL to copy outgoing MIDI messages to.");
@@ -447,10 +445,7 @@ mididispatch_t::mididispatch_t(const TASCAR::module_cfg_t& cfg)
     mmcmsg.push_back(
         std::pair<uint16_t, m_msg_t>(256 * deviceid + command, action));
   }
-  if(!connect.empty()) {
-    connect_input(connect, true);
-    connect_output(connect, true);
-  }
+  parse_xml_connections(e);
   if(!copyurl.empty())
     copytarget = lo_address_new_from_url(copyurl.c_str());
   add_variables(session);

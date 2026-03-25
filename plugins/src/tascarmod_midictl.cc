@@ -41,7 +41,6 @@ public:
 protected:
   bool dumpmsg = false;
   std::string name;
-  std::string connect;
   std::vector<std::string> controllers;
   std::vector<std::string> pattern;
   double min = 0.0;
@@ -55,7 +54,6 @@ midictl_vars_t::midictl_vars_t(const TASCAR::module_cfg_t& cfg)
 {
   GET_ATTRIBUTE_BOOL(dumpmsg, "Show unused messages in concole");
   GET_ATTRIBUTE_(name);
-  GET_ATTRIBUTE(connect, "", "ALSA midi port connection, e.g., BCF2000:0");
   GET_ATTRIBUTE(
       controllers, "",
       "MIDI CC controllers in form channel/param, both starting at zero");
@@ -109,10 +107,7 @@ midictl_t::midictl_t(const TASCAR::module_cfg_t& cfg)
   }
   if(controllers_.size() == 0)
     throw TASCAR::ErrMsg("No controllers defined.");
-  if(!connect.empty()) {
-    connect_input(connect, true);
-    connect_output(connect, true);
-  }
+  parse_xml_connections(e);
   session->add_bool_true(std::string("/") + name + "/upload", &upload);
   srv = std::thread(&midictl_t::send_service, this);
 }
