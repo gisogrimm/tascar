@@ -1,35 +1,3 @@
-Cluster generator by moving spectral averaging with random phase.
+Cluster generator, using moving averaging of amplitude spectrum with random phase.
 
-\begin{snugshade}
-{\footnotesize
-\label{attrtab:hossustain}
-Attributes of element {\bf hossustain}\nopagebreak
-
-\begin{tabularx}{\textwidth}{lXl}
-\hline
-name & description (type, unit) & def.\\
-\hline
-\hline
-\indattr{bass} & Linear gain of subsonic component (float) & 0\\
-\hline
-\indattr{bassratio} & Frequency ratio of subsonic component (float) & 2\\
-\hline
-\indattr{delayenvelope} & Delay envelope to match processed signal (bool) & false\\
-\hline
-\indattr{fcut} & Low-cut edge frequency (float, Hz) & 40\\
-\hline
-\indattr{gain} & Gain (double, dB) & 0\\
-\hline
-\indattr{id} & ID used for jack and OSC (string) & sustain\\
-\hline
-\indattr{tau\_envelope} & Envelope tracking time constant (float, s) & 1\\
-\hline
-\indattr{tau\_sustain} & Clustering time constant (float, s) & 20\\
-\hline
-\indattr{wet} & Wet-dry ratio (float) & 1\\
-\hline
-\indattr{wlen} & Window length (uint32, samples) & 8192\\
-\hline
-\end{tabularx}
-}
-\end{snugshade}
+\input{modtabtex/tabhossustain.tex}

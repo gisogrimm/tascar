@@ -1,59 +1,8 @@
 This plugins can dispatch OSC messages upon MIDI events (CC or note events). Event handlers can be registered via OSC or in the XML configuration, using the \elem{ccmsg} or \elem{notemsg} elements (see below). Parameters to the message can be added using the \elem{f v="1.234"},  \elem{i v="1"} or  \elem{s v="string"} sub-elements. Multiple event handlers for the same event can be registered. In that case all event handlers will be called. Event handler can be removed via OSC. The communication is bi-directional; MIDI events can be emitted by sending an OSC message to \verb!/mididispatch/send/cc! or  \verb!/mididispatch/send/note!.
 
-\begin{snugshade}
-{\footnotesize
-\label{attrtab:mididispatch}
-Attributes of element {\bf mididispatch}\nopagebreak
+\input{modtabtex/tabmididispatch.tex}
 
-\begin{tabularx}{\textwidth}{lXl}
-\hline
-name & description (type, unit) & def.\\
-\hline
-\hline
-\indattr{connect} & ALSA device name to connect to (string) & \\
-\hline
-\indattr{copyccpath} & OSC path for copied CC events (string) & /cc\\
-\hline
-\indattr{copynotepath} & OSC path for copied note events (string) & /note\\
-\hline
-\indattr{copyurl} & OSC URL to copy outgoing MIDI messages to. (string) & \\
-\hline
-\indattr{dumpmsg} & Dump all unrecognized messages to console (bool) & true\\
-\hline
-\indattr{name} & ALSA MIDI name (string) & mididispatch\\
-\hline
-\indattr{oscinput} & Create additional OSC inputs (bool) & false\\
-\hline
-\end{tabularx}
-}
-\end{snugshade}
-
-\begin{snugshade}
-{\footnotesize
-\label{attrtab:mididispatchccmsg}
-Attributes of element {\bf ccmsg}\nopagebreak
-
-\begin{tabularx}{\textwidth}{lXl}
-\hline
-name & description (type, unit) & def.\\
-\hline
-\hline
-\indattr{channel} & MIDI channel (uint32) & 0\\
-\hline
-\indattr{param} & MIDI CC parameter (uint32) & 0\\
-\hline
-\indattr{mode} & message mode, float|trigger (string) & trigger\\
-\hline
-\indattr{path} & OSC path (string) & \\
-\hline
-\indattr{min} & lower bound (float) & 0\\
-\hline
-\indattr{max} & upper bound (float) & 127\\
-\hline
-\end{tabularx}
-}
-\end{snugshade}
-
+\input{modtabtex/tabccmsg.tex}
 
 \begin{snugshade}
 {\footnotesize

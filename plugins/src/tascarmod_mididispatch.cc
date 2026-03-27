@@ -546,7 +546,7 @@ void mididispatch_t::add_variables(TASCAR::osc_server_t* srv)
   }
   srv->add_method("/add/launchpadaction", "iffiis",
                   &mididispatch_t::osc_add_launchpad_action, this, true, false,
-                  "", "event min max val_off val_on script");
+                  "", "event min max valoff valon script");
   srv->add_method("/del/launchpadaction", "i",
                   &mididispatch_t::osc_remove_launchpad_action, this);
   srv->add_method("/select/launchpadaction", "s",

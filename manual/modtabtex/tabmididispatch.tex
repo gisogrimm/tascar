@@ -8,7 +8,7 @@ Attributes of element {\bf mididispatch}\nopagebreak
 name & description (type, unit) & def.\\
 \hline
 \hline
-\indattr{connect} & ALSA device name to connect to (string) & \\
+\indattr{connect} & Connect MIDI client to this source/destination (string) & \\
 \hline
 \indattr{copyccpath} & OSC path for copied CC events (string) & /cc\\
 \hline
@@ -17,6 +17,8 @@ name & description (type, unit) & def.\\
 \indattr{copyurl} & OSC URL to copy outgoing MIDI messages to. (string) & \\
 \hline
 \indattr{dumpmsg} & Dump all unrecognized messages to console (bool) & true\\
+\hline
+\indattr{initsysex} & SysEx message (hex mode) sent at initialization (string) & \\
 \hline
 \indattr{name} & ALSA MIDI name (string) & mididispatch\\
 \hline

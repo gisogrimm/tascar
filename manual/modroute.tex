@@ -1,45 +1,4 @@
-Create a jack bus with OSC controllable gain.
+Create a jack bus with OSC controllable gain, level metering, and
+optional audio plugins.  The session OSC server is used for control.
 
-\begin{snugshade}
-{\footnotesize
-\label{attrtab:route}
-Attributes of element {\bf route}\nopagebreak
-
-\begin{tabularx}{\textwidth}{lXl}
-\hline
-name & description (type, unit) & def.\\
-\hline
-\hline
-\indattr{caliblevel} & calibration level (float, dB SPL) & 93.9794\\
-\hline
-\indattr{caliblevel\_in} & Input calibration levels (float array, dB SPL) & \\
-\hline
-\indattr{channels} & Number of channels (uint32) & 1\\
-\hline
-\indattr{connect} & Regular expressions of input port names (string array) & \\
-\hline
-\indattr{connect\_out} & Regular expressions of output port names (string array) & \\
-\hline
-\indattr{gain} & Route gain (float, dB) & 0\\
-\hline
-\indattr{id} & Unique route id, empty to autogenerate (string) & \\
-\hline
-\indattr{inv} & phase invert (bool) & false\\
-\hline
-\indattr{levelmeter\_tc} & Leq level metering time constant (double, s) & 2\\
-\hline
-\indattr{levelmeter\_weight} & level meter weighting (f-weight) & Z\\
-\hline
-\indattr{lingain} & linear gain (float) & 1\\
-\hline
-\indattr{mute} & Mute flag of route (bool) & false\\
-\hline
-\indattr{name} & Jack and OSC identifier (string) & \\
-\hline
-\indattr{solo} & Solo flag of route (bool) & false\\
-\hline
-\end{tabularx}
-}
-\end{snugshade}
-
-The session OSC server is used for control.
+\input{modtabtex/tabroute.tex}
