@@ -545,8 +545,8 @@ void mididispatch_t::add_variables(TASCAR::osc_server_t* srv)
     srv->add_method("/rec/cc", "iii", &mididispatch_t::osc_rec_cc, this);
   }
   srv->add_method("/add/launchpadaction", "iffiis",
-                  &mididispatch_t::osc_add_launchpad_action, this, false, "",
-                  "event min max val_off val_on script");
+                  &mididispatch_t::osc_add_launchpad_action, this, true, false,
+                  "", "event min max val_off val_on script");
   srv->add_method("/del/launchpadaction", "i",
                   &mididispatch_t::osc_remove_launchpad_action, this);
   srv->add_method("/select/launchpadaction", "s",
