@@ -22,7 +22,61 @@
 
 #include "alsamidicc.h"
 #include "session.h"
+#include <cctype>
+#include <string>
 #include <thread>
+#include <vector>
+
+// Helper function to convert a single hex character to its integer value (0-15)
+char hex_char2int(char c)
+{
+  c = std::tolower(c);
+  if(c >= '0' && c <= '9')
+    return c - '0';
+  if(c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
+
+  // If we reach here, it was not a valid hex character
+  throw std::invalid_argument("Invalid hexadecimal character");
+}
+
+// Main conversion function
+std::vector<char> hex_string2bytes(const std::string& hexString)
+{
+  std::vector<char> bytes;
+
+  // Handle empty string
+  if(hexString.empty()) {
+    return bytes;
+  }
+  // 1. Remove whitespace (optional, but often useful)
+  std::string cleanHex;
+  for(char c : hexString) {
+    if(!std::isspace(c)) {
+      cleanHex += c;
+    }
+  }
+  // 2. Handle odd number of characters by prepending a '0'
+  // e.g., "F" -> "0F", "123" -> "0123"
+  if(cleanHex.length() % 2 != 0) {
+    cleanHex.insert(0, 1, '0');
+  }
+  // 3. Iterate over the string in steps of 2
+  for(size_t i = 0; i < cleanHex.length(); i += 2) {
+    // Get the two characters representing the byte
+    char c1 = cleanHex[i];
+    char c2 = cleanHex[i + 1];
+    // Validate characters before conversion
+    if(!std::isxdigit(c1) || !std::isxdigit(c2)) {
+      throw std::invalid_argument(
+          "String contains non-hexadecimal characters.");
+    }
+    // Convert: (High nibble << 4) | Low nibble
+    unsigned char byte = (hex_char2int(c1) << 4) | hex_char2int(c2);
+    bytes.push_back(byte);
+  }
+  return bytes;
+}
 
 class lpaction_t {
 public:
@@ -446,6 +500,13 @@ mididispatch_t::mididispatch_t(const TASCAR::module_cfg_t& cfg)
         std::pair<uint16_t, m_msg_t>(256 * deviceid + command, action));
   }
   parse_xml_connections(e);
+  std::string initsysex;
+  GET_ATTRIBUTE(initsysex, "",
+                "SysEx message (hex mode) sent at initialization");
+  if(!initsysex.empty()) {
+    auto sysex = hex_string2bytes(initsysex);
+    send_midi_sysex(sysex.size(), sysex.data());
+  }
   if(!copyurl.empty())
     copytarget = lo_address_new_from_url(copyurl.c_str());
   add_variables(session);

@@ -2,7 +2,7 @@
 <session license="CC0">
   <scene/>
   <modules>
-    <mididispatch name="launchpad" connect="Launchpad X:1">
+    <mididispatch name="launchpad" connect="Launchpad X:1" initsysex="f0002029020c0e01f7">
       <notemsg note="11" channel="0" mode="trigger" min="1" max="127" path="/runscript">
         <s v="11.tosc"/>
       </notemsg>
