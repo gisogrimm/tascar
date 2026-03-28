@@ -306,6 +306,7 @@ namespace TASCAR {
     std::string scriptpath = "";
     std::string scriptext = "";
     bool scriptcancel = false;
+    int scriptrunning = 0;
     /**
        @brief Dispatch all messages from the time interval tstart (included) to
        tend (excluded).

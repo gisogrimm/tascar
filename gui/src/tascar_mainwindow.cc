@@ -103,6 +103,7 @@ tascar_window_t::tascar_window_t(BaseObjectType* cobject,
   GET_WIDGET(lab_authors);
   GET_WIDGET(lab_sessionname);
   GET_WIDGET(but_warnings);
+  GET_WIDGET(but_scripts);
   active_selector->signal_changed().connect(
       sigc::mem_fun(*this, &tascar_window_t::on_active_selector_changed));
   active_track->signal_toggled().connect(
@@ -317,6 +318,16 @@ bool tascar_window_t::on_timeout()
     }
     if(sessionquit)
       hide();
+    // script button:
+    Gdk::RGBA col;
+    if( session && (session->scriptrunning != 0) ){
+      but_scripts->set_label(TASCAR::to_string(session->scriptrunning)+" scripts");
+      col.set_rgba(1, 0.4, 0.4, 1);
+    }else{
+      but_scripts->set_label("0 scripts");
+      col.set_rgba(0.92, 0.92, 0.92, 1);
+    }
+    but_scripts->override_background_color(col);
     session_mutex.unlock();
   }
   return true;

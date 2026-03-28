@@ -150,6 +150,7 @@ protected:
   Gtk::Label* lab_sessionname;
   TSCGUI::source_ctl_t* active_source_ctl;
   Gtk::Button* but_warnings;
+  Gtk::Button* but_scripts;
 
   bool blink;
 

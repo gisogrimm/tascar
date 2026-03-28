@@ -1092,10 +1092,12 @@ void osc_server_t::read_script_one(std::string filename)
       TASCAR::add_warning("Cannot open file \"" + filename + scriptext + "\".");
       return;
     }
+    ++scriptrunning;
     while(!feof(fh)) {
       memset(rbuf, 0, 0x4000);
       if(cancelscript) {
         fclose(fh);
+        --scriptrunning;
         return;
       }
       char* s = fgets(rbuf, 0x4000 - 1, fh);
@@ -1127,9 +1129,10 @@ void osc_server_t::read_script_one(std::string filename)
               while(tictoc.toc() < val) {
                 if(cancelscript) {
                   fclose(fh);
+                  --scriptrunning;
                   return;
                 }
-                usleep(10);
+                usleep(100);
               }
             } else {
               std::vector<std::string> args(TASCAR::str2vecstr(rbuf));
@@ -1163,6 +1166,7 @@ void osc_server_t::read_script_one(std::string filename)
       }
     }
     fclose(fh);
+    --scriptrunning;
   }
 }
 
