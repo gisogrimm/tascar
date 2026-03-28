@@ -686,7 +686,7 @@ void mididispatch_t::select_lp_script(uint8_t event, bool run, int midival)
       if(lp_script.first == event) {
         val = lp_script.second.val_on;
         if(run) {
-          lp_script.second.msg_on.updatemsg(session, 0);
+          lp_script.second.msg_on.updatemsg(session, midival);
         }
       }
       int16_t ch = val / 500;
