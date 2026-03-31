@@ -4,15 +4,12 @@ cli: symlinkcli testbin
 include ../config.mk
 include ../rules.mk
 
-#CXXFLAGS += -Wconversion -Werror
-#-Waddress -Warray-bounds -Wsign-compare -Wuninitialized
-
 #
 # versioning:
 #
-LIBVERSION=$(VERSION)
-SOVERSION=$(shell echo $(VERSION) | sed 's/\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\1.\2/1')
-DYLIBCURVERSION=$(shell echo $(VERSION) | sed 's/\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\1.\2.\3/1')
+LIBVERSION := $(VERSION)
+SOVERSION := $(shell echo $(VERSION) | sed 's/\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\1.\2/1')
+DYLIBCURVERSION := $(shell echo $(VERSION) | sed 's/\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\1.\2.\3/1')
 
 #
 # main targets:
@@ -30,10 +27,6 @@ OBJECTS = licensehandler.o audiostates.o coordinates.o audiochunks.o	\
 
 ifneq ($(OS),Windows_NT)
 UNAME_S := $(shell uname -s)
-#OBJECTS += spawn_process.o
-#ifeq ($(UNAME_S),Linux)
-  OBJECTS +=  alsamidicc.o
-#endif
 ifeq ($(UNAME_S),Darwin)
 LDLIBS += -framework CoreMIDI -framework CoreFoundation
 endif
@@ -70,11 +63,11 @@ endif
 CXXFLAGS += $(GTKDEF) $(LTRDEF) $(TSCCXXFLAGS)
 
 ifeq ($(OS),Windows_NT)
-SOFAINC=
-SOFALIB=-lmysofa
+SOFAINC =
+SOFALIB = -lmysofa
 else
-SOFAINC=-I../external_libs/libmysofa-1.3.2/src/hrtf
-SOFALIB=../external_libs/libmysofa-1.3.2/build/src/libmysofa.a -lz
+SOFAINC = -I../external_libs/libmysofa-1.3.2/src/hrtf
+SOFALIB = ../external_libs/libmysofa-1.3.2/build/src/libmysofa.a -lz
 endif
 
 CXXFLAGS += -fpic -I./build -I./include $(SOFAINC)
@@ -195,7 +188,7 @@ build/%.mk: src/%.cc
 %: %.o
 	$(CXX) $(CXXFLAGS) $(LDLIBS) $^ -o $@
 
-build/%.o: src/%.cc include/%.h
+build/%.o: src/%.cc include/%.h ver
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 build/pugixml.o: ../external_libs/pugixml-1.11.4/src/pugixml.cpp ../external_libs/pugixml-1.11.4/src/pugixml.hpp ../external_libs/pugixml-1.11.4/src/pugiconfig.hpp

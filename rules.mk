@@ -57,4 +57,3 @@ endif
 
 $(BUILD_DIR)/unit-test-runner: $(BUILD_DIR)/.directory $(unit_tests_test_files) $(patsubst %_unit_tests.cpp, %.cpp , $(unit_tests_test_files))
 	if test -n "$(unit_tests_test_files)"; then $(CXX) $(CXXFLAGS) --coverage -o $@ $(wordlist 2, $(words $^), $^) $(LDFLAGS) $(LIBTASCARDLL) $(LDLIBS) -L../external_libs/googletest/lib/ -lgmock_main -lgmock -lgtest_main -lgtest -lpthread; fi
-

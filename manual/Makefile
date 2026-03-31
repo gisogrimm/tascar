@@ -6,9 +6,9 @@ all: acousticmodel.pdf manual.pdf callgraph.pdf
 
 diff: manual-diff_master.pdf
 
-TEXINPUTS="./:../doc/:"
+TEXINPUTS = "./:../doc/:"
 
-SECTIONS= secmodules.tex secactmodules.tex secapmodules.tex	\
+SECTIONS = secmodules.tex secactmodules.tex secapmodules.tex	\
 secrecgeneric.tex secrecspeaker.tex secrecreverb.tex secmaskmodules.tex
 
 %.run1: %.tex $(SECTIONS) autodoc.txt
@@ -32,12 +32,12 @@ secrecgeneric.tex secrecspeaker.tex secrecreverb.tex secmaskmodules.tex
 FIGURES = filestructure.pdf creator.pdf
 #ap_sndfile.pdf
 
-ALLAPPS = $(sort $(subst .o,,$(subst .mk,,$(wildcard ../apps/build/tascar_*))))
+ALLAPPS := $(sort $(subst .o,,$(subst .mk,,$(wildcard ../apps/build/tascar_*))))
 
 NOHELPAPPS = jackpar lsljacktime sendosc compare_level_sum	\
 	test_compare_sndfile tscupdate test_compare_level_sum
 
-ALLAPPNAMES = $(filter-out $(NOHELPAPPS),$(patsubst ../apps/build/tascar_%,%,$(ALLAPPS)))
+ALLAPPNAMES := $(filter-out $(NOHELPAPPS),$(patsubst ../apps/build/tascar_%,%,$(ALLAPPS)))
 
 
 version.tex:

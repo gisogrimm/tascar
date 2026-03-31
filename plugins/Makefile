@@ -3,8 +3,6 @@ all: build modules
 include ../config.mk
 include ../rules.mk
 
-#-Wconversion -Werror
-
 #
 # main targets:
 #
