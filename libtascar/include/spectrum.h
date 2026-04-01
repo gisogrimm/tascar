@@ -58,6 +58,11 @@ namespace TASCAR {
     uint32_t n_;
     std::complex<float>* b;
   };
+
+  TASCAR::spec_t sampled_spec_to_smooth_spec(float f_sample, uint32_t n_bins,
+                                             const std::vector<float>& vfreq,
+                                             const std::vector<float>& vgaindb);
+
 } // namespace TASCAR
 
 std::ostream& operator<<(std::ostream& out, const TASCAR::wave_t& p);

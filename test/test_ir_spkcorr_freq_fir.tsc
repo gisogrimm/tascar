@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!-- 
+basic test: sound propagation, 1m
+-->
+<session license="CC-0">
+  <scene>
+    <source>
+      <sound x="1"/>
+    </source>
+    <receiver type="nsp" layout="2ch_spkcorr_freq_fir.spk"/>
+  </scene>
+</session>

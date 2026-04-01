@@ -366,8 +366,25 @@ void spk_array_t::configure()
       spk.comp->set_irs(TASCAR::wave_t(spk.compB));
     }
     if(spk.eqfirlen > 0) {
+      std::ofstream ofh("debug.m");
+      ofh << "eqfirlen = " << spk.eqfirlen << ";" << std::endl;
+      ofh << "nfragment = " << n_fragment << ";" << std::endl;
+      ofh << "vfreq = [" << TASCAR::to_string(spk.eqfreq) << "];" << std::endl;
+      ofh << "vgain = [" << TASCAR::to_string(spk.eqgain) << "];" << std::endl;
       spk.comp = new TASCAR::partitioned_conv_t(spk.eqfirlen, n_fragment);
+      // convert non-linearly sampled gains into a smoothed spectrum:
+      uint32_t n_fft = std::max((uint32_t)f_sample, spk.eqfirlen + n_fragment);
+      ofh << "n_fft = " << n_fft << ";" << std::endl;
+      TASCAR::minphase_t minphase(n_fft);
+      TASCAR::fft_t fft(n_fft);
+      auto smoothspec = TASCAR::sampled_spec_to_smooth_spec(
+          f_sample, fft.s.n_, spk.eqfreq, spk.eqgain);
+      ofh << "smoothspec = [" << smoothspec << "];"
+          << std::endl;
       // set minimum phase filter here:
+      minphase(smoothspec);
+      fft.execute(smoothspec);
+      ofh << "ir_mp = [" << fft.w << "];" << std::endl;
       // spk.comp->set_irs(TASCAR::wave_t(spk.compB));
     }
     if(spk.eqstages > 0) {
