@@ -107,9 +107,7 @@ releasepack: checkversiontagged checkmodified $(MODULES) $(DOCMODULES) docexampl
 fastpack: $(MODULES) $(DOCMODULES)
 	$(MAKE) -C packaging/deb
 
-ifndef $(TASCARCONFIGMK)
 include config.mk
-endif
 
 checkmodified:
 	test -z "`git status --porcelain -uno`"
