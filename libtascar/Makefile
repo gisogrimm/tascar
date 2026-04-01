@@ -26,13 +26,14 @@ OBJECTS = licensehandler.o audiostates.o coordinates.o audiochunks.o	\
 # pugixml.o
 
 ifneq ($(OS),Windows_NT)
+OBJECTS += alsamidicc.o
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 LDLIBS += -framework CoreMIDI -framework CoreFoundation
 endif
 endif
 
-DMXOBJECTS =  termsetbaud.o serialport.o dmxdriver.o
+DMXOBJECTS = termsetbaud.o serialport.o dmxdriver.o
 
 GUIOBJECTS = gui_elements.o pdfexport.o viewport.o 
 
@@ -176,8 +177,6 @@ build/test_%: src/test_%.cc
 doc:
 	cd doc && sed -e 's/PROJECT.NUMBER.*=.*/&'`cat ../version`'/1' doxygen.cfg > .temp.cfg && doxygen .temp.cfg
 	rm -Rf doc/.temp.cfg
-
-#include $(BUILD_OBJECTS:.o=.mk)
 
 build/%.mk: src/%.cc
 	$(CPP) $(CXXFLAGS) -MM -MF $(@:.o=.mk) $<
