@@ -21,6 +21,7 @@
 
 #include "fft.h"
 #include "errorhandling.h"
+#include <cstring>
 
 const std::complex<float> i(0.0, 1.0);
 
@@ -84,31 +85,6 @@ TASCAR::fft_t::~fft_t()
   fftwf_destroy_plan(fftwp_s2s);
 }
 
-TASCAR::minphase_t::minphase_t(uint32_t fftlen)
-    : fft_hilbert(fftlen), phase(fftlen)
-{
-}
-
-void TASCAR::minphase_t::operator()(TASCAR::spec_t& s)
-{
-  if(fft_hilbert.w.n < s.n_) {
-    DEBUG(fft_hilbert.w.n);
-    DEBUG(s.n_);
-    throw TASCAR::ErrMsg("minphase_t programming error.");
-  }
-  if(phase.n < s.n_) {
-    DEBUG(phase.n);
-    DEBUG(s.n_);
-    throw TASCAR::ErrMsg("minphase_t programming error.");
-  }
-  phase.clear();
-  for(uint32_t k = 0; k < s.n_; ++k)
-    phase.d[k] = logf(std::max(1e-10f, std::abs(s.b[k])));
-  fft_hilbert.hilbert(phase);
-  for(uint32_t k = 0; k < s.n_; ++k)
-    s.b[k] = std::abs(s.b[k]) * std::exp(-i * fft_hilbert.w.d[k]);
-}
-
 void TASCAR::get_bandlevels(const TASCAR::wave_t& w, float cfmin, float cfmax,
                             float fs, float bpo, float overlap,
                             std::vector<float>& vF, std::vector<float>& vL)
@@ -153,6 +129,137 @@ void TASCAR::get_bandlevels(const TASCAR::wave_t& w, float cfmin, float cfmax,
     l *= 5e4f * 5e4f * 2.0f;
     l /= (float)w.n * (float)w.n;
     vL.push_back(10.0f * log10f(l));
+  }
+}
+
+TASCAR::minphase_t::minphase_t(uint32_t fftlen)
+    : spec_copy(fftlen / 2 + 1), fftlen_(fftlen), time_buf_(NULL),
+      freq_buf_(NULL)
+{
+  // Ensure even length for standard r2c/c2r compatibility
+  if(fftlen_ % 2 != 0) {
+    fftlen_++; // Or handle error, here we just adjust to next even
+    std::string warning = "FFT length adjusted to " + std::to_string(fftlen_);
+    DEBUG(warning);
+  }
+  nbins_ = fftlen_ / 2 + 1;
+  // Allocate Time Domain Buffer
+  time_buf_ = (float*)fftwf_malloc(sizeof(float) * fftlen_);
+  // Allocate Frequency Domain Buffer (using spec_t wrapper)
+  freq_buf_ = new spec_t(nbins_);
+
+  // Create FFTW Plans
+  // 1. Inverse FFT: Complex Half-Spectrum -> Real Time
+  // We use the buffer inside freq_buf_ as input
+  plan_c2r_ = fftwf_plan_dft_c2r_1d(
+      fftlen_, reinterpret_cast<fftwf_complex*>(freq_buf_->b), time_buf_,
+      FFTW_MEASURE);
+  // 2. Forward FFT: Real Time -> Complex Half-Spectrum
+  // Used to transform the windowed cepstrum back to frequency domain
+  plan_r2c_ = fftwf_plan_dft_r2c_1d(
+      fftlen_, time_buf_, reinterpret_cast<fftwf_complex*>(freq_buf_->b),
+      FFTW_MEASURE);
+  // Initialize buffers to zero
+  memset(time_buf_, 0, sizeof(float) * fftlen_);
+  freq_buf_->clear();
+}
+
+TASCAR::minphase_t::~minphase_t()
+{
+  if(plan_c2r_)
+    fftwf_destroy_plan(plan_c2r_);
+  if(plan_r2c_)
+    fftwf_destroy_plan(plan_r2c_);
+  if(time_buf_)
+    fftwf_free(time_buf_);
+  if(freq_buf_)
+    delete freq_buf_;
+}
+
+void TASCAR::minphase_t::operator()(TASCAR::spec_t& s)
+{
+  spec_copy.copy(s);
+  process(spec_copy, s);
+}
+
+void TASCAR::minphase_t::process(const spec_t& spec_in, spec_t& spec_out)
+{
+  // Check sizes
+  if(spec_in.size() != nbins_ || spec_out.size() != nbins_) {
+    // Handle error: sizes do not match
+    return;
+  }
+  // ---------------------------------------------------------
+  // Step 1: Compute Real Cepstrum
+  // Cepstrum = IFFT( log( |Spectrum| ) )
+  // ---------------------------------------------------------
+
+  // 1a. Calculate Log-Magnitude of the input spectrum
+  for(uint32_t k = 0; k < nbins_; ++k) {
+    // Get magnitude
+    float mag = std::abs(spec_in[k]);
+    // Store log magnitude in the real part of our working buffer
+    // We use the freq_buf_ to prepare for the Inverse FFT
+    (*freq_buf_)[k] = std::complex<float>(safe_log(mag), 0.0f);
+  }
+  // 1b. Perform Inverse FFT to get Cepstrum (Real valued)
+  fftwf_execute(plan_c2r_);
+  // Note: FFTW c2r does not normalize, so the result is scaled by fftlen_
+  // We handle scaling later or implicitly.
+  // The Cepstrum is now in time_buf_.
+
+  // ---------------------------------------------------------
+  // Step 2: Apply Minimum Phase Window (Causal Window)
+  // ---------------------------------------------------------
+
+  // The Real Cepstrum is symmetric. To get minimum phase, we need the causal
+  // part. c_min[n] = c[n] + c[n] * u[n-1] (where u is unit step) Effectively:
+  //   c_min[0] = c[0]
+  //   c_min[k] = 2 * c[k] for k = 1 ... N/2 - 1
+  //   c_min[N/2] = c[N/2] (Nyquist)
+  //   c_min[k] = 0 for k > N/2
+
+  // Scale by 1/fftlen_ to correct for the unnormalized IFFT
+  float scale = 1.0f / (float)fftlen_;
+
+  // DC component (index 0)
+  time_buf_[0] *= scale;
+
+  // Positive quefrencies (indices 1 to N/2 - 1)
+  for(uint32_t k = 1; k < nbins_ - 1; ++k) {
+    time_buf_[k] *= 2.0f * scale;
+  }
+
+  // Nyquist component (index N/2)
+  time_buf_[nbins_ - 1] *= scale;
+
+  // Negative quefrencies (indices N/2 + 1 to N - 1) -> Zero out
+  // Note: time_buf_ size is fftlen_.
+  // Indices nbins_ to fftlen_-1 correspond to negative times.
+  memset(time_buf_ + nbins_, 0, sizeof(float) * (fftlen_ - nbins_));
+
+  // ---------------------------------------------------------
+  // Step 3: Transform back to Frequency Domain
+  // ---------------------------------------------------------
+
+  fftwf_execute(plan_r2c_);
+
+  // ---------------------------------------------------------
+  // Step 4: Exponentiate to get Minimum Phase Spectrum
+  // ---------------------------------------------------------
+
+  // The result in freq_buf_ is the complex cepstrum in frequency domain.
+  // We need exp(real + j*imag) = exp(real) * (cos(imag) + j*sin(imag))
+
+  for(uint32_t k = 0; k < nbins_; ++k) {
+    std::complex<float> c = (*freq_buf_)[k];
+
+    // Compute complex exponential
+    // Using std::exp for complex numbers handles the Euler formula
+    std::complex<float> min_phase_spec = std::exp(c);
+
+    // Store result
+    spec_out[k] = min_phase_spec;
   }
 }
 

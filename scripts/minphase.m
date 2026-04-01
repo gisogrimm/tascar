@@ -1,25 +1,49 @@
-function [x, X, phase] = minphase(x)
+function [x_min, X_spec, phase] = minphase(x)
     %% Compute the minimum phase signal from the given input signal.
     %
     % Inputs:
     %   x       - Input signal (vector)
     %
     % Outputs:
-    %   x       - Minimum phase signal corresponding to the input magnitude
-    %   X       - Magnitude of the real part of the FFT of the input signal
+    %   x_min   - Minimum phase signal corresponding to the input magnitude
+    %   X_spec  - Complex spectrum of the minimum phase signal
     %   phase   - Phase of the minimum phase signal
     %
     % Description:
     % This function computes the minimum phase signal corresponding to the given
-    % input signal. The function uses the Hilbert transform to compute the phase
-    % and reconstructs the signal using the inverse FFT.
+    % input signal using the Cepstral method.
 
-    fftlen = size(x, 1); % Length of the FFT
-    X = abs(realfft(x)); % Magnitude of the real part of the FFT of x
-    nbins = size(X, 1); % Number of frequency bins
-    phase = log(max(1e-10, X)); % Compute initial phase using logarithm (avoid log(0))
-    phase(end+1:fftlen, :) = 0; % Extend phase to match fftlen
-    phase = -imag(hilbert(phase)); % Compute minimum phase using Hilbert transform
-    X = X .* exp(i * phase(1:nbins, :)); % Reconstruct complex FFT from magnitude and phase
-    x = realifft(X, fftlen); % Compute inverse FFT to get the minimum phase signal
+    % Ensure input is a column vector
+    x = x(:);
+    N = length(x);
+
+    % 1. Compute FFT of the input signal
+    X = fft(x);
+
+    % 2. Compute Magnitude
+    mag = abs(X);
+
+    % 3. Compute Real Cepstrum
+    % Add small epsilon to avoid log(0)
+    log_mag = log(max(mag, 1e-10));
+    cepstrum = ifft(log_mag);
+
+    % 4. Create Minimum Phase Window (Causal Window)
+    % Set negative time components to zero and double non-zero (except DC and Nyquist)
+    win = ones(N, 1);
+    if mod(N, 2) == 0
+        win(2:N/2) = 2;
+        win(N/2+2:end) = 0;
+    else
+        win(2:(N+1)/2) = 2;
+        win((N+3)/2:end) = 0;
+    end
+
+    % 5. Compute Minimum Phase Spectrum
+    min_phase_cepstrum = cepstrum .* win;
+    X_spec = exp(fft(min_phase_cepstrum));
+
+    % 6. Extract Phase and Time Domain Signal
+    phase = angle(X_spec);
+    x_min = real(ifft(X_spec));
 end

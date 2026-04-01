@@ -88,36 +88,52 @@ TEST(fft_t, hilbert)
 
 TEST(minphase_t, minphase)
 {
-  TASCAR::wave_t w(4);
-  TASCAR::fft_t fft(4);
-  w.d[0] = -2;
-  w.d[1] = -1;
+  TASCAR::wave_t w(6);
+  TASCAR::fft_t fft(6);
+  TASCAR::spec_t mpout(4);
+  w.d[0] = 9;
+  w.d[1] = 2;
   w.d[2] = 0;
-  w.d[3] = -2;
+  w.d[3] = -1;
+  w.d[4] = 0;
+  w.d[5] = 2;
   // transform to spectrum:
   fft.execute(w);
-  ASSERT_NEAR(fft.s.b[0].real(), -5.0f, 1e-7f);
+  ASSERT_NEAR(fft.s.b[0].real(), 12.0f, 1e-7f);
+  ASSERT_NEAR(fft.s.b[1].real(), 12.0f, 1e-7f);
+  ASSERT_NEAR(fft.s.b[2].real(), 6.0f, 1e-7f);
+  ASSERT_NEAR(fft.s.b[3].real(), 6.0f, 1e-7f);
   ASSERT_NEAR(fft.s.b[0].imag(), 0.0f, 1e-7f);
-  ASSERT_NEAR(fft.s.b[1].real(), -2.0f, 1e-7f);
-  ASSERT_NEAR(fft.s.b[1].imag(), -1.0f, 1e-7f);
-  ASSERT_NEAR(fft.s.b[2].real(), 1.0f, 1e-7f);
+  ASSERT_NEAR(fft.s.b[1].imag(), 0.0f, 1e-7f);
   ASSERT_NEAR(fft.s.b[2].imag(), 0.0f, 1e-7f);
-  TASCAR::minphase_t minphase(4);
-  ASSERT_NEAR(std::abs(fft.s.b[0]), 5.0f, 1e-7f);
-  ASSERT_NEAR(std::abs(fft.s.b[1]), 2.2361f, 1e-4f);
-  ASSERT_NEAR(std::abs(fft.s.b[2]), 1.0f, 1e-7f);
+  ASSERT_NEAR(fft.s.b[3].imag(), 0.0f, 1e-7f);
+  ASSERT_NEAR(std::abs(fft.s.b[0]), 12.0f, 1e-7f);
+  ASSERT_NEAR(std::abs(fft.s.b[1]), 12.0f, 1e-7f);
+  ASSERT_NEAR(std::abs(fft.s.b[2]), 6.0f, 1e-7f);
+  ASSERT_NEAR(std::abs(fft.s.b[3]), 6.0f, 1e-7f);
+  TASCAR::minphase_t minphase(6);
   minphase(fft.s);
-  ASSERT_NEAR(fft.s.b[0].real(), 4.60070f, 1e-5f);
-  ASSERT_NEAR(fft.s.b[0].imag(), 1.95795f, 1e-5f);
-  ASSERT_NEAR(fft.s.b[1].real(), 1.55030f, 1e-5f);
-  ASSERT_NEAR(fft.s.b[1].imag(), -1.61139f, 1e-5f);
-  ASSERT_NEAR(fft.s.b[2].real(), 0.92014f, 1e-5f);
-  ASSERT_NEAR(fft.s.b[2].imag(), -0.39159f, 1e-5f);
+  // amplitude spectrum should be the same:
+  ASSERT_NEAR(std::abs(fft.s.b[0]), 12.0f, 1e-7f);
+  ASSERT_NEAR(std::abs(fft.s.b[1]), 12.0f, 1e-5f);
+  ASSERT_NEAR(std::abs(fft.s.b[2]), 6.0f, 1e-5f);
+  ASSERT_NEAR(std::abs(fft.s.b[3]), 6.0f, 1e-5f);
+  // phase will differ:
+  ASSERT_NEAR(fft.s.b[0].real(), 12.0f, 1e-7f);
+  ASSERT_NEAR(fft.s.b[1].real(), 11.0518f, 1e-4f);
+  ASSERT_NEAR(fft.s.b[2].real(), 5.5259f, 1e-4f);
+  ASSERT_NEAR(fft.s.b[3].real(), 6.0f, 1e-4f);
+  ASSERT_NEAR(fft.s.b[0].imag(), 0.0f, 1e-4f);
+  ASSERT_NEAR(fft.s.b[1].imag(), -4.67511f, 1e-4f);
+  ASSERT_NEAR(fft.s.b[2].imag(), -2.33755f, 1e-4f);
+  ASSERT_NEAR(fft.s.b[3].imag(), 0.0f, 1e-4f);
   fft.ifft();
-  ASSERT_NEAR(2.15536f, fft.w.d[0], 1e-5f);
-  ASSERT_NEAR(1.72583f, fft.w.d[1], 1e-5f);
-  ASSERT_NEAR(0.60506f, fft.w.d[2], 1e-5f);
-  ASSERT_NEAR(0.11444f, fft.w.d[3], 1e-5f);
+  ASSERT_NEAR(8.52592f, fft.w.d[0], 1e-5f);
+  ASSERT_NEAR(3.94537f, fft.w.d[1], 1e-5f);
+  ASSERT_NEAR(0.91183f, fft.w.d[2], 1e-5f);
+  ASSERT_NEAR(-0.84197f, fft.w.d[3], 1e-5f);
+  ASSERT_NEAR(-0.43776f, fft.w.d[4], 1e-5f);
+  ASSERT_NEAR(-0.10339f, fft.w.d[5], 1e-5f);
 }
 
 TEST(get_bandlevels, bandspacing)

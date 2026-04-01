@@ -234,7 +234,6 @@ TASCAR::sampled_spec_to_smooth_spec(float f_sample, uint32_t n_bins,
     throw TASCAR::ErrMsg("Different size of frequencies and gains. vfreq has " +
                          std::to_string((vfreq.size())) + ", vgaindb has " +
                          std::to_string(vgaindb.size()) + ".");
-  TASCAR::spec_t spectrum(n_bins-1);
   std::vector<float> vfreqlog;
   //vfreqlog.push_back(log2f(EPSf));
   vfreqlog.push_back(log2f(vfreq[0]) - 4.0f);
@@ -257,6 +256,7 @@ TASCAR::sampled_spec_to_smooth_spec(float f_sample, uint32_t n_bins,
   vgain_extrap.push_back(vgaindb[vgaindb.size() - 1]);
   vgain_extrap.push_back(vgaindb[vgaindb.size() - 1]);
   std::vector<float> vfreq_out(n_bins);
+  TASCAR::spec_t spectrum(n_bins);
   for(uint32_t k = 1; k < spectrum.n_; ++k)
     vfreq_out[k-1] =
         log2f(std::max(EPSf, (float)k / (float)n_bins * 0.5f * f_sample));

@@ -100,14 +100,35 @@ namespace TASCAR {
 
   class minphase_t {
   public:
+    /**
+     * \param fftlen Length of the FFT (must be even for standard real FFTs)
+     */
     minphase_t(uint32_t fftlen);
+    ~minphase_t();
+    /**
+     * \brief Process a half-spectrum to generate its minimum phase equivalent.
+     *
+     * \param spec_in Input half-spectrum (DC to Nyquist).
+     *                Size must match the configured FFT length.
+     * \param spec_out Output half-spectrum (Minimum phase).
+     *                 Can be the same as spec_in for in-place operation.
+     */
+    void process(const spec_t& spec_in, spec_t& spec_out);
     void operator()(TASCAR::spec_t& s);
 
   private:
-    TASCAR::fft_t fft_hilbert;
-
-  public:
-    TASCAR::wave_t phase;
+    TASCAR::spec_t spec_copy; // copy of input to allow in-place transformation
+    uint32_t fftlen_;         // Total FFT length
+    uint32_t nbins_;          // Number of bins in half-spectrum (fftlen/2 + 1)
+    // FFTW Plans
+    fftwf_plan plan_c2r_; // Complex to Real (Inverse FFT)
+    fftwf_plan
+        plan_r2c_; // Real to Complex (Forward FFT) - used for Cepstrum check
+    // Buffers
+    float* time_buf_;  // Time domain buffer (size fftlen_)
+    spec_t* freq_buf_; // Frequency domain buffer (size nbins_)
+    // Helper to compute log magnitude safely
+    inline float safe_log(float x) { return std::log(std::max(x, 1e-10f)); }
   };
 
   /**
