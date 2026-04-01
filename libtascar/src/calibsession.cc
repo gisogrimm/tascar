@@ -104,6 +104,7 @@ void spk_eq_param_t::factory_reset()
     bandsperoctave = 8.0f;
     bandoverlap = 2.0f;
     max_eqstages = 0u;
+    max_eqfirlen = 0u;
   } else {
     fmin = 62.5f;
     fmax = 4000.0f;
@@ -113,6 +114,7 @@ void spk_eq_param_t::factory_reset()
     bandsperoctave = 3.0f;
     bandoverlap = 2.0f;
     max_eqstages = 0u;
+    max_eqfirlen = 0u;
   }
 }
 
@@ -132,6 +134,7 @@ void spk_eq_param_t::read_defaults()
   READ_DEF(bandsperoctave);
   READ_DEF(bandoverlap);
   READ_DEF(max_eqstages);
+  READ_DEF(max_eqfirlen);
   try {
     validate();
   }
@@ -192,6 +195,7 @@ void spk_eq_param_t::save_xml(const tsccfg::node_t& layoutnode) const
   e.SET_ATTRIBUTE(bandsperoctave);
   e.SET_ATTRIBUTE(bandoverlap);
   e.SET_ATTRIBUTE(max_eqstages);
+  e.SET_ATTRIBUTE(max_eqfirlen);
 }
 
 void spk_eq_param_t::validate() const
@@ -229,6 +233,10 @@ void spk_eq_param_t::validate() const
     throw TASCAR::ErrMsg(
         std::string("bandoverlap cannot be negative (current value: ") +
         TASCAR::to_string(bandoverlap) + ").");
+  if((max_eqstages > 0) && (max_eqfirlen > 0))
+    throw TASCAR::ErrMsg(
+        "cannot use parametric equalizers and FIR filter for simultation. "
+        "Either eqstages or eqfirlen needs to be zero");
   // std::max(0.0f,log2f(fmax/fmin)*bandsperoctave/3.0f-1.0f)
   // if(max_eqstages > )
   //  throw TASCAR::ErrMsg(
@@ -310,6 +318,7 @@ void spk_eq_param_t::write_defaults()
   WRITE_DEF(bandsperoctave);
   WRITE_DEF(bandoverlap);
   WRITE_DEF(max_eqstages);
+  WRITE_DEF(max_eqfirlen);
 }
 
 void calib_cfg_t::save_defaults()
@@ -325,8 +334,9 @@ void calib_cfg_t::save_defaults()
   std::vector<std::string> keys = {"tascar.spkcalib.inputport",
                                    "tascar.spkcalib.miccalib",
                                    "tascar.spkcalib.fc"};
-  for(auto key : {"fmin", "fmax", "duration", "prewait", "reflevel",
-                  "bandsperoctave", "bandoverlap", "max_eqstages"}) {
+  for(auto key :
+      {"fmin", "fmax", "duration", "prewait", "reflevel", "bandsperoctave",
+       "bandoverlap", "max_eqstages", "max_eqfirlen"}) {
     keys.push_back(std::string("tascar.spkcalib.") + key);
     if(has_sub)
       keys.push_back(std::string("tascar.spkcalib.sub.") + key);
@@ -480,10 +490,14 @@ calibsession_t::calibsession_t(const std::string& fname, const calib_cfg_t& cfg)
   startlevel = get_caliblevel();
   startdiffgain = get_diffusegain();
   for(auto recspk : {spk_nsp, spk_spec}) {
-    for(auto& spk : recspk->spkpos)
+    for(auto& spk : recspk->spkpos) {
       spk.eqstages = 0;
-    for(auto& spk : recspk->spkpos.subs)
+      spk.eqfirlen = 0;
+    }
+    for(auto& spk : recspk->spkpos.subs) {
       spk.eqstages = 0;
+      spk.eqfirlen = 0;
+    }
   }
   for(size_t ich = 0; ich < cfg_.refport.size() + 1; ++ich) {
     bbrecbuf.push_back(
@@ -529,15 +543,19 @@ void calibsession_t::enable_spkcorr_spec(bool b)
     if(b) {
       spk_spec->spkpos[k].eq = spk_nsp->spkpos[k].eq;
       spk_spec->spkpos[k].eqstages = spk_nsp->spkpos[k].eqstages;
+      spk_spec->spkpos[k].eqfirlen = spk_nsp->spkpos[k].eqfirlen;
     } else {
       spk_spec->spkpos[k].eqstages = 0u;
+      spk_spec->spkpos[k].eqfirlen = 0u;
     }
   for(uint32_t k = 0; k < sublevels.size(); ++k)
     if(b) {
       spk_spec->spkpos.subs[k].eq = spk_nsp->spkpos.subs[k].eq;
       spk_spec->spkpos.subs[k].eqstages = spk_nsp->spkpos.subs[k].eqstages;
+      spk_spec->spkpos.subs[k].eqfirlen = spk_nsp->spkpos.subs[k].eqfirlen;
     } else {
       spk_spec->spkpos.subs[k].eqstages = 0u;
+      spk_spec->spkpos.subs[k].eqfirlen = 0u;
     }
 }
 
@@ -657,9 +675,11 @@ void get_levels_(spk_array_t& spks, TASCAR::Scene::src_object_t& src,
   for(auto& spk : spks) {
     ++c;
     spkeq_report_t report;
-    if(spk.calibrate && (calibpar.max_eqstages > 0u)) {
+    if(spk.calibrate &&
+       ((calibpar.max_eqstages > 0u) || (calibpar.max_eqfirlen > 0u))) {
       // deactivate frequency correction:
       spk.eqstages = 0u;
+      spk.eqfirlen = 0u;
       // move source to speaker position:
       get_speaker_equalization(spk, src, jackrec, recbuf, miccalib, ports,
                                weight, calibpar, levels_tmp, vF, vG,
@@ -668,21 +688,26 @@ void get_levels_(spk_array_t& spks, TASCAR::Scene::src_object_t& src,
       report.vG_precalib = vG;
       for(auto& g : report.vG_precalib)
         g *= -1.0f;
-      // auto med = getmedian(report.vG_precalib);
-      // for(auto& g : report.vG_precalib)
-      //  g -= med;
-      uint32_t numflt =
-          std::min(((uint32_t)vF.size() - 1u) / 3u, calibpar.max_eqstages);
-      float maxq = std::max(1.0f, (float)vF.size()) /
-                   log2f(calibpar.fmax / calibpar.fmin);
-      spk.eq.optim_response((size_t)numflt, maxq, vF, vG,
-                            (float)jackrec.get_srate(), 2000u);
-      report.eq_f = spk.eq.get_f();
-      report.eq_g = spk.eq.get_g();
-      report.eq_q = spk.eq.get_q();
-      spk.eqfreq = vF;
-      spk.eqgain = vG;
-      spk.eqstages = numflt;
+      if(calibpar.max_eqstages > 0u) {
+        uint32_t numflt =
+            std::min(((uint32_t)vF.size() - 1u) / 3u, calibpar.max_eqstages);
+        float maxq = std::max(1.0f, (float)vF.size()) /
+                     log2f(calibpar.fmax / calibpar.fmin);
+        spk.eq.optim_response((size_t)numflt, maxq, vF, vG,
+                              (float)jackrec.get_srate(), 2000u);
+        report.eq_f = spk.eq.get_f();
+        report.eq_g = spk.eq.get_g();
+        report.eq_q = spk.eq.get_q();
+        spk.eqfreq = vF;
+        spk.eqgain = vG;
+        spk.eqstages = numflt;
+      }
+      if(calibpar.max_eqfirlen > 0u) {
+        spk.eqfreq = vF;
+        spk.eqgain = vG;
+        spk.eqstages = 0u;
+        spk.eqfirlen = calibpar.max_eqfirlen;
+      }
     }
     if(spk.calibrate) {
       get_speaker_equalization(spk, src, jackrec, recbuf, miccalib, ports,
@@ -813,7 +838,9 @@ void calibsession_t::file_saveas(const std::string& fname)
     auto& tscspk = spk_spec->spkpos[std::min(k, spk_spec->spkpos.size() - 1)];
     espk.set_attribute("gain", TASCAR::to_string(20 * log10(tscspk.gain)));
     espk.set_attribute("eqstages", std::to_string(spk_nsp->spkpos[k].eqstages));
-    if(spk_nsp->spkpos[k].eqstages > 0) {
+    espk.set_attribute("eqfirlen", std::to_string(spk_nsp->spkpos[k].eqfirlen));
+    if((spk_nsp->spkpos[k].eqstages > 0u) ||
+       (spk_nsp->spkpos[k].eqfirlen > 0u)) {
       espk.set_attribute("eqfreq",
                          TASCAR::to_string(spk_nsp->spkpos[k].eqfreq));
       espk.set_attribute("eqgain",
@@ -832,7 +859,10 @@ void calibsession_t::file_saveas(const std::string& fname)
     espk.set_attribute("gain", TASCAR::to_string(20 * log10(tscspk.gain)));
     espk.set_attribute("eqstages",
                        std::to_string(spk_nsp->spkpos.subs[k].eqstages));
-    if(spk_nsp->spkpos.subs[k].eqstages > 0) {
+    espk.set_attribute("eqfirlen",
+                       std::to_string(spk_nsp->spkpos.subs[k].eqfirlen));
+    if((spk_nsp->spkpos.subs[k].eqstages > 0u) ||
+       (spk_nsp->spkpos.subs[k].eqfirlen > 0u)) {
       espk.set_attribute("eqfreq",
                          TASCAR::to_string(spk_nsp->spkpos.subs[k].eqfreq));
       espk.set_attribute("eqgain",

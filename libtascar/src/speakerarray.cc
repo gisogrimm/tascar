@@ -385,7 +385,7 @@ void spk_array_t::configure()
       minphase(smoothspec);
       fft.execute(smoothspec);
       ofh << "ir_mp = [" << fft.w << "];" << std::endl;
-      // spk.comp->set_irs(TASCAR::wave_t(spk.compB));
+      spk.comp->set_irs(fft.w);
     }
     if(spk.eqstages > 0) {
       float fmin = 1.0f;

@@ -76,6 +76,9 @@ namespace TASCAR {
     uint32_t max_eqstages =
         0u; ///< Maximum number of biquad filter stages to use for frequency
             ///< compensation (0 means no frequency compensation).
+    uint32_t max_eqfirlen =
+        0u; ///< Maximum taps of FIR filter to use for frequency
+            ///< compensation (0 means no FIR frequency compensation).
     const bool issub =
         false; ///< True if this parameter set is for a subwoofer.
   };
@@ -712,7 +715,7 @@ namespace TASCAR {
  * Local Variables:
  * mode: c++
  * c-basic-offset: 2
- * indent-tags-mode: nil
+ * indent-tabs-mode: nil
  * compile-command: "make -C .."
  * End:
  */

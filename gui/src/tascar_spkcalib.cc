@@ -977,6 +977,7 @@ void spkcalib_t::par2gui()
   UPDATE_GTKENTRY_FROM_VALUE(par_speaker, bandsperoctave);
   UPDATE_GTKENTRY_FROM_VALUE(par_speaker, bandoverlap);
   UPDATE_GTKENTRY_FROM_VALUE(par_speaker, max_eqstages);
+  UPDATE_GTKENTRY_FROM_VALUE(par_speaker, max_eqfirlen);
   UPDATE_GTKENTRY_FROM_VALUE(par_sub, fmin);
   UPDATE_GTKENTRY_FROM_VALUE(par_sub, fmax);
   UPDATE_GTKENTRY_FROM_VALUE(par_sub, duration);
@@ -985,6 +986,7 @@ void spkcalib_t::par2gui()
   UPDATE_GTKENTRY_FROM_VALUE(par_sub, bandsperoctave);
   UPDATE_GTKENTRY_FROM_VALUE(par_sub, bandoverlap);
   UPDATE_GTKENTRY_FROM_VALUE(par_sub, max_eqstages);
+  UPDATE_GTKENTRY_FROM_VALUE(par_sub, max_eqfirlen);
   update_gtkentry_from_value("entry_refport", spkcalib.cfg.refport);
   update_gtkentry_from_value_dbspl("entry_miccalibdb", spkcalib.cfg.miccalib);
   update_gtkcheckbox_from_value("checkbox_initcal", spkcalib.cfg.initcal);
@@ -997,6 +999,7 @@ void spkcalib_t::par2gui()
   update_gtkentry_set_sensitive("par_sub_bandsperoctave", has_sub);
   update_gtkentry_set_sensitive("par_sub_bandoverlap", has_sub);
   update_gtkentry_set_sensitive("par_sub_max_eqstages", has_sub);
+  update_gtkentry_set_sensitive("par_sub_max_eqfirlen", has_sub);
 }
 
 void spkcalib_t::gui2par()
@@ -1009,6 +1012,7 @@ void spkcalib_t::gui2par()
   UPDATE_VALUE_FROM_GTKENTRY(par_speaker, bandsperoctave);
   UPDATE_VALUE_FROM_GTKENTRY(par_speaker, bandoverlap);
   UPDATE_VALUE_FROM_GTKENTRY(par_speaker, max_eqstages);
+  UPDATE_VALUE_FROM_GTKENTRY(par_speaker, max_eqfirlen);
   UPDATE_VALUE_FROM_GTKENTRY(par_sub, fmin);
   UPDATE_VALUE_FROM_GTKENTRY(par_sub, fmax);
   UPDATE_VALUE_FROM_GTKENTRY(par_sub, duration);
@@ -1017,6 +1021,7 @@ void spkcalib_t::gui2par()
   UPDATE_VALUE_FROM_GTKENTRY(par_sub, bandsperoctave);
   UPDATE_VALUE_FROM_GTKENTRY(par_sub, bandoverlap);
   UPDATE_VALUE_FROM_GTKENTRY(par_sub, max_eqstages);
+  UPDATE_VALUE_FROM_GTKENTRY(par_sub, max_eqfirlen);
   update_value_from_gtkentry("entry_refport", spkcalib.cfg.refport);
   update_value_dbspl_from_gtkentry("entry_miccalibdb", spkcalib.cfg.miccalib);
   update_value_from_gtkcheckbox("checkbox_initcal", spkcalib.cfg.initcal);
