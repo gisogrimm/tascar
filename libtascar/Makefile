@@ -187,7 +187,7 @@ build/%.mk: src/%.cc
 %: %.o
 	$(CXX) $(CXXFLAGS) $(LDLIBS) $^ -o $@
 
-build/%.o: src/%.cc include/%.h ver
+build/%.o: src/%.cc include/%.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 build/pugixml.o: ../external_libs/pugixml-1.11.4/src/pugixml.cpp ../external_libs/pugixml-1.11.4/src/pugixml.hpp ../external_libs/pugixml-1.11.4/src/pugiconfig.hpp
