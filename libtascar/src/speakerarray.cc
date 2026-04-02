@@ -233,6 +233,70 @@ double spk_descriptor_t::get_cos_adist(pos_t src_unit) const
   return dot_prod(src_unit, unitvector);
 }
 
+void spk_descriptor_t::clear_comp()
+{
+  std::lock_guard<std::mutex> lock(eqmtx);
+  if(comp)
+    delete comp;
+  comp = NULL;
+}
+
+void spk_descriptor_t::set_comp(uint32_t n_fragment, float f_sample)
+{
+  if((eqstages > 0u) && (eqfreq.size() > 1)) {
+    uint32_t numflt = std::min(((uint32_t)eqfreq.size() - 1u) / 3u, eqstages);
+    float maxq = std::max(1.0f, (float)eqfreq.size()) /
+                 log2f(eqfreq[eqfreq.size() - 1] / eqfreq[0]);
+    DEBUG(maxq);
+    eq.optim_response((size_t)numflt, maxq, eqfreq, eqgain, f_sample, 2000u);
+  }
+  if(eqfirlen > 0u) {
+    DEBUG(eqfirlen);
+    set_comp_from_gains(n_fragment, f_sample);
+  }
+}
+
+void spk_descriptor_t::set_comp_from_coeff(const std::vector<double>& c,
+                                           uint32_t n_fragment)
+{
+  std::lock_guard<std::mutex> lock(eqmtx);
+  if(comp) {
+    delete comp;
+    comp = NULL;
+  }
+  comp = new TASCAR::partitioned_conv_t(c.size(), n_fragment);
+  comp->set_irs(TASCAR::wave_t(c));
+}
+
+void spk_descriptor_t::set_comp_from_gains(uint32_t n_fragment, float f_sample)
+{
+  std::lock_guard<std::mutex> lock(eqmtx);
+  if(comp) {
+    delete comp;
+    comp = NULL;
+  }
+  DEBUG("generating debug m-file");
+  std::ofstream ofh("debug.m");
+  ofh << "eqfirlen = " << eqfirlen << ";" << std::endl;
+  ofh << "nfragment = " << n_fragment << ";" << std::endl;
+  ofh << "vfreq = [" << TASCAR::to_string(eqfreq) << "];" << std::endl;
+  ofh << "vgain = [" << TASCAR::to_string(eqgain) << "];" << std::endl;
+  comp = new TASCAR::partitioned_conv_t(eqfirlen, n_fragment);
+  // convert non-linearly sampled gains into a smoothed spectrum:
+  uint32_t n_fft = std::max((uint32_t)f_sample, eqfirlen + n_fragment);
+  ofh << "n_fft = " << n_fft << ";" << std::endl;
+  TASCAR::minphase_t minphase(n_fft);
+  TASCAR::fft_t fft(n_fft);
+  auto smoothspec =
+      TASCAR::sampled_spec_to_smooth_spec(f_sample, fft.s.n_, eqfreq, eqgain);
+  ofh << "smoothspec = [" << smoothspec << "];" << std::endl;
+  // set minimum phase filter here:
+  minphase(smoothspec);
+  fft.execute(smoothspec);
+  ofh << "ir_mp = [" << fft.w << "];" << std::endl;
+  comp->set_irs(fft.w);
+}
+
 bool sort_didx(const spk_array_t::didx_t& a, const spk_array_t::didx_t& b)
 {
   return (a.d > b.d);
@@ -361,32 +425,10 @@ void spk_array_t::configure()
           "would overwrite explicit FIR coefficients).");
   }
   for(auto& spk : *this) {
-    if(spk.compB.size() > 0) {
-      spk.comp = new TASCAR::partitioned_conv_t(spk.compB.size(), n_fragment);
-      spk.comp->set_irs(TASCAR::wave_t(spk.compB));
-    }
-    if(spk.eqfirlen > 0) {
-      std::ofstream ofh("debug.m");
-      ofh << "eqfirlen = " << spk.eqfirlen << ";" << std::endl;
-      ofh << "nfragment = " << n_fragment << ";" << std::endl;
-      ofh << "vfreq = [" << TASCAR::to_string(spk.eqfreq) << "];" << std::endl;
-      ofh << "vgain = [" << TASCAR::to_string(spk.eqgain) << "];" << std::endl;
-      spk.comp = new TASCAR::partitioned_conv_t(spk.eqfirlen, n_fragment);
-      // convert non-linearly sampled gains into a smoothed spectrum:
-      uint32_t n_fft = std::max((uint32_t)f_sample, spk.eqfirlen + n_fragment);
-      ofh << "n_fft = " << n_fft << ";" << std::endl;
-      TASCAR::minphase_t minphase(n_fft);
-      TASCAR::fft_t fft(n_fft);
-      auto smoothspec = TASCAR::sampled_spec_to_smooth_spec(
-          f_sample, fft.s.n_, spk.eqfreq, spk.eqgain);
-      ofh << "smoothspec = [" << smoothspec << "];"
-          << std::endl;
-      // set minimum phase filter here:
-      minphase(smoothspec);
-      fft.execute(smoothspec);
-      ofh << "ir_mp = [" << fft.w << "];" << std::endl;
-      spk.comp->set_irs(fft.w);
-    }
+    if(spk.compB.size() > 0)
+      spk.set_comp_from_coeff(spk.compB, n_fragment);
+    if(spk.eqfirlen > 0)
+      spk.set_comp_from_gains(n_fragment, f_sample);
     if(spk.eqstages > 0) {
       float fmin = 1.0f;
       float fmax = 1.0f;
@@ -805,19 +847,21 @@ void spk_array_diff_render_t::postproc(std::vector<wave_t>& output)
     //}
     delaycomp[k](output[k]);
     output[k] *= sgain;
-    if(operator[](k).comp)
-      operator[](k).comp->process(output[k], output[k], false);
-    if(operator[](k).eqstages)
-      operator[](k).eq.filter(output[k]);
+    operator[](k).postproc_spkeq(output[k]);
+    // if(operator[](k).comp)
+    //  operator[](k).comp->process(output[k], output[k], false);
+    // if(operator[](k).eqstages)
+    //  operator[](k).eq.filter(output[k]);
   }
   // calibration of subs:
   for(uint32_t k = 0; k < subs.size(); ++k) {
     float sgain(subs[k].spkgain * subs[k].gain);
     output[k + size()] *= sgain;
-    if(subs[k].comp)
-      subs[k].comp->process(output[k + size()], output[k + size()], false);
-    if(subs[k].eqstages)
-      subs[k].eq.filter(output[k + size()]);
+    subs[k].postproc_spkeq(output[k + size()]);
+    // if(subs[k].comp)
+    //  subs[k].comp->process(output[k + size()], output[k + size()], false);
+    // if(subs[k].eqstages)
+    //  subs[k].eq.filter(output[k + size()]);
   }
   // convolution
   if(use_conv && (!convprecalib)) {
@@ -830,6 +874,17 @@ void spk_array_diff_render_t::postproc(std::vector<wave_t>& output)
         vvp_convolver[inchannel][outchannel]->process(
             output[inchannel], output[choffset + outchannel], true);
       }
+  }
+}
+
+void spk_descriptor_t::postproc_spkeq(TASCAR::wave_t& w)
+{
+  if(eqmtx.try_lock()) {
+    if(comp)
+      comp->process(w, w, false);
+    if(eqstages)
+      eq.filter(w);
+    eqmtx.unlock();
   }
 }
 

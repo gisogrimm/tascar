@@ -41,6 +41,11 @@ namespace TASCAR {
     virtual ~spk_descriptor_t();
     double get_rel_azim(double az_src) const;
     double get_cos_adist(pos_t src_unit) const;
+    void set_comp(uint32_t n_fragment, float f_sample);
+    void clear_comp();
+    void set_comp_from_coeff(const std::vector<double>& c, uint32_t n_fragment);
+    void set_comp_from_gains(uint32_t n_fragment, float f_sample);
+    void postproc_spkeq(TASCAR::wave_t& w);
     double az;
     double el;
     double r;
@@ -61,8 +66,12 @@ namespace TASCAR {
     float d_z;
     float densityweight;
     // frequency response correction:
+  private:
     // FIR filter:
     TASCAR::partitioned_conv_t* comp;
+    std::mutex eqmtx;
+
+  public:
     // IIR filter:
     TASCAR::multiband_pareq_t eq;
     std::vector<float> eqfreq;

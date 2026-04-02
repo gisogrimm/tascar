@@ -167,6 +167,9 @@ void spk_eq_param_t::read_xml(const tsccfg::node_t& layoutnode)
       "Overlap in frequency bands in filterbank for level equalization.");
   e.GET_ATTRIBUTE(max_eqstages, "",
                   "Number of filter stages for frequency compensation.");
+  e.GET_ATTRIBUTE(
+      max_eqfirlen, "",
+      "Length of FIR filters for speaker equalization (0 = disable).");
   try {
     validate();
   }
@@ -469,7 +472,6 @@ calibsession_t::calibsession_t(const std::string& fname, const calib_cfg_t& cfg)
   if(scenes.empty())
     throw TASCAR::ErrMsg("Programming error: no scene");
   if(scenes[0]->source_objects.size() != 2) {
-    DEBUG(scenes.size());
     for(const auto& scene : scenes) {
       DEBUG(scene->source_objects.size());
     }
@@ -544,18 +546,24 @@ void calibsession_t::enable_spkcorr_spec(bool b)
       spk_spec->spkpos[k].eq = spk_nsp->spkpos[k].eq;
       spk_spec->spkpos[k].eqstages = spk_nsp->spkpos[k].eqstages;
       spk_spec->spkpos[k].eqfirlen = spk_nsp->spkpos[k].eqfirlen;
+      spk_spec->spkpos[k].set_comp(jackrec.get_fragsize(),
+                                   (float)jackrec.get_srate());
     } else {
       spk_spec->spkpos[k].eqstages = 0u;
       spk_spec->spkpos[k].eqfirlen = 0u;
+      spk_spec->spkpos[k].clear_comp();
     }
   for(uint32_t k = 0; k < sublevels.size(); ++k)
     if(b) {
       spk_spec->spkpos.subs[k].eq = spk_nsp->spkpos.subs[k].eq;
       spk_spec->spkpos.subs[k].eqstages = spk_nsp->spkpos.subs[k].eqstages;
       spk_spec->spkpos.subs[k].eqfirlen = spk_nsp->spkpos.subs[k].eqfirlen;
+      spk_spec->spkpos.subs[k].set_comp(jackrec.get_fragsize(),
+                                        (float)jackrec.get_srate());
     } else {
       spk_spec->spkpos.subs[k].eqstages = 0u;
       spk_spec->spkpos.subs[k].eqfirlen = 0u;
+      spk_spec->spkpos.subs[k].clear_comp();
     }
 }
 
@@ -680,6 +688,7 @@ void get_levels_(spk_array_t& spks, TASCAR::Scene::src_object_t& src,
       // deactivate frequency correction:
       spk.eqstages = 0u;
       spk.eqfirlen = 0u;
+      spk.clear_comp();
       // move source to speaker position:
       get_speaker_equalization(spk, src, jackrec, recbuf, miccalib, ports,
                                weight, calibpar, levels_tmp, vF, vG,
@@ -688,25 +697,20 @@ void get_levels_(spk_array_t& spks, TASCAR::Scene::src_object_t& src,
       report.vG_precalib = vG;
       for(auto& g : report.vG_precalib)
         g *= -1.0f;
+      spk.eqfreq = vF;
+      spk.eqgain = vG;
+      spk.eqstages = calibpar.max_eqstages;
+      spk.eqfirlen = calibpar.max_eqfirlen;
+      spk.set_comp(jackrec.get_fragsize(), (float)jackrec.get_srate());
       if(calibpar.max_eqstages > 0u) {
-        uint32_t numflt =
-            std::min(((uint32_t)vF.size() - 1u) / 3u, calibpar.max_eqstages);
-        float maxq = std::max(1.0f, (float)vF.size()) /
-                     log2f(calibpar.fmax / calibpar.fmin);
-        spk.eq.optim_response((size_t)numflt, maxq, vF, vG,
-                              (float)jackrec.get_srate(), 2000u);
         report.eq_f = spk.eq.get_f();
         report.eq_g = spk.eq.get_g();
         report.eq_q = spk.eq.get_q();
-        spk.eqfreq = vF;
-        spk.eqgain = vG;
-        spk.eqstages = numflt;
       }
       if(calibpar.max_eqfirlen > 0u) {
-        spk.eqfreq = vF;
-        spk.eqgain = vG;
-        spk.eqstages = 0u;
-        spk.eqfirlen = calibpar.max_eqfirlen;
+        report.eq_f.clear();
+        report.eq_g.clear();
+        report.eq_q.clear();
       }
     }
     if(spk.calibrate) {

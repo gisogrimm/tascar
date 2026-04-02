@@ -153,12 +153,12 @@ TASCAR::minphase_t::minphase_t(uint32_t fftlen)
   // We use the buffer inside freq_buf_ as input
   plan_c2r_ = fftwf_plan_dft_c2r_1d(
       fftlen_, reinterpret_cast<fftwf_complex*>(freq_buf_->b), time_buf_,
-      FFTW_MEASURE);
+      FFTW_ESTIMATE);
   // 2. Forward FFT: Real Time -> Complex Half-Spectrum
   // Used to transform the windowed cepstrum back to frequency domain
   plan_r2c_ = fftwf_plan_dft_r2c_1d(
       fftlen_, time_buf_, reinterpret_cast<fftwf_complex*>(freq_buf_->b),
-      FFTW_MEASURE);
+      FFTW_ESTIMATE);
   // Initialize buffers to zero
   memset(time_buf_, 0, sizeof(float) * fftlen_);
   freq_buf_->clear();
