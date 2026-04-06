@@ -247,11 +247,9 @@ void spk_descriptor_t::set_comp(uint32_t n_fragment, float f_sample)
     uint32_t numflt = std::min(((uint32_t)eqfreq.size() - 1u) / 3u, eqstages);
     float maxq = std::max(1.0f, (float)eqfreq.size()) /
                  log2f(eqfreq[eqfreq.size() - 1] / eqfreq[0]);
-    DEBUG(maxq);
     eq.optim_response((size_t)numflt, maxq, eqfreq, eqgain, f_sample, 2000u);
   }
   if(eqfirlen > 0u) {
-    DEBUG(eqfirlen);
     set_comp_from_gains(n_fragment, f_sample);
   }
 }
@@ -275,25 +273,16 @@ void spk_descriptor_t::set_comp_from_gains(uint32_t n_fragment, float f_sample)
     delete comp;
     comp = NULL;
   }
-  DEBUG("generating debug m-file");
-  std::ofstream ofh("debug.m");
-  ofh << "eqfirlen = " << eqfirlen << ";" << std::endl;
-  ofh << "nfragment = " << n_fragment << ";" << std::endl;
-  ofh << "vfreq = [" << TASCAR::to_string(eqfreq) << "];" << std::endl;
-  ofh << "vgain = [" << TASCAR::to_string(eqgain) << "];" << std::endl;
   comp = new TASCAR::partitioned_conv_t(eqfirlen, n_fragment);
   // convert non-linearly sampled gains into a smoothed spectrum:
   uint32_t n_fft = std::max((uint32_t)f_sample, eqfirlen + n_fragment);
-  ofh << "n_fft = " << n_fft << ";" << std::endl;
   TASCAR::minphase_t minphase(n_fft);
   TASCAR::fft_t fft(n_fft);
   auto smoothspec =
       TASCAR::sampled_spec_to_smooth_spec(f_sample, fft.s.n_, eqfreq, eqgain);
-  ofh << "smoothspec = [" << smoothspec << "];" << std::endl;
   // set minimum phase filter here:
   minphase(smoothspec);
   fft.execute(smoothspec);
-  ofh << "ir_mp = [" << fft.w << "];" << std::endl;
   comp->set_irs(fft.w);
 }
 

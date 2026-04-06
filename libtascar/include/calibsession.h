@@ -358,10 +358,14 @@ namespace TASCAR {
     {
       return (cfg_.par_speaker.duration + cfg_.par_speaker.prewait) *
                  (double)get_num_bb() *
-                 (1.0 + (double)(cfg_.par_speaker.max_eqstages > 0u)) +
+                 (1.0 + (double)(cfg_.par_speaker.max_eqstages +
+                                     cfg_.par_speaker.max_eqfirlen >
+                                 0u)) +
              (cfg_.par_sub.duration + cfg_.par_sub.prewait) *
                  (double)get_num_sub() *
-                 (1.0 + (double)(cfg_.par_sub.max_eqstages > 0u)) +
+                 (1.0 + (double)(cfg_.par_sub.max_eqstages +
+                                     cfg_.par_sub.max_eqfirlen >
+                                 0u)) +
              0.2f * (float)cfg_.par_speaker.max_eqstages *
                  (double)get_num_bb() +
              0.2f * (float)cfg_.par_sub.max_eqstages * (double)get_num_sub();

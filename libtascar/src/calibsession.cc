@@ -546,6 +546,8 @@ void calibsession_t::enable_spkcorr_spec(bool b)
       spk_spec->spkpos[k].eq = spk_nsp->spkpos[k].eq;
       spk_spec->spkpos[k].eqstages = spk_nsp->spkpos[k].eqstages;
       spk_spec->spkpos[k].eqfirlen = spk_nsp->spkpos[k].eqfirlen;
+      spk_spec->spkpos[k].eqfreq = spk_nsp->spkpos[k].eqfreq;
+      spk_spec->spkpos[k].eqgain = spk_nsp->spkpos[k].eqgain;
       spk_spec->spkpos[k].set_comp(jackrec.get_fragsize(),
                                    (float)jackrec.get_srate());
     } else {
@@ -558,6 +560,8 @@ void calibsession_t::enable_spkcorr_spec(bool b)
       spk_spec->spkpos.subs[k].eq = spk_nsp->spkpos.subs[k].eq;
       spk_spec->spkpos.subs[k].eqstages = spk_nsp->spkpos.subs[k].eqstages;
       spk_spec->spkpos.subs[k].eqfirlen = spk_nsp->spkpos.subs[k].eqfirlen;
+      spk_spec->spkpos.subs[k].eqfreq = spk_nsp->spkpos.subs[k].eqfreq;
+      spk_spec->spkpos.subs[k].eqgain = spk_nsp->spkpos.subs[k].eqgain;
       spk_spec->spkpos.subs[k].set_comp(jackrec.get_fragsize(),
                                         (float)jackrec.get_srate());
     } else {

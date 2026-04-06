@@ -20,10 +20,10 @@
  */
 
 #include "spectrum.h"
+#include "errorhandling.h"
 #include "tscconfig.h"
 #include <algorithm>
 #include <string.h>
-#include "errorhandling.h"
 
 TASCAR::spec_t::spec_t(uint32_t n)
     : n_(n), b(new std::complex<float>[std::max(1u, n_)])
@@ -229,13 +229,15 @@ TASCAR::sampled_spec_to_smooth_spec(float f_sample, uint32_t n_bins,
                                     const std::vector<float>& vgaindb)
 {
   if(vfreq.empty())
-    throw TASCAR::ErrMsg("Empty frequency vector.");
+    throw TASCAR::ErrMsg(
+        "Empty frequency vector (sampled_spec_to_smooth_spec).");
   if(vfreq.size() != vgaindb.size())
     throw TASCAR::ErrMsg("Different size of frequencies and gains. vfreq has " +
                          std::to_string((vfreq.size())) + ", vgaindb has " +
-                         std::to_string(vgaindb.size()) + ".");
+                         std::to_string(vgaindb.size()) +
+                         " (sampled_spec_to_smooth_spec).");
   std::vector<float> vfreqlog;
-  //vfreqlog.push_back(log2f(EPSf));
+  // vfreqlog.push_back(log2f(EPSf));
   vfreqlog.push_back(log2f(vfreq[0]) - 4.0f);
   vfreqlog.push_back(log2f(vfreq[0]) - 3.0f);
   vfreqlog.push_back(log2f(vfreq[0]) - 2.0f);
@@ -258,7 +260,7 @@ TASCAR::sampled_spec_to_smooth_spec(float f_sample, uint32_t n_bins,
   std::vector<float> vfreq_out(n_bins);
   TASCAR::spec_t spectrum(n_bins);
   for(uint32_t k = 1; k < spectrum.n_; ++k)
-    vfreq_out[k-1] =
+    vfreq_out[k - 1] =
         log2f(std::max(EPSf, (float)k / (float)n_bins * 0.5f * f_sample));
   auto spec_lin = cubic_spline_interpolate(vfreqlog, vgain_extrap, vfreq_out);
   for(uint32_t k = 1; k < spectrum.n_; ++k)
