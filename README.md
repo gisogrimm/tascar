@@ -3,10 +3,11 @@
 TASCAR is a collection of tools for creating spatially dynamic
 acoustic scenes in different render formats, e.g. higher order
 Ambisonics or VBAP. The toolbox has been developed for applications in
-the context of hearing research and hearing aid evaluation.
+the context of hearing research and hearing aid evaluation. Other
+applications are low-delay interactive spatial rendering of music.
 
 For installation of binary packages, please see
-[install.tascar.org](http://install.tascar.org/)
+[tascar.org/install.html](http://tascar.org/install.html)
 
 
 ## Contributing:
