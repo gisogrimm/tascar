@@ -338,7 +338,7 @@ There is also an option to track the selected object in the scene map.
 
 \subsection{Network remote control via OSC}
 
-The majority of options in \tascar{} can be controlled remotely via the Open Sound Control (OSC) protocol. An OSC message comprises one or more numeric values or strings. Each message can be transmitted to an OSC path on an OSC server. \tascar{} supports both UDP and TCP transport layers for the receipt of OSC messages. The ``oscserver'' module can be used to combine multiple OSC transport methods or multiple ports (for further details, please refer to section \ref{sec:oscserver}). Additionally, a GNU Octave/MATLAB remote control tool is available (for further details, please refer to section \ref{sec:sendosc}).
+The majority of options in \tascar{} can be controlled remotely via the Open Sound Control (OSC) protocol. An OSC message comprises one or more numeric values or strings. Each message can be transmitted to an OSC path (e.g., \verb!/scene/object/gain!) on an OSC server (e.g., a UDP server listening on port 9877 at host \verb!localhost!). \tascar{} supports both UDP and TCP transport layers for the receipt of OSC messages. The ``oscserver'' module can be used to combine multiple OSC transport methods or multiple ports (for further details, please refer to section \ref{sec:oscserver}). Additionally, a GNU Octave/MATLAB remote control tool is available (for further details, please refer to section \ref{sec:sendosc}).
 
 A list of OSC variables with their type and, in some cases, documentation, typical range and current value can be read using the special variable \verb!/sendvarsto!  This OSC variable takes three string parameters: The first is a valid OSC URL, e.g. \verb!osc.udp://localhost:9000/!.  The variable list is sent to this address.  The second parameter is an OSC path to send the variable list to, e.g. \verb!/getvar!.  The third parameter, which is optional, is a prefix.  If specified, only variables starting with that prefix will be reported.
 
@@ -368,11 +368,24 @@ This destination should be able to receive string data (format \verb!s!).
 Please note that in some cases the maximum transmission unit of UDP
 messages is not sufficient to transmit all data.
 %
-In this case you should use TCP transport.
+If you receive truncated or missing OSC messages, switch to TCP transport.
 
 It is also possible to read OSC variables from a file. This can be achieved either through the XML variable \attr{initoscscript}, or the OSC variable \attr{/runscript}. In this case, every non-empty line that does not begin with \attr{#}, \attr{@}, \attr{<}, or \attr{,}, is interpreted as an OSC message. The initial element of a space-separated list of words or numbers represents the path. All subsequent elements are converted to numeric floats if feasible, whereas those that are not are transmitted as strings. If a line commences with a comma \attr{,}, the number following the comma is interpreted as the time in seconds to await the next line's processing. Lines that commence with a hashtag \attr{#} and those that are empty are disregarded. Lines that commence with the ``at'' symbol \attr{@} indicate the presence of a ``timed message.'' In this context, the numerical value immediately following the \attr{@} symbol represents the session time at which the subsequent message is dispatched.
 
 In the event that a space-separated list of filenames (optionally quoted to include filenames with spaces) is specified instead of a single filename, all specified files are processed in sequence. It should be noted that if the XML attribute \attr{scriptcancel} is set to ``true'', the execution of other scripts will be aborted if a script is initiated while other scripts are still being processed. Otherwise, the scripts will be appended. Furthermore, if the filename does not commence with an absolute path, the session attribute \attr{scriptpath} will be used as a prefix. The default file extension for \tascar{} is OSC scripts, which are designated by the extension ``.tosc''. With the session attribute \attr{initoscscript}, an OSC script can be specified which will be run after loading a session. It is important to note that the \attr{/runscript} OSC command cannot be used to read nested OSC script files. Instead, a line containing \verb!<filename! should be written into the script file at the position where the nested file \verb!filename! is to be read. The variables \attr{scriptpath} and \attr{scriptext} will be prefixed and appended to the filename. It is required that there are no leading or trailing spaces in the line that begins with \verb!<!.
+
+Here is a minimal \verb!.tosc! file example:
+\begin{verbatim}
+# Set gain of source 1 to 0.5
+/scene/objects/1/gain 0.5
+
+# Wait 2 seconds before next message
+,2
+/scene/objects/1/gain 1.0
+
+# Run nested script
+<my_nested_script.tosc
+\end{verbatim}
 
 \subsection{Optimization of the operating system for audio processing}
 
@@ -425,7 +438,7 @@ Alternatively, if a realtime kernel is not available, type:
 sudo apt install linux-lowlatency rtirq-init
 \end{verbatim}
 
-When you start Jack, you should choose a realtime priority that is slightly lower than the priority of the interrupt handler of the selected sound card. This can be checked with the \verb!tascar_testrtprio!  tool in the console. A sample output may look like the following:
+When starting Jack, choose a real-time priority slightly lower than the interrupt handler priority of the selected sound card. This prevents the audio thread from preempting the sound card's interrupt handler, which could result in buffer underruns. You can check this with the \verb!tascar_testrtprio! tool in the console. A sample output may look like the following:
 \begin{lstlisting}[numbers=none]
        CPU0   CPU1   CPU2    CPU3       
    0:    13      0      0       0   IO-APIC    2-edge      timer
@@ -474,7 +487,9 @@ CPU frequency scaling can cause dropouts in audio signal processing when switchi
 \begin{verbatim}
 for c in {0..11}; do cpufreq-selector -c $c -g performance; done
 \end{verbatim}
-or with the \tascar{} provided wrapper \verb!tascar_cpufreq!. If this doesn't work please use the CPU frequency scaling indicators of your desktop manager, or with
+or with the \tascar{} provided wrapper \verb!tascar_cpufreq!.
+If cpufreq-selector is not available, install it via sudo apt install cpufrequtils.
+If this doesn't work please use the CPU frequency scaling indicators of your desktop manager, or with
 \begin{verbatim}
 echo "performance" | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 \end{verbatim}
