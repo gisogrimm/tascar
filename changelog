@@ -1,3 +1,7 @@
+0.237.1:
+       - MIDI support on MacOS
+       - minimum phase FIR filter can be used for loudspeaker equalization
+
 0.236.1:
        - add tool to test for real-time optimisations on Linux systems
 
