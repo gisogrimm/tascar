@@ -1,5 +1,3 @@
-# do not package main until hoa2d tests are fixed!
-
 # Create a new release
 
 On branch development:
