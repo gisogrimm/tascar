@@ -804,7 +804,7 @@ void calibsession_t::get_levels()
     for(uint32_t k = 0; k < sublevels.size(); ++k)
       recspk->spkpos.subs[k].gain *= pow(10.0, 0.05 * (lmin - sublevels[k]));
     // set max gain of broadband speakers to zero:
-    double lmax(0);
+    float lmax(0.0f);
     for(uint32_t k = 0; k < levels.size(); ++k)
       lmax = std::max(lmax, recspk->spkpos[k].gain);
     for(uint32_t k = 0; k < levels.size(); ++k)

@@ -224,6 +224,7 @@ void TASCAR::receivermod_base_speaker_t::add_variables(
   srv->set_variable_owner("receivermod_base_speaker");
   srv->add_bool("/decorr", &(spkpos.decorr));
   srv->add_bool("/densitycorr", &(spkpos.densitycorr));
+  srv->add_bool("/enable_eq", &(spkpos.enable_eq));
   srv->unset_variable_owner();
 }
 
@@ -311,8 +312,8 @@ spatial_error_t TASCAR::receivermod_base_speaker_t::get_spatial_error(
     add_pointsource(pos, 0.0, ones, output, sd);
     postproc(output);
     for(size_t outch(0); outch < spkpos.size(); ++outch)
-      output[outch] *=
-          1.0f / ((float)spkpos[outch].gain * (float)spkpos[outch].spkgain);
+      output[outch] *= 1.0f / (spkpos[outch].gain *
+                               spkpos[outch].gain_for_distance_correction);
     spkpos.clear_states();
     TASCAR::pos_t rE;
     TASCAR::pos_t rV;

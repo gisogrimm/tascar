@@ -46,17 +46,17 @@ namespace TASCAR {
     void set_comp_from_coeff(const std::vector<double>& c, uint32_t n_fragment);
     void set_comp_from_gains(uint32_t n_fragment, float f_sample);
     void postproc_spkeq(TASCAR::wave_t& w);
-    double az;
-    double el;
-    double r;
-    double delay;
+    double az = 0.0;
+    double el = 0.0;
+    double r = 1.0;
+    double delay = 0.0;
     std::string label;
     std::string connect;
     std::vector<double> compB;
-    double gain;
+    float gain = 1.0f;
     // derived parameters:
     pos_t unitvector;
-    double spkgain;
+    float gain_for_distance_correction = 1.0f;
     double dr;
     // decoder matrix:
     void update_foa_decoder(float gain, float xyzgain);
@@ -233,6 +233,8 @@ namespace TASCAR {
     std::vector<std::string> convlabels;
     bool enable_subs = true;
     bool enable_bb = true;
+    bool enable_eq = true;
+    bool enable_gaincorr = true;
   };
 } // namespace TASCAR
 

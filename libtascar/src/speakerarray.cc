@@ -157,7 +157,8 @@ spk_array_t::spk_array_t(tsccfg::node_t e, bool use_parent_xml,
   for(uint32_t k = 0; k < size(); k++) {
     if(fabsf(operator[](k).unitvector.z) > 1e-6f)
       isflat = false;
-    operator[](k).spkgain *= operator[](k).norm() / rmax;
+    // compensate relative distance:
+    operator[](k).gain_for_distance_correction *= operator[](k).norm() / rmax;
     operator[](k).dr = rmax - operator[](k).norm();
     p_xy += std::exp(-(double)k * TASCAR_2PI * i / (double)(size())) *
             (operator[](k).unitvector.x + i * operator[](k).unitvector.y);
@@ -335,9 +336,8 @@ void spk_array_diff_render_t::render_diffuse(
 }
 
 spk_descriptor_t::spk_descriptor_t(tsccfg::node_t xmlsrc)
-    : xml_element_t(xmlsrc), az(0.0), el(0.0), r(1.0), delay(0.0), gain(1.0),
-      spkgain(1.0), dr(0.0), d_w(0.0f), d_x(0.0f), d_y(0.0f), d_z(0.0f),
-      densityweight(1.0), comp(NULL)
+    : xml_element_t(xmlsrc), az(0.0), el(0.0), r(1.0), delay(0.0), dr(0.0),
+      d_w(0.0f), d_x(0.0f), d_y(0.0f), d_z(0.0f), densityweight(1.0), comp(NULL)
 {
   GET_ATTRIBUTE_DEG(az, "Azimuth");
   GET_ATTRIBUTE_DEG(el, "Elevation");
@@ -364,10 +364,11 @@ spk_descriptor_t::spk_descriptor_t(const spk_descriptor_t& src)
     : xml_element_t(src), pos_t(src), az(src.az), el(src.el), r(src.r),
       delay(src.delay), label(src.label), connect(src.connect),
       compB(src.compB), gain(src.gain), unitvector(src.unitvector),
-      spkgain(src.spkgain), dr(src.dr), d_w(src.d_w), d_x(src.d_x),
-      d_y(src.d_y), d_z(src.d_z), densityweight(src.densityweight), comp(NULL),
-      eqfreq(src.eqfreq), eqgain(src.eqgain), eqstages(src.eqstages),
-      eqfirlen(src.eqfirlen), calibrate(src.calibrate)
+      gain_for_distance_correction(src.gain_for_distance_correction),
+      dr(src.dr), d_w(src.d_w), d_x(src.d_x), d_y(src.d_y), d_z(src.d_z),
+      densityweight(src.densityweight), comp(NULL), eqfreq(src.eqfreq),
+      eqgain(src.eqgain), eqstages(src.eqstages), eqfirlen(src.eqfirlen),
+      calibrate(src.calibrate)
 {
 }
 
@@ -830,27 +831,19 @@ void spk_array_diff_render_t::postproc(std::vector<wave_t>& output)
   if(delaycomp.size() != size())
     throw TASCAR::ErrMsg("Invalid delay compensation array");
   for(uint32_t k = 0; k < size(); ++k) {
-    float sgain((float)(operator[](k).spkgain) * (float)(operator[](k).gain));
-    // for(uint32_t f = 0; f < output[k].n; ++f) {
-    //  output[k].d[f] = sgain * delaycomp[k](output[k].d[f]);
-    //}
+    float sgain((float)(operator[](k).gain_for_distance_correction) *
+                (float)(operator[](k).gain));
     delaycomp[k](output[k]);
     output[k] *= sgain;
-    operator[](k).postproc_spkeq(output[k]);
-    // if(operator[](k).comp)
-    //  operator[](k).comp->process(output[k], output[k], false);
-    // if(operator[](k).eqstages)
-    //  operator[](k).eq.filter(output[k]);
+    if(enable_eq)
+      operator[](k).postproc_spkeq(output[k]);
   }
   // calibration of subs:
   for(uint32_t k = 0; k < subs.size(); ++k) {
-    float sgain(subs[k].spkgain * subs[k].gain);
+    float sgain(subs[k].gain_for_distance_correction * subs[k].gain);
     output[k + size()] *= sgain;
-    subs[k].postproc_spkeq(output[k + size()]);
-    // if(subs[k].comp)
-    //  subs[k].comp->process(output[k + size()], output[k + size()], false);
-    // if(subs[k].eqstages)
-    //  subs[k].eq.filter(output[k + size()]);
+    if(enable_eq)
+      subs[k].postproc_spkeq(output[k + size()]);
   }
   // convolution
   if(use_conv && (!convprecalib)) {

@@ -23,18 +23,12 @@
 #include "errorhandling.h"
 #include "speakerarray.h"
 
-/*
-  This example implements an audio plugin which is a white noise
-  generator.
-
-  Audio plugins inherit from TASCAR::audioplugin_base_t and need to
-  implement the method ap_process(), and optionally add_variables().
- */
 class ap_spkcalib_t : public TASCAR::audioplugin_base_t {
 public:
   ap_spkcalib_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
                   const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+  void add_variables(TASCAR::osc_server_t* srv);
   void configure();
   void release();
   virtual ~ap_spkcalib_t();
@@ -48,6 +42,14 @@ ap_spkcalib_t::ap_spkcalib_t(const TASCAR::audioplugin_cfg_t& cfg)
     : audioplugin_base_t(cfg), spk(e, false)
 {
   // register variable for XML access:
+}
+
+void ap_spkcalib_t::add_variables(TASCAR::osc_server_t* srv)
+{
+  srv->set_variable_owner(
+      TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
+  srv->add_bool("/enable_eq", &(spk.enable_eq));
+  srv->unset_variable_owner();
 }
 
 void ap_spkcalib_t::configure()
@@ -78,8 +80,8 @@ void ap_spkcalib_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
 {
   // implement the algrithm:
   spk.postproc(chunk);
-  for( auto& ch : chunk )
-    ch *= 1.0f/(float)spk.caliblevel;
+  for(auto& ch : chunk)
+    ch *= 1.0f / (float)spk.caliblevel;
 }
 
 // create the plugin interface:

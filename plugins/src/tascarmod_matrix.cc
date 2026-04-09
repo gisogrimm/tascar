@@ -51,6 +51,7 @@ public:
   virtual int process(jack_nframes_t, const std::vector<float*>&,
                       const std::vector<float*>&);
   void configure();
+  void add_variables(TASCAR::osc_server_t* srv);
 
 private:
   TASCAR::spk_array_diff_render_t outputs;
@@ -115,9 +116,22 @@ matrix_t::matrix_t(const TASCAR::module_cfg_t& cfg)
       snprintf(ctmp, 1023, "%s", label.c_str());
     add_output_port(ctmp);
   }
+  add_variables(session);
 }
 
 matrix_vars_t::~matrix_vars_t() {}
+
+void matrix_t::add_variables(TASCAR::osc_server_t* srv)
+{
+  srv->set_variable_owner(
+      TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
+  std::string prefix_(srv->get_prefix());
+  //srv->set_prefix(std::string("/") + name);
+  DEBUG(tsccfg::node_get_path(e));
+  srv->add_bool("/enable_eq", &(outputs.enable_eq));
+  srv->set_prefix(prefix_);
+  srv->unset_variable_owner();
+}
 
 void matrix_t::release()
 {

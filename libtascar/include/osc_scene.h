@@ -32,29 +32,32 @@ namespace TASCAR {
 
   namespace Scene {
 
-    //class osc_scene_t : public TASCAR::Scene::scene_t, public TASCAR::osc_server_t {
-    //class osc_scene_t : public TASCAR::osc_server_t {
     class osc_scene_t {
     public:
       osc_scene_t(tsccfg::node_t xmlsrc, TASCAR::render_core_t* scene_);
       ~osc_scene_t();
       void add_child_methods(TASCAR::osc_server_t*);
+
     private:
-      void add_object_methods(TASCAR::osc_server_t*,TASCAR::Scene::object_t* o);
-      void add_route_methods(TASCAR::osc_server_t*,TASCAR::Scene::route_t* r);
-      void add_sound_methods(TASCAR::osc_server_t*,TASCAR::Scene::sound_t* s);
-      void add_diffuse_methods(TASCAR::osc_server_t*,TASCAR::Scene::diff_snd_field_obj_t* s);
-      void add_receiver_methods(TASCAR::osc_server_t*,TASCAR::Scene::receiver_obj_t* s);
-      void add_face_object_methods(TASCAR::osc_server_t*,TASCAR::Scene::face_object_t* s);
-      void add_face_group_methods(TASCAR::osc_server_t*,TASCAR::Scene::face_group_t* s);
+      void add_object_methods(TASCAR::osc_server_t*,
+                              TASCAR::Scene::object_t* o);
+      void add_route_methods(TASCAR::osc_server_t*, TASCAR::Scene::route_t* r);
+      void add_sound_methods(TASCAR::osc_server_t*, TASCAR::Scene::sound_t* s);
+      void add_diffuse_methods(TASCAR::osc_server_t*,
+                               TASCAR::Scene::diff_snd_field_obj_t* s);
+      void add_receiver_methods(TASCAR::osc_server_t*,
+                                TASCAR::Scene::receiver_obj_t* s);
+      void add_face_object_methods(TASCAR::osc_server_t*,
+                                   TASCAR::Scene::face_object_t* s);
+      void add_face_group_methods(TASCAR::osc_server_t*,
+                                  TASCAR::Scene::face_group_t* s);
       TASCAR::render_core_t* scene;
       std::vector<route_solo_p_t*> vprs;
-      
     };
 
-  }
+  } // namespace Scene
 
-}
+} // namespace TASCAR
 
 #endif
 
