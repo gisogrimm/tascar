@@ -22,6 +22,7 @@ usr-local-bin: build
 	mkdir -p "$(DESTDIR)$(PREFIX)/bin"
 	rm -f "homebrew-build-dir/$(PREFIX)/bin/"*.mk
 	cp -r "homebrew-build-dir/$(PREFIX)/bin/"* "$(DESTDIR)$(PREFIX)/bin"
+	cp "$(REPO)/packaging/homebrew/tascar_homebrew_postinstall" "$(DESTDIR)$(PREFIX)/bin"
 
 usr-local-lib: build
 	mkdir -p "$(DESTDIR)$(PREFIX)/lib"

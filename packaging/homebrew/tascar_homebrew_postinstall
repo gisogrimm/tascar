@@ -1,0 +1,2 @@
+#!/bin/zsh
+ln -sf $(find /opt/homebrew/Cellar/tascar -name tascar.app) ${HOME}/Applications/
