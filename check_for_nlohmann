@@ -1,0 +1,6 @@
+#!/bin/bash
+(
+    echo '#include <nlohmann/json.hpp>'
+    echo 'int main(int,char**){return 0;}'
+) | g++ ${LDFLAGS} -x c++ - 2>/dev/null && echo yes||echo no
+rm -f a.out

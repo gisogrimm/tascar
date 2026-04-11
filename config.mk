@@ -44,14 +44,12 @@ mkfile_path := $(subst $(notdir $(mkfile_name)),,$(mkfile_name))
 
 #HAS_LSL:=$(shell $(mkfile_path)/check_for_lsl)
 HAS_LSL=yes
-
 HAS_OPENMHA:=$(shell $(mkfile_path)/check_for_openmha)
-
 HAS_OPENCV2:=$(shell $(mkfile_path)/check_for_opencv2)
-
 HAS_OPENCV4:=$(shell $(mkfile_path)/check_for_opencv4)
-
 HAS_WEBKIT:=$(shell $(mkfile_path)/check_for_webkit)
+HAS_MOSQUITTO:=$(shell pkg-config libmosquitto && echo "yes" || echo "no")
+HAS_NLOHMANN:=$(shell $(mkfile_path)/check_for_nlohmann)
 
 BUILD_DIR = build
 SOURCE_DIR = src
@@ -64,3 +62,5 @@ export HAS_LSL
 export HAS_OPENMHA
 export HAS_OPENCV2
 export HAS_WEBKIT
+export HAS_MOSQUITTO
+export HAS_NLOHMANN

@@ -32,6 +32,12 @@ ifeq "$(HAS_LSL)" "yes"
 BINFILES += tascar_lslsl tascar_lsljacktime tascar_osc2lsl tascar_genrandlsl
 endif
 
+ifeq "$(HAS_MOSQUITTO)" "yes"
+ifeq "$(HAS_NLOHMANN)" "yes"
+BINFILES += tascar_mqtt2osc
+endif
+endif
+
 ifeq "ok" "$(shell pkg-config gtkmm-3.0 && echo ok)"
 GTKDEF = "-DGTKMM30"
 GTKEXT = gtkmm-3.0
@@ -78,6 +84,7 @@ build/tascar_pdf build/tascar_pdf.o: CXXFLAGS += $(GTKCFLAGS)
 build/tascar_pdf build/tascar_pdf.o: LDLIBS += -ltascargui $(EXTERNALLIBS) $(GTKLIBS)
 build/tascar_ambdecoder: LDLIBS += `pkg-config --libs gsl`
 build/tascar_lslsl build/tascar_lsljacktime build/tascar_osc2lsl build/tascar_genrandlsl: LDLIBS+= $(LSLLIBS)
+build/tascar_mqtt2osc: LDLIBS += -lmosquitto
 
 ifeq "$(COVERAGE)" "yes"
 LDLIBS += -lgcov -lgmock_main
