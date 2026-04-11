@@ -1,0 +1,7 @@
+#!/bin/bash
+
+APP_PATH="$(dirname "$(dirname "$(realpath "$0")")")"
+
+BINARY_PATH="$(brew --prefix tascar)/bin/tascar"
+
+exec "$BINARY_PATH" "$@"
