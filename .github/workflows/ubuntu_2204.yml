@@ -15,12 +15,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: fetchall
       run: git fetch --unshallow --tags
-    - name: hoerzentrumserver for LSL
-      run: wget -qO- https://apt.hoertech.de/openmha-packaging.pub | sudo apt-key add - &&
-           sudo apt-add-repository 'deb http://apt.hoertech.de/ jammy universe'
     - name: dependencies
       run: sudo apt update && 
-           sudo apt install --assume-yes build-essential default-jre doxygen dpkg-dev g++ git imagemagick jackd2 libasound2-dev libboost-all-dev libcairomm-1.0-dev libeigen3-dev libfftw3-dev libfftw3-double3 libfftw3-single3 libgsl-dev libgtkmm-3.0-dev libgtksourceviewmm-3.0-dev libjack-jackd2-dev liblo-dev libltc-dev libmatio-dev libsndfile1-dev libwebkit2gtk-4.0-dev libxml++2.6-dev lsb-release make portaudio19-dev ruby-dev software-properties-common texlive-latex-extra texlive-latex-recommended vim-common wget libsamplerate0-dev libxerces-c-dev graphviz liblsl libopencv-dev libopencv-calib3d-dev libcunit1-dev
+           sudo apt install --assume-yes build-essential default-jre doxygen dpkg-dev g++ git imagemagick jackd2 libasound2-dev libboost-all-dev libcairomm-1.0-dev libeigen3-dev libfftw3-dev libfftw3-double3 libfftw3-single3 libgsl-dev libgtkmm-3.0-dev libgtksourceviewmm-3.0-dev libjack-jackd2-dev liblo-dev libltc-dev libmatio-dev libsndfile1-dev libwebkit2gtk-4.0-dev libxml++2.6-dev lsb-release make portaudio19-dev ruby-dev software-properties-common texlive-latex-extra texlive-latex-recommended vim-common wget libsamplerate0-dev libxerces-c-dev graphviz libopencv-dev libopencv-calib3d-dev libcunit1-dev
     - name: make
       run: make -j 4
     - name: packaging
