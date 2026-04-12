@@ -20,7 +20,7 @@ jobs:
     - name: dependencies1
       run: brew install pkgconfig coreutils labstreaminglayer/tap/lsl
     - name: dependencies2
-      run: brew install jack liblo libsndfile eigen boost gsl fftw libsamplerate xerces-c libltc libmatio cunit mosquitto
+      run: brew install jack liblo libsndfile eigen boost gsl fftw libsamplerate xerces-c libltc libmatio cunit mosquitto nlohmann-json
     - name: dependencies3
       run: brew install glibmm gtkmm3 gtksourceviewmm3 adwaita-icon-theme
     - name: dependencies4

@@ -10,6 +10,7 @@
 "apps/build/tascar_lsjackp","usr/bin/"
 "apps/build/tascar_lsljacktime","usr/bin/"
 "apps/build/tascar_lslsl","usr/bin/"
+"apps/build/tascar_mqtt2osc","usr/bin/"
 "apps/build/tascar_osc2csv","usr/bin/"
 "apps/build/tascar_osc2file","usr/bin/"
 "apps/build/tascar_osc2lsl","usr/bin/"
