@@ -1,1 +1,1 @@
-jackd, hoertech-openmha-keyring, ${shlibsDepends}
+jackd, ${shlibsDepends}
