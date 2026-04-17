@@ -28,6 +28,7 @@ public:
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
                   const TASCAR::zyx_euler_t& rot,
                   const TASCAR::transport_t& tp);
+  void add_variables(TASCAR::osc_server_t* srv);
   void configure();
   void release();
   ~delay_t();
@@ -36,14 +37,24 @@ private:
   std::vector<double> delay;
   std::vector<TASCAR::wave_t*> dline;
   std::vector<uint32_t> pos;
+  bool bypass = false;
 };
 
 delay_t::delay_t(const TASCAR::audioplugin_cfg_t& cfg)
     : audioplugin_base_t(cfg), delay({1.0}), pos(0)
 {
   GET_ATTRIBUTE(delay, "s", "Delays in seconds");
+  GET_ATTRIBUTE_BOOL(bypass, "Bypass delay function");
   if(delay.empty())
     delay.push_back(0.0);
+}
+
+void delay_t::add_variables(TASCAR::osc_server_t* srv)
+{
+  srv->set_variable_owner(
+      TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
+  srv->add_bool("/bypass", &bypass);
+  srv->unset_variable_owner();
 }
 
 void delay_t::configure()
@@ -74,6 +85,8 @@ void delay_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
                          const TASCAR::pos_t&, const TASCAR::zyx_euler_t&,
                          const TASCAR::transport_t&)
 {
+  if(bypass)
+    return;
   // first iterate over samples:
   for(uint32_t k = 0; k < chunk[0].n; ++k) {
     // now iterate over channels:
