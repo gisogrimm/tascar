@@ -81,7 +81,7 @@ hoa2d_t::~hoa2d_t() {}
 void hoa2d_t::add_variables(TASCAR::osc_server_t* srv)
 {
   TASCAR::receivermod_base_t::add_variables(srv);
-  srv->set_variable_owner("receivermod_hoa2d_fuma");
+  srv->set_variable_owner(TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
   srv->add_float("/rho0", &rho0, "[0,2]", "Reference radius in m");
   srv->add_float("/rhoc", &rhoc, "[0,2]", "Centre radius in m");
   srv->unset_variable_owner();

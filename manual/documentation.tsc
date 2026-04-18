@@ -72,6 +72,7 @@
     <receiver type="debugpos" name="debugpos"/>
     <receiver type="fakebf" name="fakebf"/>
     <receiver type="hoa2d_fuma" name="hoa2d_fuma"/>
+    <receiver type="hoa2d_fuma_hos" name="hoa2d_fuma_hos"/>
     <receiver type="hoa3d_enc" name="hoa3d_enc"/>
     <receiver type="hrtf" name="hrtf"/>
     <receiver type="itu51" name="itu51"/>

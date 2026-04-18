@@ -87,11 +87,11 @@ secmaskmodules.tex: $(sort $(wildcard maskmod*.tex))
 
 secrecgeneric.tex: $(sort $(wildcard recgen*.tex))
 	echo 'List of generic receiver types:\par\begin{itemize}' > $@;\
-	(for m in $(subst recgen,,$(subst .tex,,$^)); do echo "\\item \\indrecgen[$$m]{$${m/_/\\_}}"; done) >> $@;\
+	(for m in $(subst recgen,,$(subst .tex,,$^)); do mm=$$(echo $$m|sed 's/_/\\_/g'); echo "\\item \\indrecgen[$$m]{$${mm}}"; done) >> $@;\
 	echo '\end{itemize}' >> $@;\
 	echo "" >> $@;\
 	echo "" >> $@;\
-	(for m in $(subst recgen,,$(subst .tex,,$^)); do echo "\\subsubsection{$${m/_/\\_}}\\label{sec:recgen_$$m}\\index{$${m/_/\\_} (receiver type)}";echo "\\input{recgen$$m.tex}"; done) >> $@
+	(for m in $(subst recgen,,$(subst .tex,,$^)); do mm=$$(echo $$m|sed 's/_/\\_/g'); echo "\\subsubsection{$${mm}}\\label{sec:recgen_$$m}\\index{$${mm} (receiver type)}";echo "\\input{recgen$$m.tex}"; done) >> $@
 
 secrecspeaker.tex: $(sort $(wildcard recspk*.tex))
 	echo 'List of speaker based receiver types:\par\begin{itemize}' > $@;\
