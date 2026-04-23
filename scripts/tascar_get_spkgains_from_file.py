@@ -3,6 +3,94 @@ import argparse
 import numpy as np
 from scipy.io import wavfile
 
+import numpy as np
+from math import floor, log2, pow, cos, pi
+
+def get_bandlevels2(w, cfmin, cfmax, fs, bpo, overlap):
+    """
+    Calculate band levels for audio signal using frequency bands.
+
+    Parameters:
+    w: array-like, input waveform data
+    cfmin: float, minimum center frequency
+    cfmax: float, maximum center frequency
+    fs: float, sampling frequency
+    bpo: float, bands per octave
+    overlap: float, overlap between bands
+    vF: list, output center frequencies (optional)
+    vL: list, output band levels (optional)
+
+    Returns:
+    tuple: (vF, vL) - center frequencies and corresponding levels
+    """
+
+    # Convert input to numpy array if needed
+    w = np.array(w)
+    n = len(w)
+
+    # Calculate number of bands
+    numbands = int(floor(bpo * log2(cfmax / cfmin))) + 1
+    bpo = (numbands - 1) / log2(cfmax / cfmin)
+
+    # Initialize output lists
+    vF = []
+    vL = []
+
+    # Generate center frequencies
+    for k in range(numbands):
+        f = cfmin * pow(2.0, k / bpo)
+        vF.append(f)
+
+    # Perform FFT
+    fft_result = np.fft.fft(w)
+    fft_magnitude = np.abs(fft_result)
+
+    # Process each band
+    for f in vF:
+        f1e = f * pow(2.0, -0.5 / bpo)
+        f2e = f * pow(2.0, 0.5 / bpo)
+        f1 = f * pow(2.0, -(0.5 + overlap) / bpo)
+        f2 = f * pow(2.0, (0.5 + overlap) / bpo)
+
+        # Calculate indices
+        idx1e = min(int((n * f1e / fs)), len(fft_magnitude) - 1)
+        idx2e = min(int((n * f2e / fs)), len(fft_magnitude) - 1)
+        idx1 = min(int((n * f1 / fs)), len(fft_magnitude) - 1)
+        idx2 = min(int((n * f2 / fs)), len(fft_magnitude) - 1)
+
+        # Calculate energy in the band
+        l = 0.0
+
+        # Lower overlap area from f1 to f1e
+        if idx1e > idx1:
+            for k in range(idx1, idx1e):
+                w_val = 0.5 - 0.5 * cos((k - idx1) / (idx1e - idx1) * pi)
+                l += fft_magnitude[k] * fft_magnitude[k] * w_val * w_val
+
+        # Central area from f1e to f2e
+        if idx2e > idx1e:
+            for k in range(idx1e, idx2e):
+                l += fft_magnitude[k] * fft_magnitude[k]
+
+        # Upper overlap area from f2e to f2
+        if idx2 > idx2e:
+            for k in range(idx2e, idx2):
+                w_val = 0.5 + 0.5 * cos((k - idx2e) / (idx2 - idx2e) * pi)
+                l += fft_magnitude[k] * fft_magnitude[k] * w_val * w_val
+
+        # Scale to Pa^2, factor 2 due to positive frequencies only
+        l *= 5e4 * 5e4 * 2.0
+        l /= n * n
+
+        # Convert to dB
+        vL.append(10.0 * np.log10(l))
+
+    vF = np.array(vF)
+    vL = np.array(vL)
+
+    return vF, vL
+
+
 def get_bandlevels(w, cfmin, cfmax, fs, bpo, overlap):
     """
     Calculate band levels of a waveform signal.
@@ -10,7 +98,7 @@ def get_bandlevels(w, cfmin, cfmax, fs, bpo, overlap):
     """
     # Calculate number of bands
     numbands = int(np.floor(bpo * np.log2(cfmax / cfmin))) + 1
-    
+
     # Recalculate bpo to ensure exact fit between cfmin and cfmax
     if numbands > 1:
         bpo = (numbands - 1) / np.log2(cfmax / cfmin)
@@ -20,20 +108,20 @@ def get_bandlevels(w, cfmin, cfmax, fs, bpo, overlap):
     # Initialize frequency vector
     k_indices = np.arange(numbands)
     vF = cfmin * np.power(2.0, k_indices / bpo)
-    
+
     # Get length of waveform
     w_n = len(w)
-    
+
     # Execute FFT
-    # We use standard FFT. 
+    # We use standard FFT.
     fft_s = np.fft.fft(w)
-    
+
     # Pre-calculate squared magnitude of FFT spectrum (Power)
     P = np.abs(fft_s)**2
-    
+
     # Initialize level vector
     vL = np.zeros(numbands)
-    
+
     # Iterate through each center frequency
     for i, f in enumerate(vF):
         # Calculate edge frequencies
@@ -41,7 +129,7 @@ def get_bandlevels(w, cfmin, cfmax, fs, bpo, overlap):
         f2e = f * 2.0**(0.5 / bpo)
         f1  = f * 2.0**(-(0.5 + overlap) / bpo)
         f2  = f * 2.0**((0.5 + overlap) / bpo)
-        
+
         # The C++ code calculates indices as: (uint32_t)((float)w.n * f / fs)
         # This maps frequency f directly to an index.
         # We must replicate this exactly to match the C++ output.
@@ -49,17 +137,17 @@ def get_bandlevels(w, cfmin, cfmax, fs, bpo, overlap):
         idx2e = int(np.floor(w_n * f2e / fs))
         idx1  = int(np.floor(w_n * f1 / fs))
         idx2  = int(np.floor(w_n * f2 / fs))
-        
+
         # Clamp indices to valid range [0, w_n]
         # C++ uses std::min(..., fft.s.n_)
         idx1e = min(idx1e, w_n)
         idx2e = min(idx2e, w_n)
         idx1  = min(idx1, w_n)
         idx2  = min(idx2, w_n)
-        
+
         # Initialize level accumulator
         l = 0.0
-        
+
         # Lower overlap area (f1 to f1e)
         if idx1e > idx1:
             k_range = np.arange(idx1, idx1e)
@@ -69,12 +157,12 @@ def get_bandlevels(w, cfmin, cfmax, fs, bpo, overlap):
                 norm_pos = (k_range - idx1) / denom
                 w_win = 0.5 - 0.5 * np.cos(norm_pos * np.pi)
                 l += np.sum(P[k_range] * (w_win**2))
-            
+
         # Central area (f1e to idx2e)
         if idx2e > idx1e:
             k_range = np.arange(idx1e, idx2e)
             l += np.sum(P[k_range])
-            
+
         # Upper overlap area (f2e to f2)
         if idx2 > idx2e:
             k_range = np.arange(idx2e, idx2)
@@ -83,23 +171,23 @@ def get_bandlevels(w, cfmin, cfmax, fs, bpo, overlap):
                 norm_pos = (k_range - idx2e) / denom
                 w_win = 0.5 + 0.5 * np.cos(norm_pos * np.pi)
                 l += np.sum(P[k_range] * (w_win**2))
-        
+
         # Scale to Pa^2
         # C++: l *= 5e4f * 5e4f * 2.0f;
         l = l * (5e4)**2 * 2.0
-        
+
         # Normalize by N^2
         l = l / (w_n**2)
-        
+
         # Convert to dB
         if l > 0:
             vL[i] = 10 * np.log10(l)
         else:
             vL[i] = -np.inf
-            
+
     return vF, vL
 
-def tascar_get_spkgains_from_file(fileref, filetest, cfmin, cfmax, bpo, overlap):
+def tascar_get_spkgains_from_file(fileref, filetest, cfmin, cfmax, bpo, overlap, channel=0):
     """
     Calculate speaker gains by comparing band levels of two audio files.
     """
@@ -109,7 +197,7 @@ def tascar_get_spkgains_from_file(fileref, filetest, cfmin, cfmax, bpo, overlap)
     except FileNotFoundError:
         print(f"Error: Reference file '{fileref}' not found.")
         sys.exit(1)
-        
+
     # Load Test File
     try:
         fs_test, data_test = wavfile.read(filetest)
@@ -127,23 +215,36 @@ def tascar_get_spkgains_from_file(fileref, filetest, cfmin, cfmax, bpo, overlap)
         data_ref = data_ref.astype(np.float32) / np.iinfo(data_ref.dtype).max
     if data_test.dtype.kind == 'i':
         data_test = data_test.astype(np.float32) / np.iinfo(data_test.dtype).max
-        
-    # If stereo, take the mean channel to create mono
+
+    # Handle multi-channel audio - select specific channel
     if len(data_ref.shape) > 1:
-        data_ref = np.mean(data_ref, axis=1)
+        if channel >= data_ref.shape[1]:
+            print(f"Warning: Channel {channel} requested, but reference file has only {data_ref.shape[1]} channels. Using channel 0.")
+            channel = 0
+        data_ref = data_ref[:, channel]
+    else:
+        # Mono file, ignore channel parameter
+        pass
+
     if len(data_test.shape) > 1:
-        data_test = np.mean(data_test, axis=1)
+        if channel >= data_test.shape[1]:
+            print(f"Warning: Channel {channel} requested, but test file has only {data_test.shape[1]} channels. Using channel 0.")
+            channel = 0
+        data_test = data_test[:, channel]
+    else:
+        # Mono file, ignore channel parameter
+        pass
 
     # Calculate Band Levels
-    print(f"Analyzing Reference: {fileref}...")
-    vF, vL1 = get_bandlevels(data_ref, cfmin, cfmax, fs_ref, bpo, overlap)
-    
-    print(f"Analyzing Test: {filetest}...")
-    vF, vL2 = get_bandlevels(data_test, cfmin, cfmax, fs_ref, bpo, overlap)
-    
+    print(f"Analyzing Reference: {fileref} (Channel {channel})...")
+    vF, vL1 = get_bandlevels2(data_ref, cfmin, cfmax, fs_ref, bpo, overlap)
+
+    print(f"Analyzing Test: {filetest} (Channel {channel})...")
+    vF, vL2 = get_bandlevels2(data_test, cfmin, cfmax, fs_ref, bpo, overlap)
+
     # Calculate Gains
     vG = vL1 - vL2
-    
+
     return vF, vG
 
 def main():
@@ -156,19 +257,21 @@ def main():
     parser.add_argument("--cfmax", type=float, default=20000.0, help="Maximum center frequency (Hz). Default: 20000.0")
     parser.add_argument("--bpo", type=float, default=3.0, help="Bands per octave. Default: 3.0")
     parser.add_argument("--overlap", type=float, default=0.5, help="Overlap factor. Default: 0.5")
-    
+    parser.add_argument("--channel", type=int, default=0, help="Input channel (0-based). Default: 0")
+
     args = parser.parse_args()
-    
+
     # Run calculation
     vF, vG = tascar_get_spkgains_from_file(
-        args.fileref, 
-        args.filetest, 
-        args.cfmin, 
-        args.cfmax, 
-        args.bpo, 
-        args.overlap
+        args.fileref,
+        args.filetest,
+        args.cfmin,
+        args.cfmax,
+        args.bpo,
+        args.overlap,
+        args.channel
     )
-    
+
     # Output results
     print("\n--- Results ---")
     print("vfreq:")

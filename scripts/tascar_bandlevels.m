@@ -31,6 +31,7 @@ function [vF, vL] = tascar_bandlevels(w, cfmin, cfmax, fs, bpo, overlap)
     % Optionally read w from sound file
     if ischar(w)
       [w,file_fs] = audioread(w);
+      w = w(:,1);
       if isempty(fs) || (fs==0)
         fs = file_fs;
       end
