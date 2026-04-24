@@ -74,6 +74,7 @@ multibeam_t::multibeam_t(const maskplugin_cfg_t& cfg) : maskplugin_base_t(cfg)
 
 void multibeam_t::add_variables(TASCAR::osc_server_t* srv)
 {
+  srv->set_variable_owner(TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
   srv->add_vector_float_db("/gain", &gain);
   srv->add_vector_float("/selectivity", &selectivity);
   srv->add_vector_float("/az", &az);
@@ -81,6 +82,7 @@ void multibeam_t::add_variables(TASCAR::osc_server_t* srv)
   srv->add_float_db("/mingain", &mingain);
   srv->add_float_db("/maxgain", &maxgain);
   srv->add_bool("/bypass", &bypass);
+  srv->unset_variable_owner();
 }
 
 float multibeam_t::get_gain(const pos_t& pos)

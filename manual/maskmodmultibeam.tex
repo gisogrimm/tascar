@@ -1,12 +1,66 @@
-Add multiple steerable beams. The directional gain $g$ as a function
-of the incident direction $\mathbf{p}$ is defined as
+The \texttt{multibeam} mask plugin applies spatially selective filtering to any TASCAR receiver type. It is designed to simulate beamforming behavior in both point source and diffuse sound field scenarios. The plugin supports:
+\begin{itemize}
+  \item Multiple steering beams (\texttt{numbeams}),
+  \item Angular gain control for point sources,
+  \item Modal filtering in FOA for diffuse field suppression,
+  \item Real-time parameter tuning via OSC.
+\end{itemize}
+
+
+\paragraph{Point Source Response}
+
+The directional gain $G$ as a function of the normalized incident direction
+$\mathbf{p} = \{x,y,z\}$ is defined as
 %
 \begin{equation}
-g(\mathbf{p}) = g_{\textrm{min}} + (1-g_{\textrm{min}})\sum\limits_{k=1}^N g_k\frac{\left(1+\cos\left(\min\{\pi,s_k \arccos\left(\mathbf{p}\cdot\mathbf{p}_k\right)\}\right)\right)}{2}
+G(\mathbf{p}) = \min{\left\{G_{\textrm{max}},G_{\textrm{min}} + (1-G_{\textrm{min}})\sum\limits_{k=1}^N g_k\frac{\left(1+\cos\left(\min\{\pi,s_k \arccos\left(\mathbf{p}\cdot\mathbf{p}_k\right)\}\right)\right)}{2}\right\}}
 \end{equation}
 %
-with the minimum gain $g_\textrm{min}$, the number of beams $N$, the
-on-axis gain $g_k$, the selectivity $s_k$ and the steering vector
-$\mathbf{p}_k$.
+with the minimum gain $G_\textrm{min}$, the maximum gain
+$G_\textrm{max}$, the number of beams $N$, the on-axis gain $g_k$, the
+selectivity $s_k$, and the steering vector $\mathbf{p}_k$.
+
+This function implements a {\em cardioid-like} angular gain pattern with tunable beam width.
+
+\paragraph{Diffuse Field Response}
+
+For diffuse sound fields, the plugin applies a {\em modal filter} in the first-order Ambisonics (FOA) domain. The output is computed as:
+
+\begin{equation}
+\mathbf{Y} = \mathbf{G} \cdot \mathbf{X}
+\end{equation}
+
+where:
+\begin{itemize}
+  \item $\mathbf{X} = [W, X, Y, Z]^T$ is the FOA input vector,
+  \item $\mathbf{G} \in \mathbb{R}^{4 \times 4}$ is the filter matrix,
+  \item $\mathbf{Y}$ is the filtered output.
+\end{itemize}
+
+The matrix $\mathbf{G}$ is constructed as:
+
+\begin{equation}
+\mathbf{G} = \mathbf{G}_{\text{diag}} + \sum_{k=1}^{N} \mathbf{G}_k
+\end{equation}
+
+where:
+\begin{itemize}
+  \item $\mathbf{G}_{\text{diag}} = G_{\min} \cdot \mathbf{I}$: diagonal gain for omnidirectional component,
+  \item $\mathbf{G}_k = \text{selgain}_k \cdot \mathbf{a}_k \cdot \mathbf{a}_k^T$: rank-1 contribution from beam $k$,
+  \item $\mathbf{a}_k = [1, y_k, z_k, x_k]^T$: FOA steering vector (W, Y, Z, X),
+  \item $\text{selgain}_k = \left(1 - \exp\left(-\frac{1}{\text{sel}_k^2}\right)\right) \cdot (1 - \text{dgain}_k) \cdot 0.5674$,
+  \item $\text{dgain}_k = \max(0, 1 - \min(\text{sel}_k, 1))$.
+\end{itemize}
+
+The factor $0.5674$ ensures normalization of the gain.
+
+
+\paragraph{Configuration Parameters}
 
 \input{tabmaskpluginmultibeam.tex}
+
+\paragraph{Real-Time Control via OSC}
+
+The plugin supports real-time parameter tuning through OSC:
+
+\input{oscdoc_tascar_mask_multibeam.tex}
