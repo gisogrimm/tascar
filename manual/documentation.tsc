@@ -79,6 +79,9 @@
     <receiver type="omni" name="omni">
       <maskplugin type="fig8"/>
     </receiver>
+    <receiver type="omni" name="omni1">
+      <maskplugin type="sampledgain"/>
+    </receiver>
     <receiver type="ortf" name="ortf">
       <maskplugin type="multibeam"/>
     </receiver>

@@ -137,7 +137,7 @@ void multibeam_t::get_diff_gain(float* gm)
   // Process each beam
   for(size_t k = 0; k < numbeams; ++k) {
     // Create steering vector in spherical coordinates (unit sphere)
-    TASCAR::pos_t psteer;
+    TASCAR::posf_t psteer;
     psteer.set_sphere(1.0, DEG2RAD * az[k], DEG2RAD * el[k]);
 
     // Compute "diffuse gain" — how much this beam suppresses diffuse field
@@ -156,15 +156,14 @@ void multibeam_t::get_diff_gain(float* gm)
     selgain *= (1.0f - dgain) * 0.5674f;
 
     // Compute directional gains for each FOA mode (W, X, Y, Z)
-    float pgainw = gain[k] * selgain;        // Gain for W (omnidirectional)
-    float pgainy = (float)psteer.y * pgainw; // Gain for Y (Y-directional)
-    float pgainz = (float)psteer.z * pgainw; // Gain for Z (Z-directional)
-    float pgainx = (float)psteer.x * pgainw; // Gain for X (X-directional)
+    float pgainw = gain[k] * selgain; // Gain for W (omnidirectional)
+    float pgainy = psteer.y * pgainw; // Gain for Y (Y-directional)
+    float pgainz = psteer.z * pgainw; // Gain for Z (Z-directional)
+    float pgainx = psteer.x * pgainw; // Gain for X (X-directional)
 
     // Define the steering vector in FOA mode order: [W, Y, Z, X]
     // This matches the FOA convention used in TASCAR
-    float gains[4] = {1.0f, (float)(psteer.y), (float)(psteer.z),
-                      (float)(psteer.x)};
+    float gains[4] = {1.0f, psteer.y, psteer.z, psteer.x};
 
     // Apply the rank-1 matrix contribution: G_k = selgain * a * a^T
     // where a = [1, y, z, x]^T is the FOA steering vector

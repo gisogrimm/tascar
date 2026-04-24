@@ -73,9 +73,12 @@ sampledgain_t::sampledgain_t(const maskplugin_cfg_t& cfg)
 
 void sampledgain_t::add_variables(TASCAR::osc_server_t* srv)
 {
+  srv->set_variable_owner(
+      TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
   srv->add_vector_float_db("/gain", &gain);
   srv->add_vector_float("/lingain", &gain);
   srv->add_bool("/bypass", &bypass);
+  srv->unset_variable_owner();
 }
 
 float sampledgain_t::get_gain(const pos_t& pos)
