@@ -30,26 +30,3 @@ jobs:
       with:
         name: tascar-debian
         path: packaging/deb/tascar/*/*.deb
-    - name: Upload manual to artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: tascar-manual
-        path: manual/manual.pdf
-
-    - name: Checkout Wiki
-      uses: actions/checkout@v4
-      with:
-        repository: ${{github.repository}}.wiki
-        path: ${{github.repository}}.wiki
-
-    - name: Push manual to wiki
-      run: |
-        set -e
-        cd $GITHUB_WORKSPACE/${{github.repository}}.wiki
-        mkdir -p ${{github.ref_name}}
-        ls $GITHUB_WORKSPACE/
-        cp $GITHUB_WORKSPACE/manual/manual.pdf ${{github.ref_name}}/
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add ${{github.ref_name}}
-        git diff-index --quiet HEAD || git commit -m "action: wiki sync" && git push

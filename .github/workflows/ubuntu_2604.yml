@@ -1,0 +1,55 @@
+name: Ubuntu 26.04 make
+
+on:
+  push:
+    branches: [ master, development ]
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+
+    runs-on: ubuntu-26.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: fetchall
+      run: git fetch --unshallow --tags
+    - name: dependencies
+      run: sudo apt update && 
+           sudo apt install --assume-yes build-essential default-jre doxygen dpkg-dev g++ git imagemagick jackd2 libasound2-dev libcairomm-1.0-dev libeigen3-dev libfftw3-dev libfftw3-double3 libfftw3-single3 libgsl-dev libgtkmm-3.0-dev libgtksourceviewmm-3.0-dev libjack-jackd2-dev liblo-dev libltc-dev libmatio-dev libsndfile1-dev libwebkit2gtk-4.1-dev libxml++2.6-dev lsb-release make portaudio19-dev ruby-dev software-properties-common texlive-latex-extra texlive-latex-recommended vim-common wget libsamplerate0-dev libxerces-c-dev graphviz libopencv-dev libopencv-calib3d-dev libcunit1-dev libmosquitto-dev nlohmann-json3-dev
+    - name: make
+      run: make -j 4
+    - name: packaging
+      run: make pack
+    - name: Upload debian packages to artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: tascar-debian
+        path: packaging/deb/tascar/*/*.deb
+    - name: Upload manual to artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: tascar-manual
+        path: manual/manual.pdf
+
+    - name: Checkout Wiki
+      uses: actions/checkout@v4
+      with:
+        repository: ${{github.repository}}.wiki
+        path: ${{github.repository}}.wiki
+
+    - name: Push manual to wiki
+      run: |
+        set -e
+        cd $GITHUB_WORKSPACE/${{github.repository}}.wiki
+        mkdir -p ${{github.ref_name}}
+        ls $GITHUB_WORKSPACE/
+        cp $GITHUB_WORKSPACE/manual/manual.pdf ${{github.ref_name}}/
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add ${{github.ref_name}}
+        git diff-index --quiet HEAD || git commit -m "action: wiki sync" && git push
