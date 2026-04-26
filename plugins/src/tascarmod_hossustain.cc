@@ -5,6 +5,7 @@
  * Copyright (c) 2019 Giso Grimm
  * Copyright (c) 2020 Giso Grimm
  * Copyright (c) 2021 Giso Grimm
+ * Copyright (c) 2026 Giso Grimm
  */
 /*
  * TASCAR is free software: you can redistribute it and/or modify
@@ -13,7 +14,7 @@
  *
  * TASCAR is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHATABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License, version 3 for more details.
  *
  * You should have received a copy of the GNU General Public License,
@@ -30,7 +31,7 @@ const std::complex<double> i_d(0.0, 1.0);
 class sustain_vars_t : public TASCAR::module_base_t {
 public:
   sustain_vars_t(const TASCAR::module_cfg_t& cfg);
-  ~sustain_vars_t(){};
+  ~sustain_vars_t() {};
 
 protected:
   std::string id = "sustain";
@@ -60,6 +61,17 @@ sustain_vars_t::sustain_vars_t(const TASCAR::module_cfg_t& cfg)
   GET_ATTRIBUTE(fcut, "Hz", "Low-cut edge frequency");
   GET_ATTRIBUTE_DB(gain, "Gain");
   GET_ATTRIBUTE_BOOL(delayenvelope, "Delay envelope to match processed signal");
+  // test for current jack fragment size and adapt wlen to be a multiple of it:
+  jackc_portless_t jc(id + "_hossustain__fragsizetest");
+  auto frs = jc.get_fragsize();
+  uint32_t wlen_final = ceilf((float)wlen / (float)frs) * frs;
+  if(wlen != wlen_final)
+    TASCAR::add_warning(
+        "Inner fragment size was adjusted from " + std::to_string(wlen) +
+        " samples to " + std::to_string(wlen_final) +
+        " samples in order to match jack fragment size of " +
+        std::to_string(frs) + " samples per block (hossustain)");
+  wlen = wlen_final;
 }
 
 class sustain_t : public sustain_vars_t, public jackc_db_t {
@@ -195,16 +207,34 @@ sustain_t::sustain_t(const TASCAR::module_cfg_t& cfg)
 {
   add_input_port("in");
   add_output_port("out");
-  session->add_float("/" + oscprefix + id + "/tau_sus", &tau_sustain);
-  session->add_float("/" + oscprefix + id + "/tau_env", &tau_envelope);
-  session->add_float("/" + oscprefix + id + "/bass", &bass);
-  session->add_float("/" + oscprefix + id + "/bassratio", &bassratio);
-  session->add_float("/" + oscprefix + id + "/fcut", &fcut);
-  session->add_double_db("/" + oscprefix + id + "/gain", &gain);
-  session->add_float("/" + oscprefix + id + "/wet", &wet);
+  session->set_variable_owner(
+      TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
+  session->add_float("/" + oscprefix + id + "/tau_sus", &tau_sustain, "[0,]",
+                     "Sets the decay time for the frozen spectral texture.");
+  session->add_float("/" + oscprefix + id + "/tau_env", &tau_envelope, "[0,]",
+                     "Adjusts the speed of the envelope follower matching the "
+                     "output to the input.");
+  session->add_float(
+      "/" + oscprefix + id + "/bass", &bass, "",
+      "Controls the gain of the added subsonic low-frequency component.");
+  session->add_float("/" + oscprefix + id + "/bassratio", &bassratio, "[1,]",
+                     "Sets the frequency ratio for the added bass component.");
+  session->add_float("/" + oscprefix + id + "/fcut", &fcut, "",
+                     "Defines the low-cut edge frequency to remove high "
+                     "frequencies from the processed signal.");
+  session->add_double_db("/" + oscprefix + id + "/gain", &gain, "",
+                         "Sets the overall output amplification.");
+  session->add_float("/" + oscprefix + id + "/wet", &wet, "",
+                     "Adjusts the balance between the processed effect and the "
+                     "dry input signal.");
   session->add_method("/" + oscprefix + id + "/wetapply", "f",
-                      &sustain_t::osc_apply, this);
-  session->add_bool("/" + oscprefix + id + "/delayenvelope", &delayenvelope);
+                      &sustain_t::osc_apply, this,
+                      "Smoothly transitions the wet/dry mix to a new value "
+                      "over a specified time.");
+  session->add_bool("/" + oscprefix + id + "/delayenvelope", &delayenvelope,
+                    "Toggles whether the envelope follower is delayed to match "
+                    "the processed signal latency.");
+  session->unset_variable_owner();
   activate();
 }
 

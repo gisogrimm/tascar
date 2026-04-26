@@ -1,0 +1,24 @@
+\definecolor{shadecolor}{RGB}{236,236,255}\begin{snugshade}
+{\footnotesize
+\label{osctab:tascarmodhossustain}
+OSC variables:
+\nopagebreak
+
+\begin{tabularx}{\textwidth}{llllX}
+\hline
+path & fmt. & range & readable & description\\
+\hline
+\attr{/.../bass} & f &  & yes & Controls the gain of the added subsonic low-frequency component.\\
+\attr{/.../bassratio} & f & [1,] & yes & Sets the frequency ratio for the added bass component.\\
+\attr{/.../delayenvelope} & i & bool & yes & Toggles whether the envelope follower is delayed to match the processed signal latency.\\
+\attr{/.../fcut} & f &  & yes & Defines the low-cut edge frequency to remove high frequencies from the processed signal.\\
+\attr{/.../gain} & f &  & yes & Sets the overall output amplification.\\
+\attr{/.../tau\_env} & f & [0,] & yes & Adjusts the speed of the envelope follower matching the output to the input.\\
+\attr{/.../tau\_sus} & f & [0,] & yes & Sets the decay time for the frozen spectral texture.\\
+\attr{/.../wetapply} & f &  & no & \\
+\attr{/.../wet} & f &  & yes & Adjusts the balance between the processed effect and the dry input signal.\\
+\hline
+\end{tabularx}
+}
+\end{snugshade}
+\definecolor{shadecolor}{RGB}{255,230,204}

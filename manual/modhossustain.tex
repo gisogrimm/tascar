@@ -1,3 +1,31 @@
 Cluster generator, using moving averaging of amplitude spectrum with random phase.
 
+This algorithm implements a spectral freeze / sustain effect (often called a "Infinite Hold" or "Time-Freezer").
+Here is a brief breakdown of what it does:
+
+\begin{itemize}
+\item {\bf Sustains the Sound:} It captures the spectral content
+  (frequency data) of the input signal using an FFT (Fast Fourier
+  Transform). It then holds onto these frequencies, slowly decaying
+  them over time (controlled by \verb!tau_sustain!), rather than letting them
+  stop naturally when the input becomes silent.
+\item {\bf Randomizes Phase:} While it keeps the magnitude (loudness)
+  of the frequencies, it randomizes their phase. This turns sustained
+  percussive or transient sounds (like drums) into a continuous,
+  atmospheric "wash" or texture, similar to a reverb tail or a
+  synthesizer pad.
+\item {\bf Envelope Matching:} It attempts to match the volume
+  envelope of the processed signal to the input signal (controlled by
+  \verb!tau_envelope!). This means if you stop playing, the effect fades out,
+  and if you play louder, the effect swells, blending the frozen sound
+  with the live input.
+\item {\bf Bass Enhancement:} It adds a subsonic (low-frequency)
+  component to the frozen sound, adding richness or "rumble" to the
+  texture.
+\end{itemize}
+
+In short: It turns short sounds into long, evolving, ambient soundscapes.
+
 \input{modtabtex/tabhossustain.tex}
+
+\input{oscdoc_tascarmod_hossustain.tex}
