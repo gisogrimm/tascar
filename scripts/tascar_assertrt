@@ -3,6 +3,7 @@
 # set variables:
 EXITV=0
 KERNELREL=$(uname -r)
+KERNELVER=$(uname --kernel-version)
 NUMCORES=$(lscpu --parse=core|sed '/^#/ d'|sort -u|wc -l)
 NUMCPUS=$(lscpu --parse=core|sed '/^#/ d'|wc -l)
 
@@ -13,10 +14,12 @@ if cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor|grep -q powersave; 
     let EXITV=$EXITV+1
 fi
 if !(echo $KERNELREL|grep -q -e realtime -e lowlatency); then
-    echo "Problem: The kernel release is ${KERNELREL}, which does not provide real-time scheduling."
-    echo "Suggestion: Install and boot realtime kernel."
-    echo ""
-    let EXITV=$EXITV+2
+    if !(echo $KERNELVER|grep -q -e PREEMPT); then
+        echo "Problem: The kernel release is ${KERNELREL}, which does not provide real-time scheduling."
+        echo "Suggestion: Install and boot realtime kernel or a kernel with preemption enabled."
+        echo ""
+        let EXITV=$EXITV+2
+    fi
 fi
 if test "${NUMCORES}" -ne "${NUMCPUS}"; then
     echo "Problem: The system reports ${NUMCPUS} CPUs, but only ${NUMCORES} physical cores."
