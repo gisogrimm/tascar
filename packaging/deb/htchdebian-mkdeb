@@ -26,7 +26,7 @@ fi
 # Generate debian package name from .csv filename: remove directory
 # prefixes and .csv extension from .csv file name.  Also convert all
 # uppercase letters to lowercase.
-PACKAGE=`echo "${CSV}"|sed -e 's/^.*\///1' -e 's/\.csv//1'|tr '[:upper:]' '[:lower:]'`
+PACKAGE=$(echo "${CSV}"|sed -e 's/^.*\///1' -e 's/\.csv//1'|tr '[:upper:]' '[:lower:]')
 
 # More input files that just the .csv file are used as input to
 # produce the debian package.  They are all stored in the same
@@ -34,7 +34,7 @@ PACKAGE=`echo "${CSV}"|sed -e 's/^.*\///1' -e 's/\.csv//1'|tr '[:upper:]' '[:low
 # PACKAGEBASE variable is going to be used further down to refer to
 # these files, e.g. with "$PACKAGEBASE.dep".  We remove the .csv
 # extension for this here.
-PACKAGEBASE=`echo "${CSV}"|sed -e 's/\.csv//1'`
+PACKAGEBASE=$(echo "${CSV}"|sed -e 's/\.csv//1')
 
 # The debian package is built in subdirectory debian of the CWD.
 # Remove residues of previous package builds.
@@ -47,7 +47,7 @@ mkdir -p "$colldir"/DEBIAN
 # a bash function that ignores its first parameter and calls mkdir -p
 # with the second parameter
 mkdir_p_2nd() {
-    mkdir -p $2
+    mkdir -p "$2"
 }
 
 # read all entries from a .csv file and call the given command with
@@ -93,7 +93,7 @@ chmod -R a+r "$colldir"
     mkdir debian
     touch debian/control
     SHLIBBINS="$(find ./usr/lib/ -type f -print||true) $(find ./usr/bin/ -type f -print||true)"
-    dpkg-shlibdeps -l../libtascar/build/ --ignore-missing-info ${SHLIBBINS} || true
+    dpkg-shlibdeps -l../libtascar/build/ --ignore-missing-info ${SHLIBBINS} > /dev/null 2>&1 || true
     rm -f debian/control
     test -e debian/substvars && mv debian/substvars DEBIAN/
     touch DEBIAN/substvars
