@@ -1,4 +1,4 @@
-function [vF, vG] = tascar_get_spkgains_from_file(fileref, filetest, cfmin, cfmax, bpo, overlap)
+function [vF, vG] = tascar_get_spkgains_from_file(fileref, filetest, cfmin, cfmax, bpo, overlap, channel_ref, channel_test)
 %TASCAR_GET_SPKGAINS_FROM_FILE Calculate speaker gains by comparing
 %band levels of two audio files.
 %
@@ -14,6 +14,8 @@ function [vF, vG] = tascar_get_spkgains_from_file(fileref, filetest, cfmin, cfma
 %   cfmax    - Maximum center frequency for analysis (Hz).
 %   bpo      - Bands per octave.
 %   overlap  - Overlap factor for band analysis (typically 0.5).
+%   channel_ref - Audio channel in reference file (1-based; optional)
+%   channel_test - Audio channel in reference file (1-based; optional)
 %
 % Outputs:
 %   vF       - Vector of center frequencies (Hz).
@@ -30,9 +32,16 @@ function [vF, vG] = tascar_get_spkgains_from_file(fileref, filetest, cfmin, cfma
 %   tascar_get_spkgains_from_file('ref.wav', 'test.wav', 80, 20000, 12, 6);
 %       % Displays results
 
-  [vF,vL1] = tascar_bandlevels(fileref, cfmin, cfmax, 0, bpo, overlap );
-  [vF,vL2] = tascar_bandlevels(filetest, cfmin, cfmax, 0, bpo, overlap );
-  vG = vL1-vL2;
+    if nargin < 7
+        channel_ref = 1;
+    end
+    if nargin < 8
+        channel_test = 1;
+    end
+
+  [vF,vL1] = tascar_bandlevels(fileref, cfmin, cfmax, 0, bpo, overlap, channel_ref );
+  [vF,vL2] = tascar_bandlevels(filetest, cfmin, cfmax, 0, bpo, overlap, channel_test );
+  vG = vL2-vL1;
   if nargout == 0
     disp('vfreq:');
     disp(sprintf('%g ',vF));

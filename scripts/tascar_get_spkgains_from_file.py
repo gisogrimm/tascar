@@ -37,6 +37,9 @@ def get_bandlevels(w, cfmin, cfmax, fs, bpo, overlap):
     # Initialize level vector
     vL = np.zeros(numbands)
 
+    # Nyquist frequency
+    f_nyq = 0.5*fs
+
     # Iterate through each center frequency
     for i, f in enumerate(vF):
         # Calculate edge frequencies
@@ -48,10 +51,10 @@ def get_bandlevels(w, cfmin, cfmax, fs, bpo, overlap):
         # The C++ code calculates indices as: (uint32_t)((float)w.n * f / fs)
         # This maps frequency f directly to an index.
         # We must replicate this exactly to match the C++ output.
-        idx1e = int(np.floor(w_n * f1e / fs))
-        idx2e = int(np.floor(w_n * f2e / fs))
-        idx1  = int(np.floor(w_n * f1 / fs))
-        idx2  = int(np.floor(w_n * f2 / fs))
+        idx1e = int(np.floor(w_n * f1e / f_nyq))
+        idx2e = int(np.floor(w_n * f2e / f_nyq))
+        idx1  = int(np.floor(w_n * f1 / f_nyq))
+        idx2  = int(np.floor(w_n * f2 / f_nyq))
 
         # Clamp indices to valid range [0, w_n]
         # C++ uses std::min(..., fft.s.n_)

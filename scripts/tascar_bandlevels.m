@@ -1,4 +1,4 @@
-function [vF, vL] = tascar_bandlevels(w, cfmin, cfmax, fs, bpo, overlap)
+function [vF, vL] = tascar_bandlevels(w, cfmin, cfmax, fs, bpo, overlap, channel)
 % GET_BANDLEVELS Calculate band levels of a waveform signal.
 %
 % Inputs:
@@ -8,10 +8,16 @@ function [vF, vL] = tascar_bandlevels(w, cfmin, cfmax, fs, bpo, overlap)
 %   fs     - Sampling frequency (if a file name is provided and fs is zero, the file fs is taken)
 %   bpo    - Bands per octave
 %   overlap - Overlap factor (typically 0.5 for 50% overlap, measured in bands)
+%   channel - channel number (optional; default: frist channel)
 %
 % Outputs:
 %   vF     - Vector of center frequencies
 %   vL     - Vector of band levels in dB
+
+    % check for optional channel argument:
+    if nargin < 7
+        channel = 1;
+    end
 
     % Calculate number of bands
     numbands = floor(bpo * log2(cfmax / cfmin)) + 1;
@@ -31,23 +37,27 @@ function [vF, vL] = tascar_bandlevels(w, cfmin, cfmax, fs, bpo, overlap)
     % Optionally read w from sound file
     if ischar(w)
       [w,file_fs] = audioread(w);
-      w = w(:,1);
       if isempty(fs) || (fs==0)
         fs = file_fs;
       end
     end
 
-    % Get length of waveform
-    w_n = length(w);
+    w = w(:,channel);
 
     % Execute FFT
-    fft_s = fft(w);
+    fft_s = realfft(w);
 
+    % Get length of spectrum
+    w_n = size(fft_s,1);
+    
     % Initialize level vector
     vL = zeros(1, numbands);
 
     % Pre-calculate squared magnitude of FFT spectrum
     P = abs(fft_s).^2;
+
+    % get Nyquist frequency:
+    f_nyq = fs/2;
 
     % Iterate through each center frequency
     for i = 1:length(vF)
@@ -60,10 +70,10 @@ function [vF, vL] = tascar_bandlevels(w, cfmin, cfmax, fs, bpo, overlap)
         f2  = f * 2.0^((0.5 + overlap) / bpo);
 
         % Calculate indices
-        idx1e = min(floor(w_n * f1e / fs), w_n) + 1;
-        idx2e = min(floor(w_n * f2e / fs), w_n) + 1;
-        idx1  = min(floor(w_n * f1 / fs), w_n) + 1;
-        idx2  = min(floor(w_n * f2 / fs), w_n) + 1;
+        idx1e = min(floor(w_n * f1e / f_nyq), w_n) + 1;
+        idx2e = min(floor(w_n * f2e / f_nyq), w_n) + 1;
+        idx1  = min(floor(w_n * f1 / f_nyq), w_n) + 1;
+        idx2  = min(floor(w_n * f2 / f_nyq), w_n) + 1;
 
         % Initialize level accumulator
         l = 0.0;
@@ -73,7 +83,7 @@ function [vF, vL] = tascar_bandlevels(w, cfmin, cfmax, fs, bpo, overlap)
             k_range = idx1:(idx1e-1);
             % Normalized position:
             norm_pos = (k_range - idx1) / (idx1e - idx1);
-            w_win = 0.5 - 0.5 * cos(norm_pos * pi);
+            w_win = 0.5 - 0.5 * cos(norm_pos.' * pi);
             l = l + sum(P(k_range) .* (w_win.^2));
         end
 
@@ -88,7 +98,7 @@ function [vF, vL] = tascar_bandlevels(w, cfmin, cfmax, fs, bpo, overlap)
             k_range = idx2e:(idx2-1);
             % C++: (k - idx2e) / (idx2 - idx2e)
             norm_pos = (k_range - idx2e) / (idx2 - idx2e);
-            w_win = 0.5 + 0.5 * cos(norm_pos * pi);
+            w_win = 0.5 + 0.5 * cos(norm_pos.' * pi);
             l = l + sum(P(k_range) .* (w_win.^2));
         end
 
