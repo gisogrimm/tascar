@@ -105,8 +105,8 @@ coverage: googletest unit-tests test testjack
 install: all
 	$(CMD_INSTALL) -d $(DESTDIR)$(LIBDIR)
 	cp -a libtascar/build/libtascar*.$(LIB_EXT)* $(DESTDIR)$(LIBDIR)/
-	$(CMD_INSTALL) -D libtascar/include/*.h -t $(DESTDIR)$(INCDIR)/tascar
-	$(CMD_INSTALL) -D libtascar/build/*.h -t $(DESTDIR)$(INCDIR)/tascar
+	$(CMD_INSTALL) -D libtascar/include/*.h -t $(DESTDIR)$(INCDIR)
+	$(CMD_INSTALL) -D libtascar/build/*.h -t $(DESTDIR)$(INCDIR)
 	$(CMD_INSTALL) -D plugins/build/*.$(LIB_EXT) -t $(DESTDIR)$(LIBDIR)
 	$(CMD_INSTALL) -D apps/build/tascar_* -t $(DESTDIR)$(BINDIR)
 	$(CMD_INSTALL) -D gui/build/tascar -t $(DESTDIR)$(BINDIR)
