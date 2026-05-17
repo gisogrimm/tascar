@@ -133,20 +133,20 @@ endif
 
 build/lib$(PLUGINPREFIX)tascar.so.%: $(BUILD_OBJECTS)
 	rm -f build/lib$(PLUGINPREFIX)tascar.so* && \
-	$(CXX) -shared -Wl,-soname,lib$(PLUGINPREFIX)tascar.so.$(SOVERSION) -o $@ $^ ${LDFLAGS} ${LDLIBS} && \
+	$(CXX) -shared -Wl,-soname,lib$(PLUGINPREFIX)tascar.so.$(SOVERSION) -o $@ $(BUILD_OBJECTS) ${LDFLAGS} ${LDLIBS} && \
 	ln -s lib$(PLUGINPREFIX)tascar.so.$(LIBVERSION) build/lib$(PLUGINPREFIX)tascar.so && \
 	ln -s lib$(PLUGINPREFIX)tascar.so.$(LIBVERSION) build/lib$(PLUGINPREFIX)tascar.so.$(SOVERSION)
 
 build/lib$(PLUGINPREFIX)tascargui.so.%: EXTERNALS += gtkmm-3.0
-build/lib$(PLUGINPREFIX)tascargui.so.%: $(BUILD_GUIOBJECTS)
+build/lib$(PLUGINPREFIX)tascargui.so.%: $(BUILD_GUIOBJECTS) build/lib$(PLUGINPREFIX)tascar.so.$(LIBVERSION)
 	rm -f build/lib$(PLUGINPREFIX)tascargui.so* && \
-	$(CXX) -shared -Wl,-soname,lib$(PLUGINPREFIX)tascargui.so.$(SOVERSION) -o $@ $^ ${LDFLAGS} ${LDLIBS} && \
+	$(CXX) -shared -Wl,-soname,lib$(PLUGINPREFIX)tascargui.so.$(SOVERSION) -o $@ $(BUILD_GUIOBJECTS) build/lib$(PLUGINPREFIX)tascar.so.$(LIBVERSION) ${LDFLAGS} ${LDLIBS} && \
 	ln -s lib$(PLUGINPREFIX)tascargui.so.$(LIBVERSION) build/lib$(PLUGINPREFIX)tascargui.so && \
 	ln -s lib$(PLUGINPREFIX)tascargui.so.$(LIBVERSION) build/lib$(PLUGINPREFIX)tascargui.so.$(SOVERSION)
 
-build/lib$(PLUGINPREFIX)tascardmx.so.%: $(BUILD_DMXOBJECTS)
+build/lib$(PLUGINPREFIX)tascardmx.so.%: $(BUILD_DMXOBJECTS) build/lib$(PLUGINPREFIX)tascar.so.$(LIBVERSION)
 	rm -f build/lib$(PLUGINPREFIX)tascardmx.so* && \
-	$(CXX) -shared -Wl,-soname,lib$(PLUGINPREFIX)tascardmx.so.$(SOVERSION) -o $@ $^ ${LDFLAGS} ${LDLIBS} && \
+	$(CXX) -shared -Wl,-soname,lib$(PLUGINPREFIX)tascardmx.so.$(SOVERSION) -o $@ $(BUILD_DMXOBJECTS) build/lib$(PLUGINPREFIX)tascar.so.$(LIBVERSION) ${LDFLAGS} ${LDLIBS} && \
 	ln -s lib$(PLUGINPREFIX)tascardmx.so.$(LIBVERSION) build/lib$(PLUGINPREFIX)tascardmx.so && \
 	ln -s lib$(PLUGINPREFIX)tascardmx.so.$(LIBVERSION) build/lib$(PLUGINPREFIX)tascardmx.so.$(SOVERSION)
 
