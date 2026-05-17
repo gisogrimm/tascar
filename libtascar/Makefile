@@ -8,7 +8,7 @@ include ../rules.mk
 # versioning:
 #
 LIBVERSION := $(VERSION)
-SOVERSION := $(shell echo $(VERSION) | sed 's/\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\1.\2/1')
+SOVERSION := $(shell echo $(VERSION) | sed 's/\([0-9]*\)\..*/\1/')
 DYLIBCURVERSION := $(shell echo $(VERSION) | sed 's/\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\1.\2.\3/1')
 
 #
