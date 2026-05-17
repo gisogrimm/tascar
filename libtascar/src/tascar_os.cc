@@ -210,7 +210,16 @@ namespace TASCAR {
 
   void* dlopen(const char* filename, int flags)
   {
+    // First try the normal dynamic linker search path (RPATH,
+    // LD_LIBRARY_PATH, ld.so cache).
     auto lib = ::dlopen(filename, flags);
+    // Fall-back to the configured TASCAR plugin directory (baked in
+    // via TASCAR_DEFAULT_PLUGINDIR or set at runtime via set_libdir).
+    if(!lib) {
+      const auto& libdir = TASCAR::get_libdir();
+      if(!libdir.empty())
+        lib = ::dlopen((libdir + filename).c_str(), flags);
+    }
     if(!lib) {
       auto homebrewprefix = localgetenv("HOMEBREW_PREFIX");
       if(homebrewprefix.size()) {

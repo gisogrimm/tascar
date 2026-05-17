@@ -38,7 +38,11 @@ public:
 
 static xml_init_t xercesc_init;
 
-static std::string tascar_libdir;
+#ifndef TASCAR_DEFAULT_PLUGINDIR
+#define TASCAR_DEFAULT_PLUGINDIR ""
+#endif
+
+static std::string tascar_libdir = TASCAR_DEFAULT_PLUGINDIR;
 
 void TASCAR::set_libdir(const std::string& s)
 {

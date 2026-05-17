@@ -52,6 +52,13 @@ else
   FULLVERSION := $(VERSION)
 endif
 
+# Bake the plugin search path into libtascar so dlopen() finds plugins
+# installed under $(LIBDIR)/$(PLUGIN_LIB_SUBDIR)/ at runtime. See the top-level
+# Makefile for PLUGIN_LIB_SUBDIR.
+ifneq ($(strip $(PLUGIN_LIB_SUBDIR)),)
+  CXXFLAGS += -DTASCAR_DEFAULT_PLUGINDIR='"$(LIBDIR)/$(PLUGIN_LIB_SUBDIR)/"'
+endif
+
 mkfile_name := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_path := $(subst $(notdir $(mkfile_name)),,$(mkfile_name))
 

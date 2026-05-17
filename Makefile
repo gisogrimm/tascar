@@ -11,6 +11,16 @@ DESTDIR ?=
 # version-pinned copies are used.
 USE_SYSTEM_LIBS ?= 0
 
+# Subdirectory of $(LIBDIR) used both as the install destination for
+# plugin .so files and as the search directory passed to dlopen() at
+# runtime. Empty by default - plugins are then installed directly into
+# $(LIBDIR) and resolved via the normal ld.so search path.
+# Distributors (e.g. debian) can override this to keep plugins out of the main
+# library directory, e.g.
+#   make PLUGIN_LIB_SUBDIR=tascar-plugins
+PLUGIN_LIB_SUBDIR ?=
+PLUGIN_INSTALL_DIR = $(DESTDIR)$(LIBDIR)$(if $(strip $(PLUGIN_LIB_SUBDIR)),/$(PLUGIN_LIB_SUBDIR))
+
 # Define modules and documentation modules
 MODULES = libtascar apps plugins gui
 DOCMODULES = doc manual
@@ -107,7 +117,7 @@ install: all
 	cp -a libtascar/build/libtascar*.$(LIB_EXT)* $(DESTDIR)$(LIBDIR)/
 	$(CMD_INSTALL) -D libtascar/include/*.h -t $(DESTDIR)$(INCDIR)
 	$(CMD_INSTALL) -D libtascar/build/*.h -t $(DESTDIR)$(INCDIR)
-	$(CMD_INSTALL) -D plugins/build/*.$(LIB_EXT) -t $(DESTDIR)$(LIBDIR)
+	$(CMD_INSTALL) -D plugins/build/*.$(LIB_EXT) -t $(PLUGIN_INSTALL_DIR)
 	$(CMD_INSTALL) -D apps/build/tascar_* -t $(DESTDIR)$(BINDIR)
 	$(CMD_INSTALL) -D gui/build/tascar -t $(DESTDIR)$(BINDIR)
 	$(CMD_INSTALL) -D gui/build/tascar_spkcalib -t $(DESTDIR)$(BINDIR)

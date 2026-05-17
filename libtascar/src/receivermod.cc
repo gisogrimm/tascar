@@ -39,7 +39,7 @@ TASCAR::receivermod_t::receivermod_t(tsccfg::node_t cfg)
   libname = PLUGINPREFIX + libname;
 #endif
   libname += receivertype + TASCAR::dynamic_lib_extension();
-  lib = TASCAR::dlopen((TASCAR::get_libdir() + libname).c_str(), RTLD_NOW);
+  lib = TASCAR::dlopen(libname.c_str(), RTLD_NOW);
   if(!lib)
     throw TASCAR::ErrMsg("Unable to open receiver module \"" + receivertype +
                          "\": " + dlerror());

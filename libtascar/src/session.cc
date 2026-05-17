@@ -187,7 +187,7 @@ TASCAR::module_t::module_t(const TASCAR::module_cfg_t& cfg)
   libname = PLUGINPREFIX + libname;
 #endif
   libname += name + TASCAR::dynamic_lib_extension();
-  lib = TASCAR::dlopen((TASCAR::get_libdir() + libname).c_str(), RTLD_NOW);
+  lib = TASCAR::dlopen(libname.c_str(), RTLD_NOW);
   if(!lib)
     throw TASCAR::ErrMsg("Unable to open module \"" + name +
                          "\": " + dlerror());
