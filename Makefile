@@ -103,7 +103,8 @@ coverage: googletest unit-tests test testjack
 	x-www-browser ./coverage/index.html
 
 install: all
-	$(CMD_INSTALL) -D libtascar/build/libtascar*.$(LIB_EXT) -t $(DESTDIR)$(LIBDIR)
+	$(CMD_INSTALL) -d $(DESTDIR)$(LIBDIR)
+	cp -a libtascar/build/libtascar*.$(LIB_EXT)* $(DESTDIR)$(LIBDIR)/
 	$(CMD_INSTALL) -D libtascar/include/*.h -t $(DESTDIR)$(INCDIR)/tascar
 	$(CMD_INSTALL) -D libtascar/build/*.h -t $(DESTDIR)$(INCDIR)/tascar
 	$(CMD_INSTALL) -D plugins/build/*.$(LIB_EXT) -t $(DESTDIR)$(LIBDIR)
