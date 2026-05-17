@@ -32,12 +32,20 @@ endif
 CPPFLAGS = -std=c++17
 PREFIX = /usr/local
 
-GITMODIFIED:=$(shell test -z "`git status --porcelain -uno`" || echo "-modified")
-COMMITHASH:=$(shell git log -1 --abbrev=7 --pretty='format:%h')
-LATEST_RELEASETAG:=$(shell git tag -l "release*" |tail -1)
-COMMIT_SINCE_RELEASE:=$(shell git rev-list --count $(LATEST_RELEASETAG)..)
-
-FULLVERSION=$(VERSION).$(COMMIT_SINCE_RELEASE)-$(COMMITHASH)$(GITMODIFIED)
+# Development builds derive FULLVERSION from Git metadata so local builds
+# include the commit count, commit hash and dirty state. Release/package builds
+# from source tarballs may not have a .git directory so allow callers to disable
+# this and use the upstream VERSION directly.
+DERIVE_VERSION_FROM_GIT ?= 1
+ifeq ($(DERIVE_VERSION_FROM_GIT),1)
+  GITMODIFIED:=$(shell test -z "`git status --porcelain -uno`" || echo "-modified")
+  COMMITHASH:=$(shell git log -1 --abbrev=7 --pretty='format:%h')
+  LATEST_RELEASETAG:=$(shell git tag -l "release*" |tail -1)
+  COMMIT_SINCE_RELEASE:=$(shell git rev-list --count $(LATEST_RELEASETAG)..)
+  FULLVERSION=$(VERSION).$(COMMIT_SINCE_RELEASE)-$(COMMITHASH)$(GITMODIFIED)
+else
+  FULLVERSION := $(VERSION)
+endif
 
 mkfile_name := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_path := $(subst $(notdir $(mkfile_name)),,$(mkfile_name))
