@@ -67,8 +67,13 @@ ifeq ($(OS),Windows_NT)
 SOFAINC =
 SOFALIB = -lmysofa
 else
+ifeq ($(USE_SYSTEM_LIBS),1)
+SOFAINC =
+SOFALIB = -lmysofa -lz
+else
 SOFAINC = -I../external_libs/libmysofa-1.3.2/src/hrtf
 SOFALIB = ../external_libs/libmysofa-1.3.2/build/src/libmysofa.a -lz
+endif
 endif
 
 CXXFLAGS += -fpic -I./build -I./include $(SOFAINC)

@@ -1,7 +1,12 @@
 # rules:
 
+ifeq ($(USE_SYSTEM_LIBS),1)
+CXXFLAGS += $(GCCCOVFLAGS)
+LDLIBS += $(COVLIBS)
+else
 CXXFLAGS += -I../external_libs/$(BUILD_DIR)/include $(GCCCOVFLAGS)
 LDLIBS += -L../external_libs/$(BUILD_DIR)/lib64 -L../external_libs/$(BUILD_DIR)/lib $(COVLIBS)
+endif
 LDFLAGS += $(LDCOVFLAGS)
 
 build: build/.directory
@@ -54,5 +59,13 @@ CXXFLAGS += $(LSLCFLAGS)
 endif
 endif
 
+ifeq ($(USE_SYSTEM_LIBS),1)
+GTEST_LIBPATH =
+GTEST_LIBS = -lgmock_main -lgmock -lgtest -lpthread
+else
+GTEST_LIBPATH = -L../external_libs/googletest/lib/
+GTEST_LIBS = -lgmock_main -lgmock -lgtest_main -lgtest -lpthread
+endif
+
 $(BUILD_DIR)/unit-test-runner: $(BUILD_DIR)/.directory $(unit_tests_test_files) $(patsubst %_unit_tests.cpp, %.cpp , $(unit_tests_test_files))
-	if test -n "$(unit_tests_test_files)"; then $(CXX) $(CXXFLAGS) --coverage -o $@ $(wordlist 2, $(words $^), $^) $(LDFLAGS) $(LIBTASCARDLL) $(LDLIBS) -L../external_libs/googletest/lib/ -lgmock_main -lgmock -lgtest_main -lgtest -lpthread; fi
+	if test -n "$(unit_tests_test_files)"; then $(CXX) $(CXXFLAGS) --coverage -o $@ $(wordlist 2, $(words $^), $^) $(LDFLAGS) $(LIBTASCARDLL) $(LDLIBS) $(GTEST_LIBPATH) $(GTEST_LIBS); fi

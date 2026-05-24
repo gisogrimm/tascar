@@ -1,6 +1,11 @@
 # variables:
 VERSION=0.237.1
 
+# Set to 1 to build against system-provided libmysofa / gtest / gmock
+# instead of the copies bundled under external_libs/. See the top-level
+# Makefile for the full description.
+USE_SYSTEM_LIBS ?= 0
+
 ARCH:=$(shell uname -m)
 
 CXXFLAGS = -Wall -Wextra -Wdeprecated-declarations -Wno-psabi -std=c++17 -pthread	\

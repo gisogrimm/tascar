@@ -4,6 +4,13 @@ BINDIR=$(PREFIX)/bin
 INCDIR=$(PREFIX)/include/tascar
 DESTDIR=
 
+# Set to 1 to build against system-provided libmysofa / gtest / gmock
+# instead of the copies bundled under external_libs/. Distributors that
+# package tascar alongside their own copies of these libraries should
+# enable this; upstream developer builds keep it off so the bundled,
+# version-pinned copies are used.
+USE_SYSTEM_LIBS ?= 0
+
 # Define modules and documentation modules
 MODULES = libtascar apps plugins gui
 DOCMODULES = doc manual
@@ -33,14 +40,21 @@ alldoc: all $(DOCMODULES)
 
 # Subdirectory recursion
 .PHONY: $(MODULES) $(DOCMODULES) coverage
+ifeq ($(USE_SYSTEM_LIBS),1)
+$(MODULES) $(DOCMODULES):
+	$(MAKE) -C $@
+else
 $(MODULES:external_libs=) $(DOCMODULES):
 	$(MAKE) -C $@
+endif
 
 clean:
 	for m in $(MODULES) $(DOCMODULES); do $(MAKE) -C $$m clean; done
 	$(MAKE) -C test clean
 	$(MAKE) -C examples clean
+ifneq ($(USE_SYSTEM_LIBS),1)
 	$(MAKE) -C external_libs clean
+endif
 	$(MAKE) -C packaging/deb clean
 	rm -Rf build devkit/Makefile.local devkit/build
 
@@ -54,15 +68,22 @@ test: apps plugins
 testjack: apps plugins
 	$(MAKE) -j 1 -C test jack
 
+libtascarver:
+	$(MAKE) -C libtascar ver
+
+ifeq ($(USE_SYSTEM_LIBS),1)
+libtascar: libtascarver
+
+unit-tests: $(patsubst %,%-subdir-unit-tests,$(MODULES))
+$(patsubst %,%-subdir-unit-tests,$(MODULES)): libtascar
+	$(MAKE) -C $(@:-subdir-unit-tests=) unit-tests
+else
 # External libraries
 libmysofa:
 	$(MAKE) -C external_libs libmysofa
 
 liblsl:
 	$(MAKE) -C external_libs liblsl
-
-libtascarver:
-	$(MAKE) -C libtascar ver
 
 libtascar: libtascarver libmysofa liblsl
 
@@ -73,6 +94,7 @@ googletest:
 unit-tests: $(patsubst %,%-subdir-unit-tests,$(MODULES))
 $(patsubst %,%-subdir-unit-tests,$(MODULES)): libtascar googletest
 	$(MAKE) -C $(@:-subdir-unit-tests=) unit-tests
+endif
 
 # Coverage analysis
 coverage: googletest unit-tests test testjack
