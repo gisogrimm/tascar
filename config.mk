@@ -8,7 +8,7 @@ USE_SYSTEM_LIBS ?= 0
 
 ARCH:=$(shell uname -m)
 
-CXXFLAGS = -Wall -Wextra -Wdeprecated-declarations -Wno-psabi -std=c++17 -pthread	\
+CXXFLAGS += -Wall -Wextra -Wdeprecated-declarations -Wno-psabi -std=c++17 -pthread	\
 -ggdb -fno-finite-math-only -Wno-psabi
 # -Wconversion
 # -Werror
@@ -34,8 +34,8 @@ ifeq "$(ARCH)" "x86_64"
   endif
 endif
 
-CPPFLAGS = -std=c++17
-PREFIX = /usr/local
+CPPFLAGS += -std=c++17
+PREFIX ?= /usr/local
 
 # Development builds derive FULLVERSION from Git metadata so local builds
 # include the commit count, commit hash and dirty state. Release/package builds

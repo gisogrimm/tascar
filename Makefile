@@ -1,8 +1,8 @@
-PREFIX=/usr/local
-LIBDIR=$(PREFIX)/lib
-BINDIR=$(PREFIX)/bin
-INCDIR=$(PREFIX)/include/tascar
-DESTDIR=
+PREFIX ?= /usr/local
+LIBDIR ?= $(PREFIX)/lib
+BINDIR ?= $(PREFIX)/bin
+INCDIR ?= $(PREFIX)/include/tascar
+DESTDIR ?=
 
 # Set to 1 to build against system-provided libmysofa / gtest / gmock
 # instead of the copies bundled under external_libs/. Distributors that
