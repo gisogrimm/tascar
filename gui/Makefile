@@ -66,7 +66,7 @@ build/%: build/%.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $< $(TSCOBJECTS) $(LDLIBS) -o $@
 
 build/%.o: src/%.cc
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 ifeq ($(OS),Windows_NT)
 ICON_PATH_REPLACEMENT = -e 's|usr/share/icons/hicolor/48x48/apps/|./|'

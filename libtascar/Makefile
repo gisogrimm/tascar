@@ -177,23 +177,23 @@ testbin: build/test_proc
 build/test_proc: build/.directory
 
 build/test_%: src/test_%.cc
-	$(CXX) $(CXXFLAGS) $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< $(LDFLAGS) -o $@ $(LDLIBS)
 
 doc:
 	cd doc && sed -e 's/PROJECT.NUMBER.*=.*/&'`cat ../version`'/1' doxygen.cfg > .temp.cfg && doxygen .temp.cfg
 	rm -Rf doc/.temp.cfg
 
 build/%.mk: src/%.cc
-	$(CPP) $(CXXFLAGS) -MM -MF $(@:.o=.mk) $<
+	$(CPP) $(CPPFLAGS) $(CXXFLAGS) -MM -MF $(@:.o=.mk) $<
 	printf "build/" > $(@).x
 	cat $@ >> $(@).x
 	mv $(@).x $@
 
 %: %.o
-	$(CXX) $(CXXFLAGS) $(LDLIBS) $^ -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDLIBS) $^ -o $@
 
 build/%.o: src/%.cc include/%.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 build/pugixml.o: ../external_libs/pugixml-1.11.4/src/pugixml.cpp ../external_libs/pugixml-1.11.4/src/pugixml.hpp ../external_libs/pugixml-1.11.4/src/pugiconfig.hpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

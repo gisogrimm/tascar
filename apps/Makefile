@@ -99,11 +99,11 @@ $(PREFIX)/bin/%: %
 	cp $< $@
 
 build/%: build/%.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 # The additional build/.directory dependency ensures subdirectory creation
 build/%.o: src/%.cc build/.directory
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 # Local Variables:
 # compile-command: "make"

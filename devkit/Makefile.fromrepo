@@ -58,7 +58,7 @@ $(PREFIX)/lib/%: build/%
 build/tascar_ap_openmha.so: LDLIBS+=-lopenmha
 
 build/%.so: src/%.cc
-	$(CXX) -shared -fpic -o $@ $^ $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
+	$(CXX) -shared -fpic -o $@ $^ $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
 
 %.validated: %.tsc $(BUILDMODS)
 	LD_LIBRARY_PATH=$${LD_LIBRARY_PATH}:$(PWD)/build tascar_validatetsc $< || (echo "$(<):1:";false)

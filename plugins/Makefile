@@ -190,22 +190,22 @@ build/$(PLUGINPREFIX)tascar_glabsensors$(DLLEXT): build/glabsensorplugin.o build
 build/$(PLUGINPREFIX)tascar_glabsensors$(DLLEXT): LDLIBS += $(LSLLIBS) build/glabsensorplugin.o
 
 build/$(PLUGINPREFIX)tascarreceiver_%$(DLLEXT): src/receivermod_%.cc
-	$(CXX) -shared -o $@ $< $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
+	$(CXX) -shared -o $@ $< $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
 
 build/$(PLUGINPREFIX)tascarsource_%$(DLLEXT): src/tascarsource_%.cc
-	$(CXX) -shared -o $@ $< $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
+	$(CXX) -shared -o $@ $< $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
 
 build/$(PLUGINPREFIX)tascar_%$(DLLEXT): src/tascarmod_%.cc
-	$(CXX) -shared -o $@ $< $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
+	$(CXX) -shared -o $@ $< $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
 
 build/$(PLUGINPREFIX)tascar_ap_%$(DLLEXT): src/tascar_ap_%.cc
-	$(CXX) -shared -o $@ $< $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
+	$(CXX) -shared -o $@ $< $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
 
 build/$(PLUGINPREFIX)tascar_mask_%$(DLLEXT): src/tascar_mask_%.cc
-	$(CXX) -shared -o $@ $< $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
+	$(CXX) -shared -o $@ $< $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
 
 build/$(PLUGINPREFIX)glabsensor_%$(DLLEXT): src/glabsensor_%.cc build/glabsensorplugin.o
-	$(CXX) -shared -o $@ $^ $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
+	$(CXX) -shared -o $@ $^ $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
 
 build/%_glade.h: src/%.glade
 	cat $< | sed 's/tascarversion/$(TASCARVERSION)/g' > $*_glade
@@ -215,7 +215,7 @@ build/%_glade.h: src/%.glade
 	rm -f $*_glade
 
 build/%.o: src/%.cc
-	$(CXX) $(CXXFLAGS) -o $@ -c $^
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c $^
 
 
 # Local Variables:
