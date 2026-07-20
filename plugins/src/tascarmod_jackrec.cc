@@ -11,7 +11,7 @@
  *
  * TASCAR is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHATABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License, version 3 for more details.
  *
  * You should have received a copy of the GNU General Public License,
@@ -30,6 +30,16 @@
 #include <dirent.h>
 #endif
 
+/**
+ * \def OSC_VOID(x)
+ * \brief Macro to define an OSC method wrapper for a void member function.
+ *
+ * This macro creates a static callback function compatible with liblo
+ * and a corresponding void member function. The callback casts the user_data
+ * pointer to jackrec_t* and invokes the member function.
+ *
+ * \param x The name of the member function to wrap.
+ */
 #define OSC_VOID(x)                                                            \
   static int x(const char*, const char*, lo_arg**, int, lo_message,            \
                void* user_data)                                                \
@@ -39,6 +49,18 @@
   };                                                                           \
   void x()
 
+/**
+ * \def OSC_STRING(x)
+ * \brief Macro to define an OSC method wrapper for a member function taking a
+ * string argument.
+ *
+ * This macro creates a static callback function compatible with liblo
+ * and a corresponding member function accepting a const std::string&.
+ * The callback extracts the string argument from the OSC message (argv[0]->s)
+ * and invokes the member function.
+ *
+ * \param x The name of the member function to wrap.
+ */
 #define OSC_STRING(x)                                                          \
   static int x(const char*, const char*, lo_arg** argv, int, lo_message,       \
                void* user_data)                                                \
@@ -48,44 +70,90 @@
   };                                                                           \
   void x(const std::string&)
 
+/**
+ * \class jackrec_t
+ * \brief JACK audio recorder module for TASCAR.
+ *
+ * This module connects to JACK audio ports and records the incoming audio
+ * streams to disk. It supports various audio formats and can be controlled
+ * via OSC (Open Sound Control). It also supports JACK transport
+ * synchronization.
+ */
 class jackrec_t : public TASCAR::module_base_t {
 public:
+  /**
+   * \brief Constructor.
+   * \param cfg Module configuration loaded from the XML session file.
+   */
   jackrec_t(const TASCAR::module_cfg_t& cfg);
+  /**
+   * \brief Destructor.
+   * Stops recording, cleans up resources, and joins the service thread.
+   */
   ~jackrec_t();
+  /**
+   * \brief Registers OSC variables and methods with the server.
+   * \param srv Pointer to the OSC server instance.
+   */
   void add_variables(TASCAR::osc_server_t* srv);
-  OSC_VOID(start);
-  OSC_VOID(stop);
-  OSC_VOID(clearports);
-  OSC_STRING(addport);
-  OSC_VOID(listports);
-  OSC_VOID(listfiles);
-  OSC_STRING(rmfile);
+
+  // OSC Methods
+  OSC_VOID(start);            ///< Start recording.
+  OSC_VOID(stop);             ///< Stop recording.
+  OSC_VOID(clearports);       ///< Clear the list of JACK ports to record.
+  OSC_STRING(addport);        ///< Add a JACK port name to the recording list.
+  OSC_VOID(listports);        ///< Send a list of available JACK ports via OSC.
+  OSC_VOID(listenabledports); ///< Send a list of enabled JACK ports via OSC.
+  OSC_VOID(listfiles); ///< Send a list of existing recording files via OSC.
+  OSC_STRING(rmfile);  ///< Remove a specific file from disk.
+
+  /**
+   * \brief Scans the configured directory for files matching the pattern.
+   * \return A vector of filenames found.
+   */
   std::vector<std::string> scan_dir();
 
 private:
-  // configuration variables:
-  std::string name = "jackrec";
-  double buflen = 10.0;
-  std::string path = "";
-  std::string pattern = "rec*.wav";
-  int format = 0;
-  bool usetransport = false;
+  // Configuration variables:
+  std::string name = "jackrec"; ///< Name of the module (used for OSC prefix and
+                                ///< JACK client name).
+  double buflen = 10.0;  ///< Buffer length in seconds for the recording thread.
+  std::string path = ""; ///< Directory path where audio files are stored.
+  std::string pattern = "rec*.wav"; ///< File pattern for searching recordings.
+  int format = 0; ///< Libsndfile format bitmask (container | codec).
+  bool usetransport =
+      false; ///< If true, record only when JACK transport is rolling.
+
   // OSC variables:
-  std::string ofname;
-  std::vector<std::string> ports;
-  // internal members:
-  std::string oscprefix;
-  jackrec_async_t* jr = NULL;
-  std::mutex mtx;
-  lo_address lo_addr = NULL;
-  void service();
-  std::thread srv;
-  bool run_service = true;
-  std::string extension = ".wav";
-  std::string prefix = "rec";
-  std::string tag = "";
+  std::string
+      ofname; ///< Output filename (if empty, a timestamped name is generated).
+  std::vector<std::string> ports; ///< List of JACK port names to connect to.
+
+  // Internal members:
+  std::string oscprefix; ///< OSC path prefix (e.g., "/jackrec").
+  jackrec_async_t* jr =
+      NULL;       ///< Pointer to the asynchronous recorder implementation.
+  std::mutex mtx; ///< Mutex to protect access to the recorder object.
+  lo_address lo_addr =
+      NULL;        ///< OSC address for sending feedback/status messages.
+  void service();  ///< Main loop for the service thread (sends status updates).
+  std::thread srv; ///< The service thread.
+  bool run_service = true; ///< Flag to control the service thread loop.
+  std::string extension =
+      ".wav";                 ///< File extension based on the selected format.
+  std::string prefix = "rec"; ///< Prefix for auto-generated filenames.
+  std::string tag = "";       ///< Optional tag to append to filenames.
 };
 
+/**
+ * \brief Construct a new jackrec_t object.
+ *
+ * Initializes the module by reading attributes from the configuration object,
+ * setting up file formats, and starting the service thread.
+ *
+ * \param cfg Module configuration containing attributes like name, path,
+ * buflen, etc.
+ */
 jackrec_t::jackrec_t(const TASCAR::module_cfg_t& cfg)
     : module_base_t(cfg), name("jackrec"), path(""), pattern("rec*.wav"),
       format(0), jr(NULL), lo_addr(NULL), run_service(true)
@@ -107,12 +175,15 @@ jackrec_t::jackrec_t(const TASCAR::module_cfg_t& cfg)
   std::string fileformat("WAV");
   GET_ATTRIBUTE(fileformat, "", "File format");
   std::string validformats;
+
+  // Helper macro to map string format names to libsndfile constants
 #define ADD_FILEFORMAT(x, y)                                                   \
   if(fileformat == #x) {                                                       \
     ifileformat = SF_FORMAT_##x;                                               \
     extension = y;                                                             \
   }                                                                            \
   validformats += std::string(" ") + std::string(#x)
+
   ADD_FILEFORMAT(WAV, ".wav");
   ADD_FILEFORMAT(AIFF, ".aif");
   ADD_FILEFORMAT(AU, ".au");
@@ -146,10 +217,13 @@ jackrec_t::jackrec_t(const TASCAR::module_cfg_t& cfg)
   std::string sampleformat("PCM_16");
   GET_ATTRIBUTE(sampleformat, "", "Audio sample format");
   int isampleformat(0);
+
+  // Helper macro to map string sample format names to libsndfile constants
 #define ADD_SAMPLEFORMAT(x)                                                    \
   if(sampleformat == #x)                                                       \
     isampleformat = SF_FORMAT_##x;                                             \
   validformats += std::string(" ") + std::string(#x)
+
   ADD_SAMPLEFORMAT(PCM_S8);
   ADD_SAMPLEFORMAT(PCM_16);
   ADD_SAMPLEFORMAT(PCM_24);
@@ -189,6 +263,12 @@ jackrec_t::jackrec_t(const TASCAR::module_cfg_t& cfg)
     lo_send(lo_addr, (oscprefix + "/ready").c_str(), "");
 }
 
+/**
+ * \brief Destroy the jackrec_t object.
+ *
+ * Stops the service thread, deletes the recorder object if active,
+ * and frees the OSC address resources.
+ */
 jackrec_t::~jackrec_t()
 {
   if(lo_addr)
@@ -205,6 +285,12 @@ jackrec_t::~jackrec_t()
     lo_address_free(lo_addr);
 }
 
+/**
+ * \brief Service thread main loop.
+ *
+ * Periodically checks the status of the recorder and sends OSC messages
+ * regarding recording time, xruns (buffer underruns), and write errors.
+ */
 void jackrec_t::service()
 {
   size_t xrun(0);
@@ -228,20 +314,30 @@ void jackrec_t::service()
       }
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    //usleep(200000);
   }
 }
 
+/**
+ * \brief Clears the list of JACK ports to be recorded.
+ */
 void jackrec_t::clearports()
 {
   ports.clear();
 }
 
+/**
+ * \brief Adds a JACK port to the recording list.
+ * \param port The name of the JACK port to add.
+ */
 void jackrec_t::addport(const std::string& port)
 {
   ports.push_back(port);
 }
 
+/**
+ * \brief Removes a file from the recording directory.
+ * \param file The filename to remove.
+ */
 void jackrec_t::rmfile(const std::string& file)
 {
   std::vector<std::string> dir(scan_dir());
@@ -256,6 +352,12 @@ void jackrec_t::rmfile(const std::string& file)
         (std::string("Not removing file ") + file + std::string(".")).c_str());
 }
 
+/**
+ * \brief Starts the audio recording.
+ *
+ * If no filename is set via OSC, a timestamped filename is generated.
+ * Stops any existing recording before starting a new one.
+ */
 void jackrec_t::start()
 {
   TASCAR::tictoc_t tictoc;
@@ -289,6 +391,11 @@ void jackrec_t::start()
   }
 }
 
+/**
+ * \brief Stops the audio recording.
+ *
+ * Deletes the recorder object, which closes the audio file.
+ */
 void jackrec_t::stop()
 {
   std::lock_guard<std::mutex> lock(mtx);
@@ -299,6 +406,11 @@ void jackrec_t::stop()
     lo_send(lo_addr, (oscprefix + "/stop").c_str(), "");
 }
 
+/**
+ * \brief Lists available JACK output ports.
+ *
+ * Sends the list of ports via OSC messages to the configured controller URL.
+ */
 void jackrec_t::listports()
 {
   jackc_portless_t jc(name + "_port");
@@ -312,6 +424,26 @@ void jackrec_t::listports()
   }
 }
 
+/**
+ * \brief Lists enabled JACK output ports.
+ *
+ * Sends the list of enabled ports via OSC messages to the configured controller
+ * URL.
+ */
+void jackrec_t::listenabledports()
+{
+  if(lo_addr) {
+    lo_send(lo_addr, (oscprefix + "/enabledports/start").c_str(), "");
+    for(auto p : ports)
+      lo_send(lo_addr, (oscprefix + "/enabledport").c_str(), "s", p.c_str());
+    lo_send(lo_addr, (oscprefix + "/enabledports/end").c_str(), "");
+  }
+}
+
+/**
+ * \brief Scans the configured directory for files matching the pattern.
+ * \return Vector of filenames.
+ */
 std::vector<std::string> jackrec_t::scan_dir()
 {
   std::vector<std::string> res;
@@ -344,6 +476,11 @@ std::vector<std::string> jackrec_t::scan_dir()
   return res;
 }
 
+/**
+ * \brief Lists files in the recording directory.
+ *
+ * Sends the list of files via OSC messages to the configured controller URL.
+ */
 void jackrec_t::listfiles()
 {
   std::vector<std::string> res(scan_dir());
@@ -354,6 +491,10 @@ void jackrec_t::listfiles()
   }
 }
 
+/**
+ * \brief Registers OSC variables and methods.
+ * \param srv Pointer to the OSC server.
+ */
 void jackrec_t::add_variables(TASCAR::osc_server_t* srv)
 {
   srv->set_variable_owner(
@@ -373,6 +514,8 @@ void jackrec_t::add_variables(TASCAR::osc_server_t* srv)
                   "Add the given port to the list of recorder input ports");
   srv->add_method("/listports", "", &jackrec_t::listports, this, true, false,
                   "", "List all available jack ports");
+  srv->add_method("/listenabledports", "", &jackrec_t::listenabledports, this,
+                  true, false, "", "List enabled jack ports");
   srv->add_method(
       "/listfiles", "", &jackrec_t::listfiles, this, true, false, "",
       "Send list of sound files (matching pattern provided in XML)");

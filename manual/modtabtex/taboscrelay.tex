@@ -14,7 +14,7 @@ name & description (type, unit) & def.\\
 \hline
 \indattr{replacemsg} & If set to true, the content of the incoming message is discarded and replaced with a locally defined message (constructed from child nodes). (bool) & false\\
 \hline
-\indattr{retval} & Determines how the message is handled by the local system after forwarding: 0 = The message is handled locally by other modules. non-0 = The message is not handled locally (consumed by the relay). (int32) & 1\\
+\indattr{retval} & Determines how the message is handled by the local system after forwarding: 0: do not pass it on to any other handlers, non-0: pass on to other handlers (int32) & 1\\
 \hline
 \indattr{startswith} & Defines a path prefix. Only messages whose paths start with this string will be forwarded. If left empty, no prefix filtering is applied. (string) & \\
 \hline

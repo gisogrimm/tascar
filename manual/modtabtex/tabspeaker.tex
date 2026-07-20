@@ -18,6 +18,16 @@ name & description (type, unit) & def.\\
 \hline
 \indattr{conv} & Name of impulse response for convolution (string) & \\
 \hline
+\indattr{conv\_chmap} & Convolution IR channel map, zero-base, or empty to use all channels (int32 array) & \\
+\hline
+\indattr{conv\_ramp\_end} & Apply raised cosine ramp at end of IR (int32, samples) & 0\\
+\hline
+\indattr{conv\_ramp\_start} & Apply raised cosine ramp at start of IR (int32, samples) & 0\\
+\hline
+\indattr{conv\_trim\_end} & Trim this number of samples from end of sound file (int32, samples) & 0\\
+\hline
+\indattr{conv\_trim\_start} & Trim this number of samples from start of sound file (int32, samples) & 0\\
+\hline
 \indattr{delay} & Static delay (double, s) & 0\\
 \hline
 \indattr{el} & Elevation (double, deg) & 0\\
