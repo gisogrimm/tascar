@@ -102,6 +102,7 @@ public:
   OSC_VOID(stop);             ///< Stop recording.
   OSC_VOID(clearports);       ///< Clear the list of JACK ports to record.
   OSC_STRING(addport);        ///< Add a JACK port name to the recording list.
+  OSC_STRING(delport);        ///< Add a JACK port name to the recording list.
   OSC_VOID(listports);        ///< Send a list of available JACK ports via OSC.
   OSC_VOID(listenabledports); ///< Send a list of enabled JACK ports via OSC.
   OSC_VOID(listfiles); ///< Send a list of existing recording files via OSC.
@@ -331,7 +332,19 @@ void jackrec_t::clearports()
  */
 void jackrec_t::addport(const std::string& port)
 {
-  ports.push_back(port);
+  if(std::find(ports.begin(), ports.end(), port) == ports.end())
+    ports.push_back(port);
+}
+
+/**
+ * \brief Remove a JACK port from the recording list.
+ * \param port The name of the JACK port to remove.
+ */
+void jackrec_t::delport(const std::string& port)
+{
+  auto it = std::find(ports.begin(), ports.end(), port);
+  if(it != ports.end())
+    ports.erase(it);
 }
 
 /**
@@ -512,6 +525,9 @@ void jackrec_t::add_variables(TASCAR::osc_server_t* srv)
                   "Clear list of ports");
   srv->add_method("/addport", "s", &jackrec_t::addport, this, true, false, "",
                   "Add the given port to the list of recorder input ports");
+  srv->add_method(
+      "/delport", "s", &jackrec_t::delport, this, true, false, "",
+      "Remove the given port from the list of recorder input ports");
   srv->add_method("/listports", "", &jackrec_t::listports, this, true, false,
                   "", "List all available jack ports");
   srv->add_method("/listenabledports", "", &jackrec_t::listenabledports, this,
