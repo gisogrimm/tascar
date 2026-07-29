@@ -6,6 +6,12 @@ PACKVERSION=$(FULLVERSION)-windows
 ifeq "$(DEBUG)" "yes"
 PACKVERSION:=$(PACKVERSION)-debug
 endif
+CYGCHECK=cygcheck
+MSYSTEM=ucrt64
+ifeq "x$(ARCH)" "xarm64"
+  CYGCHECK:=../cygcheck_for_arm64.sh
+  MSYSTEM:=clangarm64
+endif
 
 all:
 	rm -Rf tascar;\
@@ -13,14 +19,14 @@ all:
 	rm -f tascar-$(PACKVERSION).zip;\
 	cp -v ../../*/build/[lt]*.{dll,exe} tascar/;\
 	cp -r ../../scripts/*.m tascar/scripts/;\
-	cp -r /ucrt64/share/icons/Adwaita tascar/share/icons/;\
-	cp -r /ucrt64/share/icons/hicolor tascar/share/icons/;\
-	cp -r /ucrt64/share/glib-2.0/schemas tascar/share/glib-2.0/;\
-	cp -r /ucrt64/lib/gdk-pixbuf-2.0 tascar/lib/;\
-	cp /ucrt64/bin/gdbus.exe tascar/;\
-	cp /ucrt64/bin/broadwayd.exe tascar/;\
-	cp /ucrt64/bin/librsvg-2-2.dll tascar/;\
-	(cd tascar; cp -v $$(cygcheck ./* ./lib/gdk-pixbuf-2.0/*/*.dll | grep msys64 | sort -bu) .;mkdir -p share/{icons,glib-2.0} lib); \
+	cp -r /$(MSYSTEM)/share/icons/Adwaita tascar/share/icons/;\
+	cp -r /$(MSYSTEM)/share/icons/hicolor tascar/share/icons/;\
+	cp -r /$(MSYSTEM)/share/glib-2.0/schemas tascar/share/glib-2.0/;\
+	cp -r /$(MSYSTEM)/lib/gdk-pixbuf-2.0 tascar/lib/;\
+	cp /$(MSYSTEM)/bin/gdbus.exe tascar/;\
+	cp /$(MSYSTEM)/bin/broadwayd.exe tascar/;\
+	cp /$(MSYSTEM)/bin/librsvg-2-2.dll tascar/;\
+	(cd tascar; cp -v $$($(CYGCHECK) ./* ./lib/gdk-pixbuf-2.0/*/*.dll |  egrep "ucrt64|clangarm64" | sort -bu) .;mkdir -p share/{icons,glib-2.0} lib); \
 	cp ../../artwork/*.png tascar/;\
 	mkdir -p "tascar/examples/sounds";\
 	cp -r "../../manual/examples/"example_*.tsc "tascar/examples";\
