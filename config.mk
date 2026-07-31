@@ -56,7 +56,9 @@ PREFIX ?= /usr/local
 # this and use the upstream VERSION directly.
 DERIVE_VERSION_FROM_GIT ?= 1
 ifeq ($(DERIVE_VERSION_FROM_GIT),1)
-  GITMODIFIED:=$(shell test -z "`git status --porcelain -uno`" || echo "-modified")
+  # If the source tree contains modifications, append "-modified" to the version string.
+  # But ignore alleged symlink modifications detected on Github Windows runners.
+  GITMODIFIED:=$(shell test -z "`git status --porcelain -uno | grep -v T.external_libs/libmysofa-1.3.2/share/default.sofa | grep -v D.libtascar/tascar`" || echo "-modified")
   COMMITHASH:=$(shell git log -1 --abbrev=7 --pretty='format:%h')
   LATEST_RELEASETAG:=$(shell git tag -l "release*" |tail -1)
   COMMIT_SINCE_RELEASE:=$(shell git rev-list --count $(LATEST_RELEASETAG)..)
