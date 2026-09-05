@@ -109,20 +109,40 @@ void metronome_t::add_variables(TASCAR::osc_server_t* srv)
   srv_ = srv;
   srv->set_variable_owner(
       TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
-  srv->add_bool("/changeonone", &changeonone,"If true, parameter changes (like BPM or volume updates) are applied only on the next \"one\" (the first beat of a bar). If false, changes are applied immediately.");
-  srv->add_double("/bpm", &bpm,"","Beats per minute. Defaults to 120.");
-  srv->add_vector_int("/bpb", &bpb,"","Beats per bar. This is a vector allowing for varying bar lengths (e.g., \"4 3\" for a 4/4 bar followed by a 3/4 bar).");
-  srv->add_double_dbspl("/a1", &a1,"","Amplitude of the first beat (the \"downbeat\").");
-  srv->add_double_dbspl("/ao", &ao,"","Amplitude of the other beats.");
-  srv->add_bool("/sync", &sync,"Enables synchronization to the transport time line. If false (default), the metronome runs freely based on the audio sample rate.");
-  srv->add_double("/filter/f1", &fres1,"","Resonance frequency of the first beat.");
-  srv->add_double("/filter/fo", &freso,"","Resonance frequency of other beats.");
-  srv->add_double("/filter/q1", &q1,"","Filter resonance (Q factor) of the first beat.");
-  srv->add_double("/filter/qo", &qo,"","Filter resonance (Q factor) of other beats.");
-  srv->add_bool("/bypass", &bypass,"If true, the metronome sound is muted.");
-  srv->add_uint("/dispatchin", &dispatchin,"","A counter used to trigger an OSC message dispatch on a specific beat. (See detailed explanation below).");
-  srv->add_method("/dispatchmsg", NULL, &osc_set_message, &msg,true,false,"","An OSC method that accepts a generic message. The data sent here is stored and used later by the dispatch mechanism.");
-  srv->add_string("/dispatchpath", &(msg.path),"The OSC path (address) that the stored message will be sent to when the dispatch is triggered.");
+  srv->add_bool("/changeonone", &changeonone,
+                "If true, parameter changes (like BPM or volume updates) are "
+                "applied only on the next \"one\" (the first beat of a bar). "
+                "If false, changes are applied immediately.");
+  srv->add_double("/bpm", &bpm, "", "Beats per minute. Defaults to 120.");
+  srv->add_vector_int(
+      "/bpb", &bpb, "",
+      "Beats per bar. This is a vector allowing for varying bar lengths (e.g., "
+      "\"4 3\" for a 4/4 bar followed by a 3/4 bar).");
+  srv->add_double_dbspl("/a1", &a1, "",
+                        "Amplitude of the first beat (the \"downbeat\").");
+  srv->add_double_dbspl("/ao", &ao, "", "Amplitude of the other beats.");
+  srv->add_bool(
+      "/sync", &sync,
+      "Enables synchronization to the transport time line. If false (default), "
+      "the metronome runs freely based on the audio sample rate.");
+  srv->add_double("/filter/f1", &fres1, "",
+                  "Resonance frequency of the first beat.");
+  srv->add_double("/filter/fo", &freso, "",
+                  "Resonance frequency of other beats.");
+  srv->add_double("/filter/q1", &q1, "",
+                  "Filter resonance (Q factor) of the first beat.");
+  srv->add_double("/filter/qo", &qo, "",
+                  "Filter resonance (Q factor) of other beats.");
+  srv->add_bool("/bypass", &bypass, "If true, the metronome sound is muted.");
+  srv->add_uint("/dispatchin", &dispatchin, "",
+                "A counter used to trigger an OSC message dispatch on a "
+                "specific beat. (See detailed explanation below).");
+  srv->add_method("/dispatchmsg", NULL, &osc_set_message, &msg, true, false, "",
+                  "An OSC method that accepts a generic message. The data sent "
+                  "here is stored and used later by the dispatch mechanism.");
+  srv->add_string("/dispatchpath", &(msg.path),
+                  "The OSC path (address) that the stored message will be sent "
+                  "to when the dispatch is triggered.");
   srv->unset_variable_owner();
 }
 
