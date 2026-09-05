@@ -169,6 +169,7 @@
     <tuner/>
     <joystick actor="/*/nav"/>
     <mcuctl/>
+    <motionpath/>
   </modules>
   <connect src="a" dest="b"/>
   <range/>

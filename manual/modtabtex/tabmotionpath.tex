@@ -1,0 +1,23 @@
+\definecolor{shadecolor}{RGB}{255,230,204}\begin{snugshade}
+{\footnotesize
+\label{attrtab:motionpath}
+Attributes of element {\bf motionpath}\nopagebreak
+
+\begin{tabularx}{\textwidth}{l>{\raggedright}XX}
+\hline
+name & description (type, unit) & def.\\
+\hline
+\hline
+\indattr{active} & Enables or disables the plugin. If set to false, the motion path is ignored and the actor remains in its current state. (bool) & true\\
+\hline
+\indattr{actor} & pattern to match actor objects (string array) & \\
+\hline
+\indattr{id} & The identifier used for OSC control paths (e.g., /motionpath/go). (string) & \\
+\hline
+\indattr{sampledorientation} & Defines how orientation is calculated. If 0, orientation is taken from the <orientation> track. If non-zero, orientation is calculated based on the direction of movement (tangent) looking ahead (positive value) or behind (negative value) by the specified distance along the path in meters. (double, m) & 0\\
+\hline
+\indattr{tascartime} & Determines the time reference. If true, the path position is synchronized with the main TASCAR session time. If false, the plugin uses its own internal clock, controllable via OSC (/go, /start, /stop). (bool) & false\\
+\hline
+\end{tabularx}
+}
+\end{snugshade}

@@ -1,9 +1,11 @@
-Allow motion along a predefined trajectory independently from the
-session time line, or optionally based on the \tascar{} time line.
-%
-This module needs an active session-OSC server.
-%
-These OSC methods are added:
+This module controls the position and orientation of an actor along a
+predefined trajectory. It can operate independently of the session
+timeline using an internal clock, or optionally synchronize directly
+with the \tascar{} time. Orientation can be explicitly defined or
+automatically calculated based on the direction of movement along the
+path. The module exposes the following OSC variables (see below for
+more details):
+
 \begin{verbatim}
 /motionpath/go from to
 /motionpath/start
@@ -21,11 +23,9 @@ These OSC methods are added:
 current time is after the stop time, then the current time is set to
 the stop time.
 
-\begin{tscattributes}
-\indattr{active}             & Play trajectory (true), or ignore trajectory (false); default: true     \\
-\indattr{tascartime}         & Use OSC time control (false) or tascar time line (true); default: false \\
-\indattr{id}                 & Use id in OSC path; default: ``motionpath''                             \\
-\indattr{sampledorientation} & Sample orientation along trajectory with this distance (default: 0)     \\
-\end{tscattributes}
+\input{modtabtex/tabmotionpath.tex}
+
+\input{oscdoc_motionpath.tex}
+
 
 
