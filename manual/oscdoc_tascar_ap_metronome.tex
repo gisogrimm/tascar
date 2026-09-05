@@ -8,20 +8,20 @@ OSC variables:
 \hline
 path & fmt. & range & readable & description\\
 \hline
-\attr{/.../a1} & f & [0,120] & yes & \\
-\attr{/.../ao} & f & [0,120] & yes & \\
-\attr{/.../bpb} & i &  & no & \\
-\attr{/.../bpm} & f &  & yes & \\
-\attr{/.../bypass} & i & bool & yes & \\
-\attr{/.../changeonone} & i & bool & yes & \\
-\attr{/.../dispatchin} & i &  & yes & \\
-\attr{/.../dispatchmsg} & (any) &  & no & \\
-\attr{/.../dispatchpath} & s & string & yes & \\
-\attr{/.../filter/f1} & f &  & yes & \\
-\attr{/.../filter/fo} & f &  & yes & \\
-\attr{/.../filter/q1} & f &  & yes & \\
-\attr{/.../filter/qo} & f &  & yes & \\
-\attr{/.../sync} & i & bool & yes & \\
+\attr{/.../a1} & f &  & yes & Amplitude of the first beat (the "downbeat").\\
+\attr{/.../ao} & f &  & yes & Amplitude of the other beats.\\
+\attr{/.../bpb} & i &  & no & Beats per bar. This is a vector allowing for varying bar lengths (e.g., "4 3" for a 4/4 bar followed by a 3/4 bar).\\
+\attr{/.../bpm} & f &  & yes & Beats per minute. Defaults to 120.\\
+\attr{/.../bypass} & i & bool & yes & If true, the metronome sound is muted.\\
+\attr{/.../changeonone} & i & bool & yes & If true, parameter changes (like BPM or volume updates) are applied only on the next "one" (the first beat of a bar). If false, changes are applied immediately.\\
+\attr{/.../dispatchin} & i &  & yes & A counter used to trigger an OSC message dispatch on a specific beat. (See detailed explanation below).\\
+\attr{/.../dispatchmsg} & (any) &  & no & An OSC method that accepts a generic message. The data sent here is stored and used later by the dispatch mechanism.\\
+\attr{/.../dispatchpath} & s & string & yes & The OSC path (address) that the stored message will be sent to when the dispatch is triggered.\\
+\attr{/.../filter/f1} & f &  & yes & Resonance frequency of the first beat.\\
+\attr{/.../filter/fo} & f &  & yes & Resonance frequency of other beats.\\
+\attr{/.../filter/q1} & f &  & yes & Filter resonance (Q factor) of the first beat.\\
+\attr{/.../filter/qo} & f &  & yes & Filter resonance (Q factor) of other beats.\\
+\attr{/.../sync} & i & bool & yes & Enables synchronization to the transport time line. If false (default), the metronome runs freely based on the audio sample rate.\\
 \hline
 \end{tabularx}
 }

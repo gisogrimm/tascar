@@ -1,8 +1,39 @@
 \input{tabmetronome.tex}
 
-OSC messages can be dispatched on beat one using the ``/dispatchin'' OSC variables.
+%OSC messages can be dispatched on beat one using the ``/dispatchin'' OSC variables.
+
+This metronome plugin generates a rhythmic click track with
+customizable timing, beat signatures, and filtered sound
+characteristics. It supports synchronization to the transport timeline
+or free-running operation, allowing real-time control of parameters
+like BPM and volume via OSC. Additionally, it features a dispatch
+mechanism that allows users to schedule and automatically send custom
+OSC messages on specific downbeats, enabling it to trigger events in
+other parts of the session.
+
 
 \input{oscdoc_tascar_ap_metronome.tex}
+
+The \verb!dispatchin! feature allows the metronome to act as a
+sequencer or trigger for other OSC events. It enables you to schedule
+an OSC message to be sent out automatically when the metronome reaches
+a specific downbeat. How it works:
+
+\begin{enumerate} 
+\item {\bf Setup (The Payload):} You first define the message you want to send. You send an OSC message to the \verb!/dispatchmsg! method of this plugin containing the arguments (e.g., floats, strings, integers) you want to dispatch. Simultaneously, you set the \verb!/dispatchpath! variable to the target OSC address (e.g., \verb!/scene/start!) where this message should eventually be sent.
+\item {\bf Scheduling (The Counter):} You set the variable \verb!/dispatchin! to an integer value. This value represents the number of bars to wait before the message is sent.
+\begin{itemize}
+\item If you set \verb!/dispatchin! to 1, the message is dispatched immediately on the very next downbeat.
+\item If you set \verb!/dispatchin! to 4, the plugin will count down 3, 2, 1 during the subsequent downbeats, and dispatch the message on the 4th downbeat.
+\end{itemize}
+\item {\bf Execution:} Inside the audio processing loop (\verb!ap_process!), the plugin checks every time it hits a "one" (the first beat of a bar, where \verb!beat! == 0):
+\begin{itemize}
+\item It checks if dispatchin is greater than 0.
+\item If so, it decrements the counter (\verb!--dispatchin!).
+\item If the counter reaches exactly 0 during this beat, the plugin calls \verb!srv_->dispatch_data_message!. This takes the stored message payload and sends it out to the stored \verb!/dispatchpath!.
+\end{itemize}
+\end{enumerate}
+
 
 Each sub-message can be defined using a \elem{msg} element.
 
