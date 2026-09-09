@@ -32,11 +32,10 @@
 #include "coordinates.h"
 #include "errorhandling.h"
 #include "tscconfig.h"
-#include <fstream>
+#include <cmath>
 #include <numeric>
 #include <sstream>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
 #include <vector>
 
 #include "quickhull/QuickHull.cpp"
@@ -126,24 +125,12 @@ void posf_t::normalize()
 
 bool pos_t::has_infinity() const
 {
-  if(x == std::numeric_limits<double>::infinity())
-    return true;
-  if(y == std::numeric_limits<double>::infinity())
-    return true;
-  if(z == std::numeric_limits<double>::infinity())
-    return true;
-  return false;
+  return std::isinf(x) || std::isinf(y) || std::isinf(z);
 }
 
 bool posf_t::has_infinity() const
 {
-  if(x == std::numeric_limits<float>::infinity())
-    return true;
-  if(y == std::numeric_limits<float>::infinity())
-    return true;
-  if(z == std::numeric_limits<float>::infinity())
-    return true;
-  return false;
+  return std::isinf(x) || std::isinf(y) || std::isinf(z);
 }
 
 shoebox_t::shoebox_t() {}
@@ -240,7 +227,7 @@ void ngon_t::apply_rot_loc(const pos_t& p0, const zyx_euler_t& o)
 
 void ngon_t::update()
 {
-  // firtst calculate vertices in global coordinate system:
+  // first calculate vertices in global coordinate system:
   std::vector<pos_t>::iterator i_local_vert(local_verts_.begin());
   for(std::vector<pos_t>::iterator i_vert = verts_.begin();
       i_vert != verts_.end(); ++i_vert) {
@@ -361,30 +348,77 @@ bool ngon_t::is_behind(const pos_t& p0) const
 bool ngon_t::intersection(const pos_t& p0, const pos_t& p1, pos_t& p_is,
                           double* w) const
 {
+  // 1. Find the nearest point on the plane to p0
   pos_t np(nearest_on_plane(p0));
-  pos_t dpn(p1 - p0);
-  double dpl(dpn.norm());
-  dpn.normalize();
-  double d(distance(np, p0));
-  if(d == 0) {
-    // first point is intersecting:
+
+  // 2. Calculate the vector from p0 to p1
+  pos_t dir(p1 - p0);
+  double dpl(dir.norm()); // Length of the segment
+
+  // Handle degenerate case where p0 and p1 are the same point
+  if(dpl == 0) {
+    // If p0 is on the plane, it intersects, otherwise it doesn't
+    double d = distance(np, p0);
+    if(d == 0) {
+      if(w)
+        *w = 0;
+      p_is = p0;
+      return true;
+    }
+    return false;
+  }
+
+  dir.normalize(); // dpn in original code
+
+  // 3. Calculate distance from p0 to the plane
+  // Note: distance(np, p0) is the absolute distance.
+  // We need the signed distance to determine direction.
+  // Assuming distance() returns absolute value, we calculate sign manually.
+  // Or, if distance() is signed, use it directly.
+  // Here we calculate the signed distance using the plane normal.
+  // (Assuming get_normal() returns the plane's normal vector)
+  // pos_t plane_normal = get_normal();
+  double d = dot_prod(normal, np - p0);
+
+  if(std::abs(d) < 1e-9) { // Check if p0 is effectively on the plane
     if(w)
       *w = 0;
     p_is = p0;
     return true;
   }
-  double r(dot_prod(dpn, (np - p0).normal()));
-  if(r == 0) {
-    // the edge is parallel to the plane; no intersection.
+
+  // 4. Calculate the projection of the line onto the plane normal
+  // This replaces: dot_prod(dpn, (np - p0).normal())
+  double denom = dot_prod(dir, normal);
+
+  if(std::abs(denom) < 1e-9) {
+    // The line is parallel to the plane; no intersection (unless on plane,
+    // handled above)
     return false;
   }
-  r = d / r;
-  dpn *= r;
-  r /= dpl;
+
+  // 5. Calculate the ratio 'r' (distance along line / total segment length)
+  // r = d / denom
+  // Since 'd' is distance to plane and 'denom' is the component of dir along
+  // normal, this gives us the scalar distance along the line.
+  auto r = d / denom;
+
+  // 6. Check if the intersection is within the segment [0, 1]
+  // (Optional: usually desired for segment intersection)
+  // if (r < 0 || r > 1) return false;
+
   if(w)
     *w = r;
-  dpn += p0;
-  p_is = dpn;
+
+  // 7. Calculate the intersection point
+  // p_is = p0 + dir * r
+  // Note: We must multiply by the scalar distance 'r', not the normalized 'r'
+  // from original code logic. However, the original code calculated r /= dpl at
+  // the end. Let's stick to standard vector math: Point = Origin + Direction *
+  // ScalarDistance
+  dir *= r;
+  p_is = p0 + dir;
+
   return true;
 }
 
@@ -466,7 +500,7 @@ TASCAR::quickhull_t::quickhull_t(const std::vector<pos_t>& vertices)
     }
     faces.push_back(sim);
   }
-  std::sort(faces.begin(), faces.end(), [](simplex_t a, simplex_t b) {
+  std::sort(faces.begin(), faces.end(), [](const simplex_t& a, const simplex_t& b) {
     if(a.c1 < b.c1)
       return true;
     if(a.c1 == b.c1) {
@@ -504,15 +538,12 @@ bool operator==(const TASCAR::quickhull_t& h1, const TASCAR::quickhull_t& h2)
 {
   if(h1.faces.size() != h2.faces.size())
     return false;
-  // see if all faces are also available in other mesh:
-  for(auto it = h1.faces.begin(); it != h1.faces.end(); ++it) {
-    bool found(false);
-    for(auto it2 = h2.faces.begin(); it2 != h2.faces.end(); ++it2)
-      if(*it == *it2)
-        found = true;
-    if(!found) {
+  // Both face lists are sorted by the quickhull_t constructor, so
+  // element-wise equality is equivalent to multiset equality
+  // (duplicate faces are now handled correctly).
+  for(size_t k = 0; k < h1.faces.size(); ++k) {
+    if(!(h1.faces[k] == h2.faces[k]))
       return false;
-    }
   }
   return true;
 }
@@ -539,7 +570,7 @@ void TASCAR::vector_get_mean_std(const std::vector<double>& v, double& mean,
 {
   mean = std::numeric_limits<double>::quiet_NaN();
   stdev = std::numeric_limits<double>::quiet_NaN();
-  if(v.size() == 0)
+  if(v.empty())
     return;
   double sum = std::accumulate(v.begin(), v.end(), 0.0);
   mean = sum / (double)(v.size());

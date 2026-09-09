@@ -717,7 +717,7 @@ receiver_t::~receiver_t()
 
 void receiver_t::clear_output()
 {
-  for(auto & outchannel : outchannels )
+  for(auto& outchannel : outchannels)
     outchannel.clear();
   scatterbuffer->clear();
 }
@@ -966,7 +966,7 @@ pos_t diffractor_t::process(pos_t p_src, const pos_t& p_rec, wave_t& audio,
     pos_t p_rec_is(p_is - p_rec);
     p_rec_is.normalize();
     const float d_is_src(p_is_src.normf());
-    if(d_is_src > 0)
+    if(d_is_src > EPSf)
       p_is_src *= 1.0 / d_is_src;
     // calculate first zero crossing frequency:
     const float cos_theta(std::max(0.0f, dot_prodf(p_is_src, p_rec_is)));
