@@ -21,7 +21,7 @@ $(patsubst %,%-subdir-unit-tests,$(SUBDIRS)):
 	$(MAKE) -C $(@:-subdir-unit-tests=) unit-tests
 
 execute-unit-tests: $(BUILD_DIR)/unit-test-runner
-	pwd;if [ -x $< ]; then LD_LIBRARY_PATH=./build:../libtascar/build DYLD_LIBRARY_PATH=./build:../libtascar/build $<; fi
+	pwd;if [ -x $< ]; then LD_LIBRARY_PATH=./../plugins/build:./build:../libtascar/build DYLD_LIBRARY_PATH=../plugins/build/:./build:../libtascar/build $<; fi
 
 unit_tests_test_files = $(wildcard $(SOURCE_DIR)/*_unit_tests.cc)
 

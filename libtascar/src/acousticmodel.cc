@@ -1103,6 +1103,27 @@ soundpath_t::soundpath_t(const source_t* src, const soundpath_t* parent_,
     reflectionfilterstates[k] = 0;
 }
 
+// void soundpath_t::update_position()
+// {
+//   visible = true;
+//   if(reflector) {
+//     // calculate image position and orientation:
+//     p_cut = reflector->nearest_on_plane(parent->position);
+//     // calculate nominal image source position:
+//     pos_t p_img(p_cut);
+//     p_img *= 2.0;
+//     p_img -= parent->position;
+//     // if image source is in front of reflector then return:
+//     if(dot_prod(p_img - p_cut, reflector->get_normal()) > 0)
+//       visible = false;
+//     position = p_img;
+//     orientation = parent->orientation;
+//   } else {
+//     position = primary->position;
+//     orientation = primary->orientation;
+//   }
+// }
+
 void soundpath_t::update_position()
 {
   visible = true;
@@ -1117,7 +1138,33 @@ void soundpath_t::update_position()
     if(dot_prod(p_img - p_cut, reflector->get_normal()) > 0)
       visible = false;
     position = p_img;
-    orientation = parent->orientation;
+    // Update orientation:
+    // The image source orientation is the parent orientation mirrored at the
+    // reflector plane. We use a rotation matrix to perform this operation.
+    rotmat_t r;
+    r.set_from_euler(parent->orientation);
+    // Create a reflection matrix R = I - 2 * n * n^T
+    // where n is the normalized normal vector.
+    pos_t n(reflector->get_normal());
+    // Apply reflection to the rotation matrix columns (basis vectors)
+    // R_new = R_reflection * R_old
+    // Column 1 (x-axis):
+    double dot1 = r.m11 * n.x + r.m21 * n.y + r.m31 * n.z;
+    r.m11 -= 2.0 * dot1 * n.x;
+    r.m21 -= 2.0 * dot1 * n.y;
+    r.m31 -= 2.0 * dot1 * n.z;
+    // Column 2 (y-axis):
+    double dot2 = r.m12 * n.x + r.m22 * n.y + r.m32 * n.z;
+    r.m12 -= 2.0 * dot2 * n.x;
+    r.m22 -= 2.0 * dot2 * n.y;
+    r.m32 -= 2.0 * dot2 * n.z;
+    // Column 3 (z-axis):
+    double dot3 = r.m13 * n.x + r.m23 * n.y + r.m33 * n.z;
+    r.m13 -= 2.0 * dot3 * n.x;
+    r.m23 -= 2.0 * dot3 * n.y;
+    r.m33 -= 2.0 * dot3 * n.z;
+    // Convert back to Euler angles
+    orientation = r.to_euler();
   } else {
     position = primary->position;
     orientation = primary->orientation;
