@@ -126,6 +126,7 @@ acoustic_model_t::~acoustic_model_t()
 
 uint32_t acoustic_model_t::process(const TASCAR::transport_t& tp)
 {
+  // update position of sound vertex:
   if(src_->active)
     update_position();
   if((!receiver_->gain_zero) && receiver_->active && src_->active &&
@@ -154,8 +155,10 @@ uint32_t acoustic_model_t::process(const TASCAR::transport_t& tp)
           position = get_effective_position(receiver_->position, srcgainmod);
           // read audio from source, update radation position:
           pos_t prelsrc(receiver_->position);
-          prelsrc -= src_->position;
-          prelsrc /= src_->orientation;
+          // prelsrc -= src_->position;
+          // prelsrc /= src_->orientation;
+          prelsrc -= position;
+          prelsrc /= orientation;
           if(receiver_->volumetric.has_volume()) {
             if(src_->read_source_diffuse(prelsrc, src_->inchannels, audio,
                                          source_data)) {
@@ -1103,68 +1106,53 @@ soundpath_t::soundpath_t(const source_t* src, const soundpath_t* parent_,
     reflectionfilterstates[k] = 0;
 }
 
-// void soundpath_t::update_position()
-// {
-//   visible = true;
-//   if(reflector) {
-//     // calculate image position and orientation:
-//     p_cut = reflector->nearest_on_plane(parent->position);
-//     // calculate nominal image source position:
-//     pos_t p_img(p_cut);
-//     p_img *= 2.0;
-//     p_img -= parent->position;
-//     // if image source is in front of reflector then return:
-//     if(dot_prod(p_img - p_cut, reflector->get_normal()) > 0)
-//       visible = false;
-//     position = p_img;
-//     orientation = parent->orientation;
-//   } else {
-//     position = primary->position;
-//     orientation = primary->orientation;
-//   }
-// }
-
 void soundpath_t::update_position()
 {
   visible = true;
+
   if(reflector) {
-    // calculate image position and orientation:
-    p_cut = reflector->nearest_on_plane(parent->position);
-    // calculate nominal image source position:
+    // 1. Calculate the image source position
+    // Find the point on the plane closest to the parent
+    pos_t p_cut = reflector->nearest_on_plane(parent->position);
+
+    // Calculate the mirrored position: p_img = p_cut + (p_cut - parent)
     pos_t p_img(p_cut);
     p_img *= 2.0;
     p_img -= parent->position;
-    // if image source is in front of reflector then return:
-    if(dot_prod(p_img - p_cut, reflector->get_normal()) > 0)
+
+    // If the image source is in front of the reflector, it is not visible
+    if(dot_prod(p_img - p_cut, reflector->get_normal()) > 0) {
       visible = false;
+    }
     position = p_img;
-    // Update orientation:
-    // The image source orientation is the parent orientation mirrored at the
-    // reflector plane. We use a rotation matrix to perform this operation.
+
+    // 2. Calculate the image source orientation
+    // The orientation is the parent orientation mirrored at the reflector
+    // plane.
+
+    // Get parent rotation matrix
     rotmat_t r;
     r.set_from_euler(parent->orientation);
-    // Create a reflection matrix R = I - 2 * n * n^T
-    // where n is the normalized normal vector.
-    pos_t n(reflector->get_normal());
-    // Apply reflection to the rotation matrix columns (basis vectors)
-    // R_new = R_reflection * R_old
-    // Column 1 (x-axis):
-    double dot1 = r.m11 * n.x + r.m21 * n.y + r.m31 * n.z;
-    r.m11 -= 2.0 * dot1 * n.x;
-    r.m21 -= 2.0 * dot1 * n.y;
-    r.m31 -= 2.0 * dot1 * n.z;
-    // Column 2 (y-axis):
-    double dot2 = r.m12 * n.x + r.m22 * n.y + r.m32 * n.z;
-    r.m12 -= 2.0 * dot2 * n.x;
-    r.m22 -= 2.0 * dot2 * n.y;
-    r.m32 -= 2.0 * dot2 * n.z;
-    // Column 3 (z-axis):
-    double dot3 = r.m13 * n.x + r.m23 * n.y + r.m33 * n.z;
-    r.m13 -= 2.0 * dot3 * n.x;
-    r.m23 -= 2.0 * dot3 * n.y;
-    r.m33 -= 2.0 * dot3 * n.z;
+
+    // Create reflection matrix F = I - 2 * n * n^T
+    const pos_t n = reflector->get_normal();
+    rotmat_t F;
+    F.m11 = 1.0 - 2 * n.x * n.x;
+    F.m12 = -2.0 * n.x * n.y;
+    F.m13 = -2.0 * n.x * n.z;
+    F.m21 = -2.0 * n.y * n.x;
+    F.m22 = 1.0 - 2 * n.y * n.y;
+    F.m23 = -2.0 * n.y * n.z;
+    F.m31 = -2.0 * n.z * n.x;
+    F.m32 = -2.0 * n.z * n.y;
+    F.m33 = 1.0 - 2 * n.z * n.z;
+
+    // Apply reflection: R_new = R_reflection * R_old
+    r *= F;
+
     // Convert back to Euler angles
     orientation = r.to_euler();
+
   } else {
     position = primary->position;
     orientation = primary->orientation;

@@ -66,7 +66,10 @@ template <class T> void make_friendly_number_limited(T& x)
 
 namespace TASCAR {
 
-  inline bool is_denormal(const double& a) { return !((a < 1.0) || (a > 0.0)); }
+  inline bool is_denormal(const double& a)
+  {
+    return !((a < 1.0) || (a > 0.0));
+  }
 
   inline bool is_denormal(const float& a)
   {
@@ -471,6 +474,37 @@ namespace TASCAR {
       eul.z = atan2(-m12, m11);
       return eul;
     };
+    // Compound assignment operator for matrix multiplication (this *= rhs)
+    inline rotmat_t& operator*=(const rotmat_t& rhs)
+    {
+      // Store current values in temporary variables to ensure correct
+      // calculation when writing back to member variables.
+      const double t11 = m11 * rhs.m11 + m12 * rhs.m21 + m13 * rhs.m31;
+      const double t12 = m11 * rhs.m12 + m12 * rhs.m22 + m13 * rhs.m32;
+      const double t13 = m11 * rhs.m13 + m12 * rhs.m23 + m13 * rhs.m33;
+
+      const double t21 = m21 * rhs.m11 + m22 * rhs.m21 + m23 * rhs.m31;
+      const double t22 = m21 * rhs.m12 + m22 * rhs.m22 + m23 * rhs.m32;
+      const double t23 = m21 * rhs.m13 + m22 * rhs.m23 + m23 * rhs.m33;
+
+      const double t31 = m31 * rhs.m11 + m32 * rhs.m21 + m33 * rhs.m31;
+      const double t32 = m31 * rhs.m12 + m32 * rhs.m22 + m33 * rhs.m32;
+      const double t33 = m31 * rhs.m13 + m32 * rhs.m23 + m33 * rhs.m33;
+
+      // Assign computed values back to members
+      m11 = t11;
+      m12 = t12;
+      m13 = t13;
+      m21 = t21;
+      m22 = t22;
+      m23 = t23;
+      m31 = t31;
+      m32 = t32;
+      m33 = t33;
+
+      return *this;
+    };
+
     double m11 = 1;
     double m12 = 0;
     double m13 = 0;

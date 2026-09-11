@@ -1,19 +1,23 @@
 <?xml version="1.0"?>
 <session license="CC-0">
-  <scene guiscale="4">
+  <scene guiscale="8">
     <source>
       <orientation>0 0 0 0 1 360 0 0</orientation>
-      <sound type="generic1storder" a="0.5" ismmin="1" ismmax="1">
+      <sound type="generic1storder" a="0.5" rz="60">
 	<plugins>
 	  <const/>
 	</plugins>
       </sound>
     </source>
-    <receiver type="omni" delaycomp="1">
+    <receiver type="omni" delaycomp="1" ismmin="0" ismmax="0">
+      <position>0 1 0 0</position>
+    </receiver>
+    <receiver type="omni" delaycomp="1" name="r2" ismmin="1" ismmax="1">
       <position>0 1 0 0</position>
     </receiver>
     <facegroup>
-      <faces>-2 1 1	-2 -1 1 	 -2 -1 -1   -2  1 -1      </faces>
+      <!-- place a reflector at x=-2, facing towards the origin: -->
+      <faces>-2 1 1   -2 -1 1   -2 -1 -1   -2  1 -1</faces>
     </facegroup>
   </scene>
 </session>

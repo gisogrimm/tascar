@@ -16,6 +16,7 @@ TESTS = test_snd_pink_diffuse test_ir1 test_ir2 test_ir3 test_ir4	\
 	test_ir_scatter_ortf test_snd_sourcedir_generic			\
 	test_snd_sourcedir_generic1					\
 	test_snd_sourcedir_generic_cardioid test_ir_wfs			\
+	test_snd_sourcedir_generic_ism                                  \
 	test_ir_wfs_noplanewave test_level_hoa2d_basic			\
 	test_level_hoa2d_maxre test_ir_reverb test_ir_simplefdn		\
 	test_ir_simplefdn_biquadallpass test_ir_simplefdn_gain		\
