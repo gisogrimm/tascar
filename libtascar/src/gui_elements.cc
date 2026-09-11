@@ -753,22 +753,47 @@ void scene_draw_t::draw_acousticmodel(Cairo::RefPtr<Cairo::Context> cr)
   cr->save();
   cr->set_source_rgb(0, 0, 0);
   cr->set_line_width(0.2 * markersize);
-  for(std::vector<TASCAR::Acousticmodel::receiver_graph_t*>::iterator irc =
-          scene_->world->receivergraphs.begin();
-      irc != scene_->world->receivergraphs.end(); ++irc)
-    for(std::vector<TASCAR::Acousticmodel::acoustic_model_t*>::iterator iam =
-            (*irc)->acoustic_model.begin();
-        iam != (*irc)->acoustic_model.end(); ++iam) {
-      if((*iam)->receiver_->volumetric.is_null() && (*iam)->src_->active &&
-         (*iam)->receiver_->active &&
-         ((*iam)->src_->ismmin <= (*iam)->ismorder) &&
-         ((*iam)->src_->ismmax >= (*iam)->ismorder) &&
-         ((*iam)->receiver_->ismmin <= (*iam)->ismorder) &&
-         ((*iam)->receiver_->ismmax >= (*iam)->ismorder)) {
-        pos_t psrc(view((*iam)->position));
-        pos_t prec(view((*iam)->receiver_->position));
+  // iterate through all receiver graphs (i.e., subset of the world belonging to
+  // one receiver):
+  for(auto& receivergraph : scene_->world->receivergraphs)
+    // iterate through all acoustic models (i.e., pair of receiver and sound):
+    for(auto& am : receivergraph->acoustic_model) {
+      if(am->receiver_->volumetric.is_null() && am->src_->active &&
+         am->receiver_->active && (am->src_->ismmin <= am->ismorder) &&
+         (am->src_->ismmax >= am->ismorder) &&
+         (am->receiver_->ismmin <= am->ismorder) &&
+         (am->receiver_->ismmax >= am->ismorder)) {
+
+        pos_t psrc(view(am->position));
+        // // draw direction:
         cr->save();
-        float gain_color(std::min(1.0f, std::max(0.0f, (*iam)->get_gain())));
+        TASCAR::pos_t dirx(0.03 * view.scale, 0, 0);
+        TASCAR::pos_t diry(0, 0.03 * view.scale, 0);
+        TASCAR::pos_t dirz(0, 0, 0.03 * view.scale);
+        dirx *= am->orientation;
+        dirx += am->position;
+        dirx = view(dirx);
+        diry *= am->orientation;
+        diry += am->position;
+        diry = view(diry);
+        dirz *= am->orientation;
+        dirz += am->position;
+        dirz = view(dirz);
+        cr->set_source_rgb(1.0, 0.0, 0.0);
+        draw_edge(cr, psrc, dirx);
+        cr->stroke();
+        cr->set_source_rgb(0.0, 1.0, 0.0);
+        draw_edge(cr, psrc, diry);
+        cr->stroke();
+        cr->set_source_rgb(0.0, 0.0, 1.0);
+        draw_edge(cr, psrc, dirz);
+        cr->stroke();
+        cr->restore();
+        // end of direction
+
+        pos_t prec(view(am->receiver_->position));
+        cr->save();
+        float gain_color(std::min(1.0f, std::max(0.0f, am->get_gain())));
         if(gain_color < EPS)
           // sources with zero gain but active are shown in red:
           cr->set_source_rgba(1, 0, 0, 0.5);
@@ -789,12 +814,12 @@ void scene_draw_t::draw_acousticmodel(Cairo::RefPtr<Cairo::Context> cr)
           cr->stroke();
         }
         // image source or primary source:
-        if((*iam)->ismorder > 0) {
+        if(am->ismorder > 0) {
           // image source:
           cr->save();
           char ctmp[1024];
           ctmp[1023] = 0;
-          snprintf(ctmp, 1023, "%u", (*iam)->ismorder);
+          snprintf(ctmp, 1023, "%u", am->ismorder);
           if(gain_color < EPS)
             // sources with zero gain but active are shown in red:
             cr->set_source_rgba(1, 0, 0, 0.5);
