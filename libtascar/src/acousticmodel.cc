@@ -153,16 +153,19 @@ uint32_t acoustic_model_t::process(const TASCAR::transport_t& tp)
           float srcgainmod(1.0);
           // update effective position/calculate ISM geometry:
           position = get_effective_position(receiver_->position, srcgainmod);
-          // read audio from source, update radation position:
+          // read audio from source, update radation position. For
+          // this, first calculate the receiver position relative to
+          // the source:
           pos_t prelsrc(receiver_->position);
           // prelsrc -= src_->position;
-          // prelsrc /= src_->orientation;
+          //  prelsrc /= src_->orientation;
           prelsrc -= position;
           prelsrc /= orientation;
           if(receiver_->volumetric.has_volume()) {
             if(src_->read_source_diffuse(prelsrc, src_->inchannels, audio,
                                          source_data)) {
-              prelsrc *= src_->orientation;
+              // prelsrc *= src_->orientation;
+              prelsrc *= orientation;
               prelsrc -= receiver_->position;
               prelsrc *= -1.0;
               position = prelsrc;
@@ -170,7 +173,8 @@ uint32_t acoustic_model_t::process(const TASCAR::transport_t& tp)
           } else {
             if(src_->read_source(prelsrc, src_->inchannels, audio,
                                  source_data)) {
-              prelsrc *= src_->orientation;
+              // prelsrc *= src_->orientation;
+              prelsrc *= orientation;
               prelsrc -= receiver_->position;
               prelsrc *= -1.0;
               position = prelsrc;
