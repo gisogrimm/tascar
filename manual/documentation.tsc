@@ -60,6 +60,7 @@
       <sound type="door"/>
       <sound type="farsrc"/>
       <sound type="generic1storder"/>
+      <sound type="head"/>
     </source>
     <!-- generic receivers -->
     <receiver type="amb1h0v" name="amb1h0v"/>

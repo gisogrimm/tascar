@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<session license="CC-0">
+  <scene ismorder="1">
+    <source>
+      <position>0 1 0 0</position>
+      <orientation>0 0 0 0 1 360 0 0</orientation>
+      <sound type="${SRCTYPE}" airabsorption="false" a="0.5"/>
+    </source>
+    <receiver type="omni"/>
+  </scene>
+</session>

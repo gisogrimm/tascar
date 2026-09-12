@@ -32,8 +32,10 @@ function plot_obstacle_spec
   ylabel('obstacle center / m');
   title('hole');
   drawnow();
-  saveas(fh,'obstacle.eps','epsc');
-  system('epstopdf obstacle.eps');
+  %saveas(fh,'obstacle.eps','epsc');
+  saveas(fh,'obstacle.png','png');
+  %system('epstopdf obstacle.eps');
+end
   
 function [ir,fs] = render_ir( fname, t )
   sLib = 'LD_LIBRARY_PATH=../libtascar/build/:../plugins/build/';
@@ -43,3 +45,4 @@ function [ir,fs] = render_ir( fname, t )
   system(sCmd);
   [ir,fs] = audioread('temp.wav');
   system('rm -f temp.wav');
+end
