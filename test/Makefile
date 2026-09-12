@@ -1,4 +1,4 @@
-TESTS = test_snd_pink_diffuse test_ir1 test_ir2 test_ir3 test_ir4	\
+TESTS = test_snd_pink_diffuse test_ir1 test_ir2a test_ir2 test_ir3 test_ir4	\
 	test_ir_proxy_air test_ir_proxy_gain test_ir_proxy_delay	\
 	test_ir_proxy_direction test_ir6_ismminmax test_snd1		\
 	test_snd_include_sound test_snd2 test_snd4 test_snd3		\

@@ -3,16 +3,21 @@
 c = 340m/s
 direct path = 1m = 1/340*fs sample = 130, aplitude = 1
 
-reflection path = 5m = 649, aplitude 0.2
+reflection paths
+3m = 389, aplitude 0.333
+5m = 649, aplitude 0.2
+
+2x:
+6.0828 = 789, amplitude = 0.1644
+
 -->
 <session license="CC-0">
-  <scene>
+  <scene guiscale="20" ismorder="1">
     <source>
       <sound x="1" airabsorption="false"/>
     </source>
     <receiver type="omni"/>
-    <facegroup damping="0" reflectivity="1">
-      <faces>-2 1 1   -2 -1 1   -2 -1 -1   -2  1 -1</faces>
+    <facegroup damping="0" reflectivity="1" shoeboxwalls="4 6 2">
     </facegroup>
   </scene>
 </session>

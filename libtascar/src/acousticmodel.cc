@@ -129,6 +129,7 @@ uint32_t acoustic_model_t::process(const TASCAR::transport_t& tp)
   // update position of sound vertex:
   if(src_->active)
     update_position();
+  // now position is absolute source position.
   if((!receiver_->gain_zero) && receiver_->active && src_->active &&
      ((!reflector) || reflector->active)) {
     // render only if source, receiver and in case of image source the reflector
@@ -152,6 +153,7 @@ uint32_t acoustic_model_t::process(const TASCAR::transport_t& tp)
           // calculate relative geometry between source and receiver:
           float srcgainmod(1.0);
           // update effective position/calculate ISM geometry:
+          // position is source position:
           position = get_effective_position(receiver_->position, srcgainmod);
           // read audio from source, update radation position. For
           // this, first calculate the receiver position relative to
@@ -1117,7 +1119,7 @@ void soundpath_t::update_position()
   if(reflector) {
     // 1. Calculate the image source position
     // Find the point on the plane closest to the parent
-    pos_t p_cut = reflector->nearest_on_plane(parent->position);
+    p_cut = reflector->nearest_on_plane(parent->position);
 
     // Calculate the mirrored position: p_img = p_cut + (p_cut - parent)
     pos_t p_img(p_cut);
@@ -1184,12 +1186,14 @@ void soundpath_t::apply_reflectionfilter(TASCAR::wave_t& audio)
   }
 }
 
+// this function updates the source position in case of edge
+// diffraction: should be superseeded by diffractor_t::process
 pos_t soundpath_t::get_effective_position(const pos_t& p_rec, float& gain)
 {
   if(!reflector)
     return position;
   // calculate orthogonal point on plane:
-  pos_t pcut_rec(reflector->nearest_on_plane(p_rec));
+  auto pcut_rec = reflector->nearest_on_plane(p_rec);
   // if receiver is behind reflector then return zero:
   if(dot_prod(p_rec - pcut_rec, reflector->get_normal()) < 0) {
     gain = 0;
@@ -1208,9 +1212,10 @@ pos_t soundpath_t::get_effective_position(const pos_t& p_rec, float& gain)
               2.7f);
   make_friendly_number(gain);
   if(reflector->edgereflection) {
-    float len_img(distancef(p_is, position));
-    pos_t p_eff((p_is - p_rec).normal());
-    p_eff *= len_img;
+    // distance between intersection and source position
+    auto dist_img = distancef(p_is, position);
+    auto p_eff = (p_is - p_rec).normal();
+    p_eff *= dist_img;
     p_eff += p_is;
     return p_eff;
   }

@@ -383,7 +383,8 @@ namespace TASCAR {
           reflectionfilterstates; ///< Filter states for first-order reflection
                                   ///< filters
       bool visible;
-      pos_t p_cut;
+      pos_t p_cut; ///< projection of source position on reflector,
+                   /// updated in soundpath_t::update_position()
     };
 
     /** \brief A model for a sound wave propagating from a point source to a
