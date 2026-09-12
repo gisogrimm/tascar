@@ -379,10 +379,8 @@ world_t::world_t(float c, float fs, uint32_t chunksize,
 
 world_t::~world_t()
 {
-  for(std::vector<receiver_graph_t*>::reverse_iterator it =
-          receivergraphs.rbegin();
-      it != receivergraphs.rend(); ++it)
-    delete(*it);
+  for(auto& receivergraph : receivergraphs)
+    delete receivergraph;
 }
 
 void world_t::process(const TASCAR::transport_t& tp)
@@ -430,28 +428,26 @@ void world_t::process(const TASCAR::transport_t& tp)
     receivers_[k]->set_next_gain(gain_inner);
   }
   // calculate acoustic models:
-  for(std::vector<receiver_graph_t*>::iterator ig = receivergraphs.begin();
-      ig != receivergraphs.end(); ++ig) {
-    (*ig)->process(tp);
-    local_active_point += (*ig)->get_active_pointsource();
+  for(auto& graph : receivergraphs) {
+    graph->process(tp);
+    local_active_point += graph->get_active_pointsource();
   }
   // apply post-processing and receiver gain of reverb receivers:
-  for(auto it = receivers_.begin(); it != receivers_.end(); ++it)
-    if((*it)->is_reverb) {
-      (*it)->post_proc(tp);
-      (*it)->apply_gain();
+  for(auto& rec : receivers_)
+    if(rec->is_reverb) {
+      rec->post_proc(tp);
+      rec->apply_gain();
     }
   // calculate diffuse sound fields:
-  for(std::vector<receiver_graph_t*>::iterator ig = receivergraphs.begin();
-      ig != receivergraphs.end(); ++ig) {
-    (*ig)->process_diffuse(tp);
-    local_active_diffuse += (*ig)->get_active_diffuse_sound_field();
+  for(auto& graph : receivergraphs) {
+    graph->process_diffuse(tp);
+    local_active_diffuse += graph->get_active_diffuse_sound_field();
   }
   // apply post-processing and receiver gain on non-reverb receivers:
-  for(auto it = receivers_.begin(); it != receivers_.end(); ++it)
-    if(!(*it)->is_reverb) {
-      (*it)->post_proc(tp);
-      (*it)->apply_gain();
+  for(auto& rec : receivers_)
+    if(!rec->is_reverb) {
+      rec->post_proc(tp);
+      rec->apply_gain();
     }
   active_pointsource = local_active_point;
   active_diffuse_sound_field = local_active_diffuse;

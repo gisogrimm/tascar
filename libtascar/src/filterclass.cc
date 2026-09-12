@@ -142,8 +142,8 @@ void normalize_vec(std::vector<float>& v)
   for(std::vector<float>::const_iterator it = v.begin(); it != v.end(); ++it)
     norm += fabsf(*it);
   if(norm > 0) {
-    for(std::vector<float>::iterator it = v.begin(); it != v.end(); ++it)
-      *it *= 1.0f / norm;
+    for(auto& e : v)
+      e *= 1.0f / norm;
   }
 }
 

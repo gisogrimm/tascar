@@ -61,23 +61,20 @@ TASCAR::navmesh_t::navmesh_t(tsccfg::node_t xmlsrc)
       mesh.push_back(p_face);
     }
   }
-  for(std::vector<TASCAR::ngon_t*>::iterator it = mesh.begin();
-      it != mesh.end(); ++it)
-    *(*it) += TASCAR::pos_t(0, 0, zshift);
+  for(auto& mp : mesh)
+    *mp += TASCAR::pos_t(0, 0, zshift);
 }
 
 void TASCAR::navmesh_t::update_pos(TASCAR::pos_t& p)
 {
   if(mesh.empty())
     return;
-  // p.z -= zshift;
   TASCAR::pos_t pnearest(mesh[0]->nearest(p));
   double dist((p.x - pnearest.x) * (p.x - pnearest.x) +
               (p.y - pnearest.y) * (p.y - pnearest.y) +
               1e-3 * (p.z - pnearest.z) * (p.z - pnearest.z));
-  for(std::vector<TASCAR::ngon_t*>::iterator it = mesh.begin();
-      it != mesh.end(); ++it) {
-    TASCAR::pos_t pnl((*it)->nearest(p));
+  for(auto& mp : mesh) {
+    TASCAR::pos_t pnl(mp->nearest(p));
     double ld((p.x - pnl.x) * (p.x - pnl.x) + (p.y - pnl.y) * (p.y - pnl.y) +
               1e-3 * (p.z - pnl.z) * (p.z - pnl.z));
     if((ld < dist) && (pnl.z - p.z <= maxstep)) {
@@ -86,14 +83,12 @@ void TASCAR::navmesh_t::update_pos(TASCAR::pos_t& p)
     }
   }
   p = pnearest;
-  // p.z += zshift;
 }
 
 TASCAR::navmesh_t::~navmesh_t()
 {
-  for(std::vector<TASCAR::ngon_t*>::iterator it = mesh.begin();
-      it != mesh.end(); ++it)
-    delete(*it);
+  for(auto& mp : mesh)
+    delete mp;
 }
 
 TASCAR::dynobject_t::dynobject_t(tsccfg::node_t xmlsrc)
