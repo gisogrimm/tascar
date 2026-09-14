@@ -1066,6 +1066,12 @@ void source_t::process_plugins(const TASCAR::transport_t& tp)
   plugins.process_plugins(inchannels, position, orientation, tp);
 }
 
+void source_t::add_variables(TASCAR::osc_server_t* srv)
+{
+  sourcemod_t::add_variables(srv);
+  plugins.add_variables(srv);
+}
+
 void receiver_t::add_variables(TASCAR::osc_server_t* srv)
 {
   receivermod_t::add_variables(srv);

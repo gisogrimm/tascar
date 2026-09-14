@@ -165,11 +165,12 @@ namespace TASCAR {
     public:
       source_t(tsccfg::node_t xmlsrc, const std::string& name,
                const std::string& parentname);
-      ~source_t();
+      virtual ~source_t();
       void configure();
       void post_prepare();
       void release();
       virtual void process_plugins(const TASCAR::transport_t& tp);
+      virtual void add_variables(TASCAR::osc_server_t* srv);
       void add_licenses(licensehandler_t*);
       uint32_t ismmin;
       uint32_t ismmax;
@@ -366,6 +367,7 @@ namespace TASCAR {
           const source_t* src, const soundpath_t* parent_ = NULL,
           const reflector_t* generator_ =
               NULL); ///< constructor, for primary sources set parent_ to NULL
+      virtual ~soundpath_t(){};
       void update_position(); ///< Update image source position from parent and
                               ///< reflector
       pos_t get_effective_position(
@@ -401,7 +403,7 @@ namespace TASCAR {
                            std::vector<obstacle_t*>(0u, NULL),
                        const acoustic_model_t* parent = NULL,
                        const reflector_t* reflector = NULL);
-      ~acoustic_model_t();
+      virtual ~acoustic_model_t();
       /**
        * @brief Read audio from source, process and add to receiver.
        * @ingroup callgraph

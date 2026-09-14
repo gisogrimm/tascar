@@ -317,8 +317,9 @@ void osc_scene_t::add_sound_methods(TASCAR::osc_server_t* srv,
                   "", "ZYX orientation of the sound vertex, in degree");
   srv->add_method("/zeuler", "f", osc_set_sound_orientation, s, true, false, "",
                   "Z orientation of the sound vertex, in degree");
-  srv->set_prefix(oldpref);
   srv->unset_variable_owner();
+  s->add_variables(srv);
+  srv->set_prefix(oldpref);
 }
 
 void osc_scene_t::add_diffuse_methods(TASCAR::osc_server_t* srv,

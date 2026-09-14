@@ -1106,9 +1106,19 @@ sound source radiates independently of the direction.
 \subsubsection{Source directivity ``cardioidmod''}
 
 The ``cardioidmod'' source directivity has these attributes:
+
 \input{tabsoundcardioidmod.tex}
+
 At low frequencies, the source radiates omni-directionally. At higher
-frequencies, a cardioid-like radiation pattern is achieved.
+frequencies, a cardioid-like radiation pattern is achieved, see Figure
+\ref{fig:radiation_cardioidmod}.
+
+\begin{figure}[htb]
+  \centering
+  \fbox{\includegraphics[width=0.8\textwidth]{cardioidmod.pdf}}
+  \caption{Radiation pattern of {\tt cardioidmod} source directivity with default parameters.}
+  \label{fig:radiation_cardioidmod}
+\end{figure}
 
 \subsubsection{Source directivity ``door''}
 
@@ -1138,6 +1148,25 @@ receiver type ``vmic'' (Section \ref{sec:recgen_vmic} on page
 \pageref{sec:recgen_vmic}) for details.
 
 \input{tabsoundgeneric1storder.tex}
+
+\subsubsection{Source directivity ``head''}
+
+
+\begin{figure}[htb]
+  \centering
+  \fbox{\includegraphics[width=0.8\textwidth]{head.pdf}}
+  \caption{Radiation pattern of {\tt head} source directivity with default parameters.}
+  \label{fig:radiation_head}
+\end{figure}
+
+
+A source radiation pattern similar to a human head is approximated,
+roughly based on data by \citet{Poerschmann2021}. The resulting
+radiation pattern is shown in Figure \ref{fig:radiation_head}.
+
+\input{tabsoundhead.tex}
+
+\input{oscdoc_tascarsource_head.tex}
 
 \subsection{The {\tt <diffuse .../>} element}\label{sec:diffuse}\index{diffuse}\index{diffuse}
 

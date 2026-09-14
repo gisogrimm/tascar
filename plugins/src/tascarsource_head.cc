@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2018 Giso Grimm
  * Copyright (c) 2020 Giso Grimm
- * Copyright (c) 2021 Giso Grimm
+ * Copyright (c) 2026 Giso Grimm
  */
 /*
  * TASCAR is free software: you can redistribute it and/or modify
@@ -12,7 +12,7 @@
  *
  * TASCAR is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHATABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHATANBILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License, version 3 for more details.
  *
  * You should have received a copy of the GNU General Public License,
@@ -27,10 +27,10 @@ public:
   class data_t : public TASCAR::sourcemod_base_t::data_t {
   public:
     data_t(uint32_t chunksize);
-    float dt = 0.0f;
-    float w = 0.0f;
+    // float dt = 0.0f;
+    // float w = 0.0f;
     TASCAR::biquadf_t flt;
-    TASCAR::biquadf_t flto;
+    // TASCAR::biquadf_t flto;
   };
   srchead_t(tsccfg::node_t xmlsrc);
   void add_variables(TASCAR::osc_server_t* srv);
@@ -42,23 +42,31 @@ public:
   void configure() { n_channels = 1; };
 
 private:
-  float fc = 500.0f;
+  float fc_front = 15000.0f;
+  float fc_side = 2000.0f;
+  float fc_back = 500.0f;
 };
 
-srchead_t::data_t::data_t(uint32_t chunksize)
-    : dt(1.0f / std::max(1.0f, (float)chunksize))
-{
-}
+srchead_t::data_t::data_t(uint32_t) {}
 
 srchead_t::srchead_t(tsccfg::node_t xmlsrc) : TASCAR::sourcemod_base_t(xmlsrc)
 {
-  GET_ATTRIBUTE(fc, "Hz", "Highpass frequency of 1st order component");
+  GET_ATTRIBUTE(fc_front, "Hz", "Lowpass frequency in frontal direction");
+  GET_ATTRIBUTE(fc_side, "Hz", "Lowpass frequency in lateral direction");
+  GET_ATTRIBUTE(fc_back, "Hz", "Lowpass frequency in back direction");
 }
 
 void srchead_t::add_variables(TASCAR::osc_server_t* srv)
 {
-  srv->add_float("/fc", &fc, "[100,10000]",
-                 "Highpass frequency of 1st order component");
+  srv->set_variable_owner(
+      TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
+  srv->add_float("/fc_front", &fc_front, "[100,10000]",
+                 "Lowpass frequency in frontal direction");
+  srv->add_float("/fc_side", &fc_side, "[100,10000]",
+                 "Lowpass frequency in lateral direction");
+  srv->add_float("/fc_back", &fc_back, "[100,10000]",
+                 "Lowpass frequency in back direction");
+  srv->unset_variable_owner();
 }
 
 bool srchead_t::read_source(TASCAR::pos_t& prel,
@@ -67,20 +75,23 @@ bool srchead_t::read_source(TASCAR::pos_t& prel,
                             sourcemod_base_t::data_t* sd)
 {
   data_t* d((data_t*)sd);
-  d->flt.set_butterworth(fc, f_sample, true);
-  d->flto.set_butterworth(fc, f_sample);
+  // d->flto.set_butterworth(fc, f_sample);
   TASCAR::pos_t prel_norm(prel.normal());
   // calculate panning parameters (as incremental values):
-  float w = 0.5 - 0.5 * prel_norm.x;
-  double dw = (w - d->w) * d->dt;
+  if(prel_norm.x >= 0.0)
+    d->flt.set_butterworth(
+        exp(log(fc_front) * prel_norm.x + (1.0 - prel_norm.x) * log(fc_side)),
+        f_sample);
+  else
+    d->flt.set_butterworth(
+        exp(-log(fc_back) * prel_norm.x + (1.0 + prel_norm.x) * log(fc_side)),
+        f_sample);
   // apply panning:
   uint32_t N(output.size());
   for(uint32_t k = 0; k < N; ++k) {
     float v = input[0][k];
-    output[k] = d->flto.filter(v) + 0.25 * d->w * d->flt.filter(v);
-    d->w += dw;
+    output[k] = d->flt.filter(v);
   }
-  d->w = w;
   return false;
 }
 
