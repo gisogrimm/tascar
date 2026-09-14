@@ -23,9 +23,26 @@ more details):
 current time is after the stop time, then the current time is set to
 the stop time.
 
+Additionally, the module provides an {\tt /active} OSC command to
+enable or disable the plugin. When disabled, the motion path is
+ignored and the actor remains in its current state. The specific OSC
+paths are constructed using the identifier defined in the
+configuration (defaulting to ``motionpath''), allowing multiple
+instances to be controlled independently.
+
+The spatial trajectory is defined using a \elem{position} track (see
+Section \ref{sec:position}), while orientation can be specified via an
+\elem{orientation} (see Section \ref{sec:orientation})
+track. Alternatively, orientation can be derived automatically from
+the movement direction using the \attr{sampledorientation}
+parameter. When this parameter is non-zero, the actor faces along the
+tangent of the path, looking ahead by the specified distance in meters
+(or behind if the value is negative). The module also supports a
+\elem{creator} XML structure, which generates path points and
+automatically calculates orientation based on the direction of
+movement between those points, handling azimuth unwrapping to prevent
+discontinuities.
+
 \input{modtabtex/tabmotionpath.tex}
 
 \input{oscdoc_motionpath.tex}
-
-
-
