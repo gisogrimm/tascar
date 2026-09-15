@@ -13,6 +13,8 @@ function [x,fs] = tascar_measure_radiationpattern( varargin )
     sHelp.rhomin = 'maximum radius in dB';
     sCfg.rhostep = 6;
     sHelp.rhostep = 'radius step size in dB';
+    sCfg.plane = 'transverse';
+    sHelp.plane = 'Analysis plane (transverse|sagittal|coronal)';
     sCfg = tascar_parse_keyval( sCfg, sHelp, varargin{:} );
 
     n_doc = tascar_xml_doc_new();
@@ -28,16 +30,24 @@ function [x,fs] = tascar_measure_radiationpattern( varargin )
     %                                 'fmin','500'
     % receiver:
     N = 72;
+    N = 180;
     vaz = angle(exp(i*(2*pi*([1:N]-1)/N + pi)));
+    fmt.transverse = '0 %g %g 0';
+    fmt.sagittal = '0 %g 0 %g';
+    fmt.coronal = '0 0 %g %g';
+    dirs.transverse = {'front','left','back','right'};
+    dirs.sagittal = {'front','top','back','bottom'};
+    dirs.coronal = {'left','top','right','bottom'};
     for n=1:N
         az = vaz(n);
         n_rec = tascar_xml_add_element(n_doc,n_scene,'receiver',[],...
                                        'name', sprintf('out_%d',n));
         tascar_xml_add_element(n_doc, n_rec, ...
-                               'position',sprintf('0 %g %g 0',cos(az),sin(az)));
-    end  
+                               'position',sprintf(fmt.(sCfg.plane),...
+                                                  cos(az),sin(az)));
+    end
+    system('rm -f temp_rec.wav temp_rec.tsc');
     tascar_xml_save( n_doc, 'temp_rec.tsc' );
-    system('rm -f temp_rec.wav');
     system('tascar_renderir temp_rec.tsc -o temp_rec.wav');
     [x,fs] = audioread('temp_rec.wav');
     cf = 1000*2.^[log2(sCfg.fmin/1000):(1/sCfg.bpo):log2(sCfg.fmax/1000)];
@@ -49,12 +59,14 @@ function [x,fs] = tascar_measure_radiationpattern( varargin )
     for k=1:numel(cf)
         m(:,k) = 10*log10(mean(abs(H(ef_low(k):ef_high(k),:)).^2));
     end
-    figure
-    imagesc(m);
-    colorbar;
-    set(gca,'YTick',1:3:N,'YTickLabel',round(180/pi*vaz(1:3:N)),...
-            'XTick',1:3:numel(cf),'XTickLabel',round(cf(1:3:end)));
-    figure
+    %figure
+    %imagesc(m);
+    %colorbar;
+    %set(gca,'YTick',1:3:N,'YTickLabel',round(180/pi*vaz(1:3:N)),...
+    %        'XTick',1:3:numel(cf),'XTickLabel',round(cf(1:3:end)));
+    sName = sprintf('radiation_%s_%s',sCfg.type,sCfg.plane);
+    sTitle = sprintf('%s (%s plane)',sCfg.type,sCfg.plane);
+    figure('menubar','none','Name',sName, 'Units','centimeters','paperposition',[0 0 10 10]*0.5, 'position',[0,0,10,10]*0.5,'PaperSize',[10 10]*0.5);
     plot((sCfg.rhomax-sCfg.rhomin)*[-1,1],[0,0],'k-');
     hold on
     plot([0,0],(sCfg.rhomax-sCfg.rhomin)*[-1,1],'k-');
@@ -76,15 +88,29 @@ function [x,fs] = tascar_measure_radiationpattern( varargin )
         csLabel{end+1} = sprintf('%1.5g Hz',cf(k));
         hold on
     end
-    set(gca,'DataAspectRatio',[1,1,1],'visible','off');
+    set(gca,'DataAspectRatio',[1,1,1],'visible','off',...
+            'xlim',(sCfg.rhomax-sCfg.rhomin)*1.1*[-1,1],...
+            'ylim',(sCfg.rhomax-sCfg.rhomin)*1.1*[-1,1],...
+       'Units','centimeters','position',[0,0,9.8,9.8]*0.5);
 
     for rho=sCfg.rhomax:-sCfg.rhostep:sCfg.rhomin
-        text(0,rho-sCfg.rhomin,sprintf('  %1.2g dB',rho),'verticalAlignment','bottom');
+        x = (rho-sCfg.rhomin)*cos(82*pi/180);
+        y = (rho-sCfg.rhomin)*sin(82*pi/180);
+        text(x,y,sprintf(' %1.2g dB',rho),'verticalAlignment','bottom');
     end
-    text((sCfg.rhomax-sCfg.rhomin),0,'front','rotation',90,'horizontalAlignment','center','verticalAlignment','top');
-    text(-(sCfg.rhomax-sCfg.rhomin),0,'back','rotation',-90,'horizontalAlignment','center','verticalAlignment','top');
+    csDirs = dirs.(sCfg.plane);
+    vRot = [90,0,270,0];
+    csVAlign = {'top','bottom','top','top'};
+    for k=1:4
+        az = (k-1)*90;
+        x = (sCfg.rhomax-sCfg.rhomin)*cos(az*pi/180)*1.02;
+        y = (sCfg.rhomax-sCfg.rhomin)*sin(az*pi/180)*1.02;
+        text(x,y,csDirs{k},'rotation',vRot(k), ...
+             'horizontalAlignment','center','verticalAlignment',csVAlign{k});
+    end
+    %text(-(sCfg.rhomax-sCfg.rhomin),0,'back','rotation',-90,'horizontalAlignment','center','verticalAlignment','top');
     
-    legend(vpl,csLabel,'Location','BestOutside');
-    title(sCfg.type);
-    saveas(gca,[sCfg.type,'.eps'],'epsc');
+    legend(vpl,csLabel);%,'Location','BestOutside');
+                        %title(sTitle);
+    saveas(gca,[sName,'.pdf'],'pdf');
 end

@@ -43,8 +43,11 @@ public:
 
 private:
   float fc_front = 15000.0f;
-  float fc_side = 2000.0f;
   float fc_back = 500.0f;
+  float fc_left = 4000.0f;
+  float fc_right = 4000.0f;
+  float fc_top = 5000.0f;
+  float fc_bottom = 8000.0f;
 };
 
 srchead_t::data_t::data_t(uint32_t) {}
@@ -52,8 +55,11 @@ srchead_t::data_t::data_t(uint32_t) {}
 srchead_t::srchead_t(tsccfg::node_t xmlsrc) : TASCAR::sourcemod_base_t(xmlsrc)
 {
   GET_ATTRIBUTE(fc_front, "Hz", "Lowpass frequency in frontal direction");
-  GET_ATTRIBUTE(fc_side, "Hz", "Lowpass frequency in lateral direction");
   GET_ATTRIBUTE(fc_back, "Hz", "Lowpass frequency in back direction");
+  GET_ATTRIBUTE(fc_left, "Hz", "Lowpass frequency in left direction");
+  GET_ATTRIBUTE(fc_right, "Hz", "Lowpass frequency in right direction");
+  GET_ATTRIBUTE(fc_top, "Hz", "Lowpass frequency in top direction");
+  GET_ATTRIBUTE(fc_bottom, "Hz", "Lowpass frequency in bottom direction");
 }
 
 void srchead_t::add_variables(TASCAR::osc_server_t* srv)
@@ -62,10 +68,16 @@ void srchead_t::add_variables(TASCAR::osc_server_t* srv)
       TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
   srv->add_float("/fc_front", &fc_front, "[100,10000]",
                  "Lowpass frequency in frontal direction");
-  srv->add_float("/fc_side", &fc_side, "[100,10000]",
-                 "Lowpass frequency in lateral direction");
   srv->add_float("/fc_back", &fc_back, "[100,10000]",
                  "Lowpass frequency in back direction");
+  srv->add_float("/fc_left", &fc_left, "[100,10000]",
+                 "Lowpass frequency in left direction");
+  srv->add_float("/fc_right", &fc_right, "[100,10000]",
+                 "Lowpass frequency in right direction");
+  srv->add_float("/fc_top", &fc_top, "[100,10000]",
+                 "Lowpass frequency in top direction");
+  srv->add_float("/fc_bottom", &fc_bottom, "[100,10000]",
+                 "Lowpass frequency in bottom direction");
   srv->unset_variable_owner();
 }
 
@@ -78,14 +90,27 @@ bool srchead_t::read_source(TASCAR::pos_t& prel,
   // d->flto.set_butterworth(fc, f_sample);
   TASCAR::pos_t prel_norm(prel.normal());
   // calculate panning parameters (as incremental values):
-  if(prel_norm.x >= 0.0)
-    d->flt.set_butterworth(
-        exp(log(fc_front) * prel_norm.x + (1.0 - prel_norm.x) * log(fc_side)),
-        f_sample);
-  else
-    d->flt.set_butterworth(
-        exp(-log(fc_back) * prel_norm.x + (1.0 + prel_norm.x) * log(fc_side)),
-        f_sample);
+  TASCAR::pos_t weights = prel_norm;
+  weights.x = fabs(weights.x);
+  weights.y = fabs(weights.y);
+  weights.z = fabs(weights.z);
+  //weights.x *= weights.x;
+  //weights.y *= weights.y;
+  //weights.z *= weights.z;
+  float w_total = weights.x + weights.y + weights.z;
+  float fc_x = fc_front;
+  if(prel_norm.x < 0)
+    fc_x = fc_back;
+  float fc_y = fc_left;
+  if(prel_norm.y < 0)
+    fc_y = fc_right;
+  float fc_z = fc_top;
+  if(prel_norm.z < 0)
+    fc_z = fc_bottom;
+  float fc = exp(
+      (weights.x * log(fc_x) + weights.y * log(fc_y) + weights.z * log(fc_z)) /
+      w_total);
+  d->flt.set_butterworth(fc, f_sample);
   // apply panning:
   uint32_t N(output.size());
   for(uint32_t k = 0; k < N; ++k) {
