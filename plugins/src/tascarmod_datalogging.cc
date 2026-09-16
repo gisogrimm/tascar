@@ -55,7 +55,7 @@ class recorder_t;
 class var_base_t : public TASCAR::xml_element_t {
 public:
   var_base_t(tsccfg::node_t);
-  virtual ~var_base_t() {};
+  virtual ~var_base_t(){};
   void set_recorder(recorder_t* rec);
   std::string get_name() const;
   size_t get_size() const;
@@ -109,7 +109,7 @@ private:
 class oscsvar_t : public var_base_t {
 public:
   oscsvar_t(tsccfg::node_t xmlsrc);
-  virtual ~oscsvar_t() {};
+  virtual ~oscsvar_t(){};
   static int osc_receive_sample(const char* path, const char* types,
                                 lo_arg** argv, int argc, lo_message msg,
                                 void* user_data);
@@ -127,7 +127,7 @@ private:
 class oscvar_t : public var_base_t {
 public:
   oscvar_t(tsccfg::node_t xmlsrc);
-  virtual ~oscvar_t() {};
+  virtual ~oscvar_t(){};
   std::string get_fmt();
   static int osc_receive_sample(const char* path, const char* types,
                                 lo_arg** argv, int argc, lo_message msg,
@@ -192,7 +192,7 @@ void dlog_vars_t::validate_attributes(std::string& msg) const
 class label_t {
 public:
   label_t(double t1_, double t2_, const std::string& msg_)
-      : t1(t1_), t2(t2_), msg(msg_) {};
+      : t1(t1_), t2(t2_), msg(msg_){};
   double t1;
   double t2;
   std::string msg;
@@ -1108,16 +1108,16 @@ datalogging_t::datalogging_t(const TASCAR::module_cfg_t& cfg)
 
 datalogging_t::~datalogging_t()
 {
-  for(auto pvar : oscvars)
-    delete pvar;
-  for(auto pvar : oscsvars)
-    delete pvar;
-#ifdef HAS_LSL
-  for(auto pvar : lslvars)
-    delete pvar;
-#endif
-  for(auto prec : recorder)
-    delete prec;
+  //  for(auto pvar : oscvars)
+  //    delete pvar;
+  //  for(auto pvar : oscsvars)
+  //    delete pvar;
+  // #ifdef HAS_LSL
+  //  for(auto pvar : lslvars)
+  //    delete pvar;
+  // #endif
+  //  for(auto prec : recorder)
+  //    delete prec;
   // if(!headless) {
   //   delete win;
   //   delete trialid;
@@ -1204,6 +1204,7 @@ void datalogging_t::release()
   TASCAR::osc_server_t::deactivate();
   for(auto prec : recorder)
     delete prec;
+  recorder.clear();
 #ifdef HAS_LSL
   for(auto var : lslvars)
     delete var;
@@ -1211,10 +1212,9 @@ void datalogging_t::release()
 #endif
   for(auto var : oscsvars)
     delete var;
+  oscsvars.clear();
   for(auto var : oscvars)
     delete var;
-  recorder.clear();
-  oscsvars.clear();
   oscvars.clear();
   TASCAR::module_base_t::release();
 }
@@ -1406,7 +1406,7 @@ void datalogging_t::start_trial(const std::string& name)
   }
   for(uint32_t k = 0; k < recorder.size(); k++)
     recorder[k]->clear();
-  // lsl re-sync:
+    // lsl re-sync:
 #ifdef HAS_LSL
   for(lslvarlist_t::iterator it = lslvars.begin(); it != lslvars.end(); ++it) {
     (*it)->get_stream_delta_start();
