@@ -1,0 +1,14 @@
+The osclist module acts as a diagnostic tool for monitoring incoming
+Open Sound Control (OSC) messages. It automatically detects and lists
+all OSC messages received by the TASCAR session, along with the time
+elapsed since they were last received.
+
+When active, the module listens to all OSC traffic directed at the
+session. Upon receiving a message with a specific path and format type
+for the first time, it prints the path and type to the standard
+console output.  Data Output The module maintains a running list of
+active OSC messages. This list can be retrieved in JSON format
+(containing the message path/types and their elapsed times) via the
+session's standard state interface (e.g., get\_state\_json).
+
+\input{modtabtex/tabosclist.tex}

@@ -123,6 +123,7 @@
     <oscjacktime/>
     <waitforlslstream/>
     <waitforjackport/>
+    <osclist/>
     <epicycles/>
     <midicc2osc controllers="0/1"/>
     <mididispatch>

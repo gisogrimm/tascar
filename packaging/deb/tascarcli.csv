@@ -99,6 +99,7 @@
 "plugins/build/tascar_oscevents.so","usr/lib/"
 "plugins/build/tascar_oscheadtracker.so","usr/lib/"
 "plugins/build/tascar_oscjacktime.so","usr/lib/"
+"plugins/build/tascar_osclist.so","usr/lib/"
 "plugins/build/tascar_oscrelay.so","usr/lib/"
 "plugins/build/tascar_oscserver.so","usr/lib/"
 "plugins/build/tascar_ovheadtracker.so","usr/lib/"
