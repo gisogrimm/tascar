@@ -74,7 +74,6 @@ std::string osclist_t::get_state_json()
 }
 
 osclist_t::osclist_t(const TASCAR::module_cfg_t& cfg) : module_base_t(cfg)
-
 {
   GET_ATTRIBUTE(timeout, "s", "timeout after which messages are discarded");
   session->add_method("", NULL, &osclist_t::osc_recv, this);

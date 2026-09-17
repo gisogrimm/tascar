@@ -450,6 +450,7 @@ jack_port_t* jackc_t::add_output_port(const std::string& name, bool is_midi)
 int jackc_portless_t::xrun_callback(void* arg)
 {
   ((jackc_portless_t*)arg)->xruns++;
+  ((jackc_portless_t*)arg)->xrun_callback();
   return 0;
 }
 

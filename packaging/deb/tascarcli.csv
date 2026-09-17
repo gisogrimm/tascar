@@ -84,6 +84,7 @@
 "plugins/build/tascar_lightctl.so","usr/lib/"
 "plugins/build/tascar_lsl2osc.so","usr/lib/"
 "plugins/build/tascar_lsljacktime.so","usr/lib/"
+"plugins/build/tascar_lsllist.so","usr/lib/"
 "plugins/build/tascar_ltcgen.so","usr/lib/"
 "plugins/build/tascar_mask_*.so","usr/lib/"
 "plugins/build/tascar_matrix.so","usr/lib/"

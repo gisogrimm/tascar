@@ -65,6 +65,7 @@ public:
                         int flags = 0) const;
   std::vector<std::string> get_all_port_names(int flags = 0) const;
   std::vector<std::string> get_all_client_names(int flags = 0) const;
+  virtual void xrun_callback() {};
 
 private:
   static int xrun_callback(void* arg);

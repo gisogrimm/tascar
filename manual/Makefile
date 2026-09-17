@@ -172,7 +172,7 @@ cli_%.tex: ../apps/build/tascar_% Makefile
 
 
 modtabs:
-	jackd -d dummy & PID=$$!; sleep 1;(export LD_LIBRARY_PATH="../libtascar/build/:../plugins/build/";export TASCARGENDOC="true";../gui/build/tascar documentation.tsc);kill -9 $$PID; mkdir -p modtabtex; cp tab*.tex modtabtex/
+	jackd -d dummy & PID=$$!; sleep 1;(export LD_LIBRARY_PATH="../libtascar/build/:../plugins/build/";export TASCARGENDOC="true";export PATH="../apps/build/:${PATH}";../gui/build/tascar documentation.tsc);kill -9 $$PID; mkdir -p modtabtex; cp tab*.tex modtabtex/
 
 showundoc:
 	for i in oscdoc_*.tex; do grep -q -e "input.$${i}" *.tex || echo "\input{$${i}}"; done

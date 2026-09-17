@@ -38,40 +38,63 @@ class jackstatus_t : public sensorplugin_base_t, public jackc_t {
 public:
   jackstatus_t(const sensorplugin_cfg_t& cfg);
   virtual ~jackstatus_t() throw();
+  void add_variables(TASCAR::osc_server_t* srv_);
   virtual int process(jack_nframes_t nframes,
                       const std::vector<float*>& inBuffer,
                       const std::vector<float*>& outBuffer);
+  virtual void xrun_callback();
 
 private:
   void service();
   std::thread srv;
-  bool run_service;
-  float warnload;
-  float criticalload;
-  uint32_t lxruns;
-  double f_xrun;
-  double maxxrunfreq;
+  std::atomic<bool> run_service = true;
+  float warnload = 70.0f;
+  float criticalload = 95.0f;
+  uint32_t lxruns = 0;
+  double f_xrun = 0.0;
+  double maxxrunfreq = 0.1;
   double t_prev;
-  double c1;
-  int prio;
+  double c1 = 0.9;
+  int prio = -1;
   std::string oncritical;
+  std::string pathstatus;
+  std::string pathxrun;
+  TASCAR::msg_t msg_status;
+  TASCAR::msg_t msg_xrun;
+  TASCAR::osc_server_t* oscsrv = nullptr;
 };
 
 jackstatus_t::jackstatus_t(const sensorplugin_cfg_t& cfg)
     : sensorplugin_base_t(cfg), jackc_t("glabsensor_jackstatus"),
-      run_service(true), warnload(70), criticalload(95), lxruns(0), f_xrun(0),
-      maxxrunfreq(0.1), t_prev(gettime()), c1(0.9), prio(-1)
+      t_prev(gettime()), msg_status("/status"), msg_xrun("/xrun")
 {
-  GET_ATTRIBUTE_(warnload);
-  GET_ATTRIBUTE_(criticalload);
-  GET_ATTRIBUTE_(maxxrunfreq);
+  GET_ATTRIBUTE(warnload, "%", "CPU load threshold to display a warning.");
+  GET_ATTRIBUTE(criticalload, "%",
+                "CPU load threshold to display a critical state.");
+  GET_ATTRIBUTE(maxxrunfreq, "Hz",
+                "Frequency of under-/overruns for a critical state");
   GET_ATTRIBUTE(
       oncritical, "",
       "system command to be executed when critical threshold is reached");
+  GET_ATTRIBUTE(pathstatus, "",
+                "OSC path to report jack status (empty: no OSC reporting)");
+  GET_ATTRIBUTE(pathxrun, "",
+                "OSC path to report xruns (empty: no OSC reporting)");
+
   srv = std::thread(&jackstatus_t::service, this);
   prio = (jack_client_max_real_time_priority(jc));
   DEBUG(prio);
+  lo_message_add_float(msg_status.msg, 0.0f);
+  lo_message_add_float(msg_status.msg, 0.0f);
   jackc_t::activate();
+}
+
+void jackstatus_t::xrun_callback()
+{
+  if(!pathxrun.empty())
+    if(oscsrv) {
+      oscsrv->dispatch_data_message(pathstatus.c_str(), msg_xrun.msg);
+    }
 }
 
 jackstatus_t::~jackstatus_t() throw()
@@ -79,6 +102,11 @@ jackstatus_t::~jackstatus_t() throw()
   jackc_t::deactivate();
   run_service = false;
   srv.join();
+}
+
+void jackstatus_t::add_variables(TASCAR::osc_server_t* srv_)
+{
+  oscsrv = srv_;
 }
 
 void jackstatus_t::service()
@@ -91,8 +119,15 @@ void jackstatus_t::service()
   }
   while(run_service) {
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    //usleep(500000);
+    // usleep(500000);
     float load(get_cpu_load());
+    if(!pathstatus.empty())
+      if(oscsrv) {
+        auto msgargv = lo_message_get_argv(msg_status.msg);
+        msgargv[0]->f = load;
+        msgargv[1]->f = xruns;
+        oscsrv->dispatch_data_message(pathstatus.c_str(), msg_status.msg);
+      }
     if((load > warnload) || (load > criticalload)) {
       char ctmp[1024];
       ctmp[1023] = 0;

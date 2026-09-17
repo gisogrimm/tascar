@@ -49,7 +49,7 @@ lsl_sender_t::lsl_sender_t()
 {
   add_input_port("sync");
   lsl_xml_ptr desc(lsl_get_desc(info));
-  lsl_append_child_value(desc, "manufacturer", "HoerTech");
+  lsl_append_child_value(desc, "manufacturer", "tascar.org");
   lsl_xml_ptr chns(lsl_append_child(desc, "channels"));
   lsl_xml_ptr chn(lsl_append_child(chns, "channel"));
   lsl_append_child_value(chn, "label", "jacktime");

@@ -112,7 +112,7 @@
     <obstacle name="obstacle"/>
   </scene>
   <modules>
-    <system command="tascar_lsljacktime"/>
+    <system command="tascar_lsljacktime" sleep="1"/>
     <jackrec/>
     <datalogging>
       <osc/>
@@ -124,6 +124,7 @@
     <waitforlslstream/>
     <waitforjackport/>
     <osclist/>
+    <lsllist/>
     <epicycles/>
     <midicc2osc controllers="0/1"/>
     <mididispatch>
