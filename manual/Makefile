@@ -116,7 +116,7 @@ secrecreverb.tex: $(sort $(wildcard recrev*.tex))
 	dot -Tpdf < $< > $@
 
 clean:
-	rm -Rf *.log *.lot *.lof *.aux *.dep *.dvi *.toc *~ *.blg *.bbl *.brf manual.pdf plug_*.tex *.idx *.ilg *.out *.ind $(FIGURES) $(SECTIONS) version.tex *.run*
+	rm -Rf *.log *.lot *.lof *.aux *.dep *.dvi *.toc *~ *.blg *.bbl *.brf manual.pdf plug_*.tex *.idx *.ilg *.out *.ind $(FIGURES) $(SECTIONS) version.tex *.run* clihelp.tex cli_*.tex
 	$(MAKE) -C ./examples clean
 
 %.png: %.dot

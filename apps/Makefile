@@ -29,7 +29,8 @@ BINFILES += $(TEST_FILES)
 BUILD_BINS = $(patsubst %,build/%,$(BINFILES))
 
 ifeq "$(HAS_LSL)" "yes"
-BINFILES += tascar_lslsl tascar_lsljacktime tascar_osc2lsl tascar_genrandlsl
+BINFILES += tascar_lslsl tascar_lsljacktime tascar_osc2lsl	\
+tascar_lsl2osc tascar_genrandlsl
 endif
 
 ifeq "$(HAS_MOSQUITTO)" "yes"
@@ -83,7 +84,7 @@ build/tascar_hdspmixer build/tascar_hdspmixer.o: CXXFLAGS += $(ALSACFLAGS)
 build/tascar_pdf build/tascar_pdf.o: CXXFLAGS += $(GTKCFLAGS)
 build/tascar_pdf build/tascar_pdf.o: LDLIBS += -ltascargui $(EXTERNALLIBS) $(GTKLIBS)
 build/tascar_ambdecoder: LDLIBS += `pkg-config --libs gsl`
-build/tascar_lslsl build/tascar_lsljacktime build/tascar_osc2lsl build/tascar_genrandlsl: LDLIBS+= $(LSLLIBS)
+build/tascar_lslsl build/tascar_lsljacktime build/tascar_osc2lsl build/tascar_lsl2osc build/tascar_genrandlsl: LDLIBS+= $(LSLLIBS)
 build/tascar_mqtt2osc: LDLIBS += -lmosquitto
 
 ifeq "$(COVERAGE)" "yes"

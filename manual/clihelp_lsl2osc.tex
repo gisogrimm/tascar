@@ -1,0 +1,63 @@
+This command line tool has the primary function to act as a bridge between data acquisition protocols and audio/control software.
+
+{\bf Core Functionality}
+
+The tool listens for data streams from the Lab Streaming Layer (LSL) -- commonly used in neuroscience, physiological monitoring, and sensor networks -- and converts that data into Open Sound Control (OSC) messages.
+OSC is a standard protocol used for real-time communication between computers, synthesizers, and multimedia software (like Max/MSP, Pure Data, SuperCollider, or TASCAR).
+
+{\bf Key Features}
+
+\begin{itemize}
+\item Multi-Stream Support: It can monitor multiple LSL streams
+  simultaneously by creating a separate thread for each one.
+\item Data Type Handling: It specifically looks for floating-point
+  data (float32 or double64). If a stream contains other data types
+  (like integers or strings), the tool will ignore that stream.
+\item Real-Time Conversion: It pulls samples from LSL and immediately
+  forwards them via OSC to a specified IP address and port.
+\end{itemize}
+
+{\bf Usage Examples}
+
+\begin{enumerate}
+\item Basic Conversion: Convert an LSL stream named "EEG" and send it
+  to a local OSC server on port 9000.
+
+\begin{verbatim}
+lsl2osc -a EEG -u osc.udp://localhost:9000
+\end{verbatim}
+
+\item Multiple Streams: Convert two different streams ("HeartRate" and "Acceleration") simultaneously.
+
+\begin{verbatim}
+lsl2osc -a HeartRate -a Acceleration -u osc.udp://192.168.1.50:8000
+\end{verbatim}
+
+\item Custom OSC Path: Send data to a custom OSC path prefix.
+
+\begin{verbatim}
+lsl2osc -a MySensor -u osc.udp://localhost:9000 -p /sensors
+\end{verbatim}
+\end{enumerate}
+
+{\bf How the OSC Message is Formatted}
+
+When the tool sends data, it constructs the OSC path and payload as follows:
+
+\begin{itemize}
+\item OSC Path: [Prefix]/[StreamName]\\
+  Example: If prefix is /lsl2osc and stream is EEG, the path is /lsl2osc/EEG.
+\item Payload (Arguments):\\
+  Timestamp: A double representing the LSL timestamp of the sample.\\
+  Channel Data: A series of doubles representing the data from each channel in the stream.
+\end{itemize}
+
+{\bf Technical Details}
+
+Dependencies: It relies on liblsl (for LSL) and liblo (for OSC).
+
+Error Handling: If the network connection fails or the stream
+disappears, it prints an error to stderr but attempts to keep running
+(or sleeps while waiting for the stream to reappear).
+
+Termination: It runs until you stop it (Ctrl+C).

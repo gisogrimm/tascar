@@ -1,1 +1,26 @@
-Play and record wav files via jack.
+{\tt tascar\_jackio} is a command-line tool designed to bridge audio
+files and the JACK Audio Connection Kit. You can use it to perform the
+following tasks:
+
+\begin{itemize}
+\item Play and Record Simultaneously: You can play a sound file (e.g.,
+  a stimulus or backing trac k) through JACK while simultaneously
+  recording the audio output from other JACK applications or hardware
+  inputs.
+\item Record Only: If you do not provide an input file, the tool
+  functions as a dedicated recorder for a specified duration (using
+  the {\tt -d} flag).
+\item Synchronize with Other Software: You can synchronize the
+  playback and recording with other JACK clients (like Ardour,
+  Hydrogen, or a DAW) using JACK's transport system. Specifically, you
+  can configure the tool to wait for an external "Start" command
+  before it begins playing or recording.
+\item Offline/Fast Processing: By enabling "freewheeling mode" ({\tt
+    -f}), you can process audio faster than real-time, which is useful
+  for rendering or batch processing tasks without being constrained by
+  the audio driver's speed.
+\item Automate Workflows: The tool can automatically connect to
+  hardware ports ({\tt -c}), delete the source file after processing
+  ({\tt -u}), and save performance statistics like CPU load and xruns
+  to a text file ({\tt -t}).  Play and record wav files via jack.
+\end{itemize}

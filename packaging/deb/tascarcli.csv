@@ -8,6 +8,7 @@
 "apps/build/tascar_levelmeter","usr/bin/"
 "apps/build/tascar_listsrc","usr/bin/"
 "apps/build/tascar_lsjackp","usr/bin/"
+"apps/build/tascar_lsl2osc","usr/bin/"
 "apps/build/tascar_lsljacktime","usr/bin/"
 "apps/build/tascar_lslsl","usr/bin/"
 "apps/build/tascar_mqtt2osc","usr/bin/"
