@@ -1,4 +1,14 @@
-Create a jack bus with OSC controllable gain, level metering, and
-optional audio plugins.  The session OSC server is used for control.
+The {\tt route} plugin is a versatile audio routing module that
+creates a JACK audio bus, enabling flexible routing between multiple
+input and output channels. It supports real-time gain control via OSC
+messages, allowing remote adjustment of audio levels for live or
+automated setups. Built-in level metering offers configurable time
+constants and weighting filters (e.g., A-weighting), with options to
+monitor pre- or post-fader levels. The plugin can host additional
+audio effects, which are fully integrated and controllable within the
+routing chain. Smooth fades between levels can be triggered via OSC,
+specifying target gain and duration. Output muting is also
+controllable via OSC, while input calibration ensures accurate level
+matching across sources. The plugin synchronizes with JACK transport
 
 \input{modtabtex/tabroute.tex}

@@ -290,16 +290,18 @@ int routemod_t::process(jack_nframes_t n, const std::vector<float*>& sIn,
     tp.object_time_samples = tp_frame;
     tp.object_time_seconds = (double)tp_frame / (double)srate;
     bool active(is_active(0));
-    for(uint32_t ch = 0; ch < std::min(sIn.size(), sIn_tsc.size()); ++ch) {
+    auto N_channels =
+        std::min(sIn.size(), std::min(sIn_tsc.size(), sOut.size()));
+    for(uint32_t ch = 0; ch < N_channels; ++ch) {
       sIn_tsc[ch].copy(sIn[ch], n, caliblevel_in[ch]);
     }
     if(active) {
       plugins.process_plugins(sIn_tsc, nullpos, nullrot, tp);
       fader.apply_gain(sIn_tsc);
     }
-    for(uint32_t ch = 0; ch < std::min(sIn.size(), sOut.size()); ++ch) {
+    for(uint32_t ch = 0; ch < N_channels; ++ch) {
       if(prefaderlevel)
-        rmsmeter[ch]->update(TASCAR::wave_t(n, sOut[ch]));
+        rmsmeter[ch]->update(sIn_tsc[ch]);
       if(active) {
         for(uint32_t k = 0; k < n; ++k) {
           sOut[ch][k] = gain * sIn_tsc[ch].d[k];
