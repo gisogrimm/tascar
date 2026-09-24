@@ -83,13 +83,13 @@ jobs:
             arch: arm64
             msystem: CLANGARM64
 
-          # macOS ARM (latest)
-          - name: macos-arm64
-            runs_on: macos-latest
-            # Container for building for a different OS than the runner's OS.
-            job_container: ""
-            shell: bash
-            use_bundled_libmysofa: MAY_USE
+          # # macOS ARM (latest)
+          # - name: macos-arm64
+          #   runs_on: macos-latest
+          #   # Container for building for a different OS than the runner's OS.
+          #   job_container: ""
+          #   shell: bash
+          #   use_bundled_libmysofa: MAY_USE
 
     runs-on: ${{ matrix.runs_on }}
     defaults:
