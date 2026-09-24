@@ -162,6 +162,7 @@ jobs:
           ls -al /opt/homebrew/Cellar/lsl
           brew --prefix lsl
           ls -al $(brew --prefix lsl)
+          ls -al /opt/homebrew/Cellar/lsl/*/
 
       # Clone the repository after git has been installed in the container
       - name: Checkout
