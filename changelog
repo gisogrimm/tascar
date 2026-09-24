@@ -1,3 +1,8 @@
+0.239.1:
+       - Improve orientation update of image sources
+       - Add literature-based head radiation pattern
+       - Many minor bugfixes and improvements
+
 0.238.1:
        - Improve support for Mackie Control Unit protocol
        - Add trim, ramp and channel selection options for convolution in speaker layouts
