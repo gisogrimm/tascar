@@ -46,17 +46,18 @@ ifeq ($(UNAME_S),Linux)
 endif
 ifeq ($(UNAME_S),Darwin)
 BREWPREFIX := $(shell brew --prefix||echo /opt/homebrew)
+LSL_PREFIX := $(brew --prefix lsl)
 LIBTASCARDLL=../libtascar/$(BUILD_DIR)/libtascar.dylib
 CXXFLAGS += -I$(BREWPREFIX)/include -DISMACOS
 CPPFLAGS += -I$(BREWPREFIX)/include
 LDFLAGS += -L$(BREWPREFIX)/lib
-LSLFLAGSFIND := $(addprefix -I,$(dir $(shell find $(BREWPREFIX)/ -name lsl_cpp.h)))
-CXXFLAGS += $(LSLFLAGSFIND)
+#  LSLFLAGSFIND := $(addprefix -I,$(dir $(shell find $(BREWPREFIX)/ -name lsl_cpp.h)))
+#  CXXFLAGS += $(LSLFLAGSFIND)
 #  LDFLAGS += -F$(BREWPREFIX)/Cellar/lsl/1.17.4/Frameworks -framework lsl
 #  $(addprefix -I,$(dir $(shell find $(BREWPREFIX)/ -name lsl_cpp.h)))
 # -framework Lsl
-LSLCFLAGS = -I$(BREWPREFIX)/Frameworks/lsl.framework/Headers
-LSLLIBS = -F$(BREWPREFIX)/Frameworks/ -framework lsl
+LSLCFLAGS = -I$(LSL_PREFIX)/Frameworks/lsl.framework/Headers
+LSLLIBS = -F$(LSL_PREFIX)/Frameworks/ -framework lsl
 CXXFLAGS += $(LSLCFLAGS)
 endif
 endif
