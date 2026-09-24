@@ -154,7 +154,8 @@ jobs:
         if: startsWith(matrix.name, 'macos')
         run: |
           set -eux
-          brew install pkgconfig coreutils labstreaminglayer/tap/lsl@1.17.7
+          brew install pkgconfig coreutils
+          brew install -s labstreaminglayer/tap/lsl
           brew install jack liblo libsndfile eigen boost gsl fftw libsamplerate
           brew install xerces-c libltc libmatio cunit mosquitto nlohmann-json
           brew install glibmm gtkmm3 gtksourceviewmm3 adwaita-icon-theme
