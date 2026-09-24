@@ -337,6 +337,7 @@ jobs:
           set -eux
           c++ --version || true
           JOBS="$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
+          JOBS=1
           echo make -j"$JOBS"
           make -j"$JOBS"
 

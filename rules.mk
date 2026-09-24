@@ -57,7 +57,7 @@ LDFLAGS += -L$(BREWPREFIX)/lib
 #  $(addprefix -I,$(dir $(shell find $(BREWPREFIX)/ -name lsl_cpp.h)))
 # -framework Lsl
 LSLCFLAGS = -I$(LSL_PREFIX)/Frameworks/lsl.framework/Headers
-LSLLIBS = -v -F$(LSL_PREFIX)/Frameworks/ -framework lsl
+LSLLIBS = -F$(LSL_PREFIX)/Frameworks/ -framework lsl
 CXXFLAGS += $(LSLCFLAGS)
 endif
 endif

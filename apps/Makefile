@@ -84,7 +84,7 @@ build/tascar_hdspmixer build/tascar_hdspmixer.o: CXXFLAGS += $(ALSACFLAGS)
 build/tascar_pdf build/tascar_pdf.o: CXXFLAGS += $(GTKCFLAGS)
 build/tascar_pdf build/tascar_pdf.o: LDLIBS += -ltascargui $(EXTERNALLIBS) $(GTKLIBS)
 build/tascar_ambdecoder: LDLIBS += `pkg-config --libs gsl`
-build/tascar_lslsl build/tascar_lsljacktime build/tascar_osc2lsl build/tascar_lsl2osc build/tascar_genrandlsl: LDLIBS+=$(LSLLIBS)
+build/tascar_lslsl build/tascar_lsljacktime build/tascar_osc2lsl build/tascar_lsl2osc build/tascar_genrandlsl: LDLIBS += $(LSLLIBS)
 build/tascar_mqtt2osc: LDLIBS += -lmosquitto
 
 ifeq "$(COVERAGE)" "yes"
