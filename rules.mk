@@ -4,8 +4,8 @@ ifeq ($(USE_SYSTEM_LIBS),1)
 CXXFLAGS += $(GCCCOVFLAGS)
 LDLIBS += $(COVLIBS)
 else
-CXXFLAGS += -I../external_libs/$(BUILD_DIR)/include $(GCCCOVFLAGS)
-LDLIBS += -L../external_libs/$(BUILD_DIR)/lib64 -L../external_libs/$(BUILD_DIR)/lib $(COVLIBS)
+CXXFLAGS += -I$(realpath ../external_libs/$(BUILD_DIR)/include) $(GCCCOVFLAGS)
+LDLIBS += -L$(realpath ../external_libs/$(BUILD_DIR)/lib64) -L../external_libs/$(BUILD_DIR)/lib $(COVLIBS)
 endif
 LDFLAGS += $(LDCOVFLAGS)
 
@@ -46,7 +46,7 @@ ifeq ($(UNAME_S),Linux)
 endif
 ifeq ($(UNAME_S),Darwin)
 BREWPREFIX := $(shell brew --prefix||echo /opt/homebrew)
-LSL_PREFIX := $(shell brew --prefix lsl||echo /opt/homebrew/opt/lsl)
+LSL_PREFIX := $(realpath $(shell brew --prefix lsl||echo /opt/homebrew/opt/lsl))
 LIBTASCARDLL=../libtascar/$(BUILD_DIR)/libtascar.dylib
 CXXFLAGS += -I$(BREWPREFIX)/include -DISMACOS
 CPPFLAGS += -I$(BREWPREFIX)/include
