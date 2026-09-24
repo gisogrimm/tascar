@@ -46,7 +46,7 @@ ifeq ($(UNAME_S),Linux)
 endif
 ifeq ($(UNAME_S),Darwin)
 BREWPREFIX := $(shell brew --prefix||echo /opt/homebrew)
-LSL_PREFIX := $(brew --prefix lsl)
+LSL_PREFIX := $(shell brew --prefix lsl||echo /opt/homebrew/opt/lsl)
 LIBTASCARDLL=../libtascar/$(BUILD_DIR)/libtascar.dylib
 CXXFLAGS += -I$(BREWPREFIX)/include -DISMACOS
 CPPFLAGS += -I$(BREWPREFIX)/include
