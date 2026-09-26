@@ -1,4 +1,71 @@
-Feedback delay line.
+This plugin is a feedback delay line with adjustable wet/dry mixing
+and feedback control, commonly used for creating echo effects. It
+implements a first-order recursive delay line system with the sampling
+frequency $f_s$, the delay time parameter $f$ (in Hz, related to delay
+duration, variable \attr{f}), the fractional sample delay $d$, and the
+gains of the wet signal $g_w$ (\attr{wet}), the dry signal $g_d$
+(\attr{dry}) and the feedback gain $g_f$ (\attr{feedback}).
+
+The fractional delay $d$ is calculated as:
+\begin{equation}
+  d = \frac{f_s}{f} - 1
+\end{equation}
+where the subtraction of 1 accounts for the order of read/write operations in the delay line implementation.
+
+The system follows the linear difference equation:
+\begin{equation}
+  y[n] = g_w \cdot x[n] + g_f \cdot y[n - d]
+\end{equation}
+where $x[n]$ is the input sample at time $n$, $y[n]$ is the output
+sample at time $n$, $d$ is the fractional delay in samples, and
+$feedback$ is the feedback gain coefficient. Sub-sample delays are
+achieved with a first-order sinc-interpolation. The final output
+$y_o[n]$ is a linear combination of the dry and processed (wet)
+signals:
+\begin{equation}
+  y_o[n] = g_d \cdot x[n] + y[n]
+\end{equation}
+
+The $z$-transform of the difference equation yields the transfer function:
+\begin{equation}
+  H(z) = \frac{Y(z)}{X(z)} = \frac{g_w}{1 - g_f \cdot z^{-d}}
+\end{equation}
+
+The complete system including the dry/wet mixing has the transfer function:
+\begin{equation}
+  G(z) = g_d + H(z) = g_d + \frac{g_w}{1 - g_f \cdot z^{-d}}
+\end{equation}
+
+For the feedback component, the frequency response is:
+\begin{equation}
+  H(e^{j\omega}) = \frac{g_w}{1 - g_f \cdot e^{-j\omega d}}
+\end{equation}
+where $\omega = 2\pi f / f_s$ is the normalized angular frequency.
+The magnitude response exhibits peaks at frequencies where $\omega d =
+2\pi k$ for integer $k$, resulting in a comb filter effect with
+notches/peaks spaced at intervals of $f$ Hz.
+
+For stability, the feedback gain must satisfy $|g_f| < 1$. When $g_f =
+1$, the system becomes marginally stable (infinite decay time), and
+when $|g_f| > 1$, the system becomes unstable (exponentially growing
+output).
+
+The decay time (time for echo amplitude to decrease by 60 dB) is
+approximately $T_{60} \approx \frac{-60}{\log_{10}(g_f)} \cdot
+\frac{1}{f}$.
+
+{\bf Special Cases}
+\begin{itemize}
+\item \textbf{No feedback ($g_f = 0$):} Simple delay line with
+  output $y[n] = g_w \cdot x[n-d]$
+  
+\item \textbf{All-wet ($g_d = 0$):} Output consists only of the echo
+  signal
+  
+\item \textbf{All-dry ($g_w = 0$):} Output consists only of the
+  original signal (no echo); switching from $g_w \ne 0$ to $g_w = 0$
+  results in a decaying echo.
+\end{itemize}
 
 \input{tabfeedbackdelay.tex}
 
