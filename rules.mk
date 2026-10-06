@@ -5,7 +5,7 @@ CXXFLAGS += $(GCCCOVFLAGS)
 LDLIBS += $(COVLIBS)
 else
 CXXFLAGS += -I$(realpath ../external_libs/$(BUILD_DIR)/include) $(GCCCOVFLAGS)
-LDLIBS += -L$(realpath ../external_libs/$(BUILD_DIR)/lib64) -L../external_libs/$(BUILD_DIR)/lib $(COVLIBS)
+LDLIBS += -L$(realpath ../external_libs/$(BUILD_DIR)/lib64) -L$(realpath ../external_libs/$(BUILD_DIR)/lib) $(COVLIBS)
 endif
 LDFLAGS += $(LDCOVFLAGS)
 

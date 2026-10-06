@@ -78,11 +78,12 @@ mkfile_name := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_path := $(subst $(notdir $(mkfile_name)),,$(mkfile_name))
 
 #HAS_LSL:=$(shell $(mkfile_path)/check_for_lsl)
-ifneq "$(UNAME_S)" "Darwin"
-HAS_LSL=yes
-else
-HAS_LSL=no
-endif
+#ifeq "$(UNAME_S)" "Darwin"
+#HAS_LSL = no
+#else
+#HAS_LSL = yes
+#endif
+HAS_LSL = yes
 
 HAS_OPENMHA:=$(shell $(mkfile_path)/check_for_openmha)
 HAS_OPENCV2:=$(shell $(mkfile_path)/check_for_opencv2)
