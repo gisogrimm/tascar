@@ -111,6 +111,7 @@ namespace TASCAR {
     std::string srv_addr;
     std::string srv_proto;
     std::string starturl;
+    int tosc_port = 0;
   };
 
   class session_core_t : public TASCAR::tsc_reader_t {

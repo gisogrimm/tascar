@@ -270,6 +270,9 @@ TASCAR::session_oscvars_t::session_oscvars_t(tsccfg::node_t src)
   GET_ATTRIBUTE(srv_port, "", "OSC port number");
   GET_ATTRIBUTE(srv_addr, "", "OSC multicast address in case of UDP transport");
   GET_ATTRIBUTE(srv_proto, "", "OSC protocol, UDP or TCP");
+  GET_ATTRIBUTE(tosc_port, "",
+                "TCP port to accept text based OSC messages, or 0 for no "
+                "additional TCP server");
   GET_ATTRIBUTE(name, "", "session name");
   GET_ATTRIBUTE(starturl, "", "URL of start page for display");
 }
@@ -420,6 +423,9 @@ TASCAR::session_t::session_t()
   assert_jackpar("fragment size", requirefragsize, fragsize, false);
   assert_jackpar("sampling rate", warnsrate, srate, true, " Hz");
   assert_jackpar("fragment size", warnfragsize, fragsize, true);
+  DEBUG(tosc_port);
+  if(tosc_port > 0)
+    start_tcp_script_server(tosc_port);
   profilermsg = lo_message_new();
   pthread_mutex_init(&mtx, NULL);
   read_xml();
@@ -462,6 +468,9 @@ TASCAR::session_t::session_t(const std::string& filename_or_data, load_type_t t,
   assert_jackpar("fragment size", requirefragsize, fragsize, false);
   assert_jackpar("sampling rate", warnsrate, srate, true, " Hz");
   assert_jackpar("fragment size", warnfragsize, fragsize, true);
+  DEBUG(tosc_port);
+  if(tosc_port > 0)
+    start_tcp_script_server(tosc_port);
   profilermsg = lo_message_new();
   pthread_mutex_init(&mtx, NULL);
   // parse XML:

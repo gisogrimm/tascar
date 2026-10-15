@@ -26,11 +26,23 @@
 #include "osc_helper.h"
 #include "defs.h"
 #include "errorhandling.h"
-#include "tictoctimer.h"
 #include <fstream>
 #include <map>
 #include <math.h>
 #include <unistd.h>
+
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib") // Tells linker to use Winsock library
+typedef SOCKET socket_t;
+#define CLOSE_SOCKET closesocket
+#else
+#include <netinet/in.h>
+#include <sys/socket.h>
+typedef int socket_t;
+#define CLOSE_SOCKET close
+#endif
 
 using namespace TASCAR;
 
@@ -39,6 +51,95 @@ static bool liblo_errflag;
 std::string str_get_null(void*)
 {
   return "null";
+}
+
+void osc_server_t::start_tcp_script_server(int port)
+{
+  run_tcp_server = true;
+  tcp_server_thread =
+      std::thread(&osc_server_t::tcp_script_thread_fun, this, port);
+}
+
+void osc_server_t::stop_tcp_script_server()
+{
+  run_tcp_server = false;
+  if(tcp_server_thread.joinable())
+    tcp_server_thread.join();
+}
+
+void osc_server_t::tcp_script_thread_fun(int port)
+{
+#ifdef _WIN32
+  // Windows-specific initialization
+  WSADATA wsaData;
+  if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    return;
+#endif
+
+  socket_t server_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if(server_fd == (socket_t)-1) {
+#ifdef _WIN32
+    WSACleanup();
+#endif
+    return;
+  }
+  // int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+  int opt = 1;
+  setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+  sockaddr_in address;
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(port);
+
+  DEBUG(1);
+
+  if(bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0){
+    DEBUG("bind failed");
+    return;
+  }
+  DEBUG(1);
+  listen(server_fd, 3);
+  DEBUG(1);
+
+  while(run_tcp_server) {
+    struct timeval tv{1, 0}; // 1 second timeout to check run_tcp_server
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(server_fd, &readfds);
+
+    if(select(server_fd + 1, &readfds, NULL, NULL, &tv) > 0) {
+      int client_socket = accept(server_fd, NULL, NULL);
+      if(client_socket < 0)
+        continue;
+
+      char buffer[4096];
+      std::string line_acc;
+      tictoc_t tictoc;
+
+      while(run_tcp_server) {
+        ssize_t bytes = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+        if(bytes <= 0)
+          break;
+        buffer[bytes] = '\0';
+
+        line_acc += buffer;
+        size_t pos;
+        while((pos = line_acc.find('\n')) != std::string::npos) {
+          std::string line = line_acc.substr(0, pos);
+          if(!line.empty() && line.back() == '\r')
+            line.pop_back();
+          process_script_line(line, tictoc);
+          line_acc.erase(0, pos + 1);
+        }
+      }
+      close(client_socket);
+    }
+  }
+  close(server_fd);
+#ifdef _WIN32
+  WSACleanup();
+#endif
 }
 
 TASCAR::osc_server_t::data_element_t::data_element_t()
@@ -657,12 +758,40 @@ int osc_server_t::dispatch_data_message(const char* path, lo_message m)
 {
   if(!isactive)
     return 0;
-  size_t len(lo_message_length(m, path));
-  char data[len + 256];
+
+  size_t len = lo_message_length(m, path);
+
+  // Lock the buffer to ensure thread safety
+  std::lock_guard<std::mutex> lock(mtx_dispatch_buffer);
+
+  // Only resize if the current buffer is too small.
+  // This avoids repeated allocations.
+  if(dispatch_buffer.size() < (len + 256)) {
+    dispatch_buffer.resize(len + 256);
+  }
+
   size_t sdatasize = 0;
-  char* sdata = (char*)lo_message_serialise(m, path, data, &sdatasize);
+  char* sdata = static_cast<char*>(
+      lo_message_serialise(m, path, dispatch_buffer.data(), &sdatasize));
+  // char* sdata = lo_message_serialise(m, path, dispatch_buffer.data(),
+  // &sdatasize);
+
+  if(!sdata)
+    return -1;
+
   return dispatch_data(sdata, sdatasize);
 }
+
+// int osc_server_t::dispatch_data_message(const char* path, lo_message m)
+//{
+//   if(!isactive)
+//     return 0;
+//   size_t len(lo_message_length(m, path));
+//   char data[len + 256];
+//   size_t sdatasize = 0;
+//   char* sdata = (char*)lo_message_serialise(m, path, data, &sdatasize);
+//   return dispatch_data(sdata, sdatasize);
+// }
 
 osc_server_t::~osc_server_t()
 {
@@ -678,6 +807,7 @@ osc_server_t::~osc_server_t()
   if(isactive) {
     deactivate();
   }
+  stop_tcp_script_server();
   if(initialized) {
     lo_server_thread_free(lost);
   }
@@ -1122,45 +1252,46 @@ void osc_server_t::read_script_one(std::string filename)
               TASCAR::add_warning("Not calling tosc script \"" + newfname +
                                   "\" recursively.");
           } else {
-            if(rbuf[0] == ',') {
-              double val(0.0f);
-              sscanf(&rbuf[1], "%lg", &val);
-              tictoc.tic();
-              while(tictoc.toc() < val) {
-                if(cancelscript) {
-                  fclose(fh);
-                  --scriptrunning;
-                  return;
-                }
-                usleep(100);
-              }
-            } else {
-              std::vector<std::string> args(TASCAR::str2vecstr(rbuf));
-              if(args.size()) {
-                if(args[0].size() && (args[0][0] == '@')) {
-                  auto stime = args[0];
-                  stime.erase(stime.begin());
-                  args.erase(args.begin());
-                  char* p(NULL);
-                  double ftime(strtod(stime.c_str(), &p));
-                  if(!*p)
-                    timed_message_add(ftime, TASCAR::vecstr2str(args));
-                } else {
-                  auto msg(lo_message_new());
-                  for(size_t n = 1; n < args.size(); ++n) {
-                    char* p(NULL);
-                    float val(strtof(args[n].c_str(), &p));
-                    if(*p) {
-                      lo_message_add_string(msg, args[n].c_str());
-                    } else {
-                      lo_message_add_float(msg, val);
-                    }
-                  }
-                  dispatch_data_message(args[0].c_str(), msg);
-                  lo_message_free(msg);
-                }
-              }
-            }
+            process_script_line(rbuf, tictoc);
+            // if(rbuf[0] == ',') {
+            //   double val(0.0f);
+            //   sscanf(&rbuf[1], "%lg", &val);
+            //   tictoc.tic();
+            //   while(tictoc.toc() < val) {
+            //     if(cancelscript) {
+            //       fclose(fh);
+            //       --scriptrunning;
+            //       return;
+            //     }
+            //     usleep(100);
+            //   }
+            // } else {
+            //   std::vector<std::string> args(TASCAR::str2vecstr(rbuf));
+            //   if(args.size()) {
+            //     if(args[0].size() && (args[0][0] == '@')) {
+            //       auto stime = args[0];
+            //       stime.erase(stime.begin());
+            //       args.erase(args.begin());
+            //       char* p(NULL);
+            //       double ftime(strtod(stime.c_str(), &p));
+            //       if(!*p)
+            //         timed_message_add(ftime, TASCAR::vecstr2str(args));
+            //     } else {
+            //       auto msg(lo_message_new());
+            //       for(size_t n = 1; n < args.size(); ++n) {
+            //         char* p(NULL);
+            //         float val(strtof(args[n].c_str(), &p));
+            //         if(*p) {
+            //           lo_message_add_string(msg, args[n].c_str());
+            //         } else {
+            //           lo_message_add_float(msg, val);
+            //         }
+            //       }
+            //       dispatch_data_message(args[0].c_str(), msg);
+            //       lo_message_free(msg);
+            //     }
+            //   }
+            // }
           }
         }
       }
@@ -1179,6 +1310,47 @@ void osc_server_t::read_script(const std::vector<std::string>& filenames)
   cancelscript = false;
   for(auto filename : filenames) {
     read_script_one(filename);
+  }
+}
+
+void osc_server_t::process_script_line(const std::string& line,
+                                       tictoc_t& tictoc)
+{
+  if(line.empty() || line[0] == '#')
+    return;
+
+  if(line[0] == ',') {
+    double val(0.0f);
+    sscanf(line.c_str() + 1, "%lg", &val);
+    tictoc.tic();
+    while(tictoc.toc() < val) {
+      if(cancelscript)
+        return;
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+  } else {
+    std::vector<std::string> args(TASCAR::str2vecstr(line));
+    if(args.empty())
+      return;
+
+    if(args[0][0] == '@') {
+      std::string stime = args[0].substr(1);
+      double ftime = std::stod(stime);
+      std::vector<std::string> msg_args(args.begin() + 1, args.end());
+      timed_message_add(ftime, TASCAR::vecstr2str(msg_args));
+    } else {
+      auto msg = lo_message_new();
+      for(size_t n = 1; n < args.size(); ++n) {
+        char* p;
+        float val = strtof(args[n].c_str(), &p);
+        if(*p)
+          lo_message_add_string(msg, args[n].c_str());
+        else
+          lo_message_add_float(msg, val);
+      }
+      dispatch_data_message(args[0].c_str(), msg);
+      lo_message_free(msg);
+    }
   }
 }
 

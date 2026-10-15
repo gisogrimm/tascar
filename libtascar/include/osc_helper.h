@@ -40,6 +40,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include "tictoctimer.h"
 
 typedef std::string(strcnvrt_t)(void*);
 
@@ -320,6 +321,9 @@ namespace TASCAR {
 
     void generate_osc_documentation_files();
 
+    void start_tcp_script_server(int port);
+    void stop_tcp_script_server();
+
   private:
     void scriptthread_fun();
     std::string get_vars_as_json_rg(
@@ -346,6 +350,15 @@ namespace TASCAR {
     std::mutex mtxtimedmessages;
     std::map<std::string, std::map<std::string, descriptor_t>> owned_vars;
     std::string varowner;
+
+    std::vector<char> dispatch_buffer;
+    std::mutex mtx_dispatch_buffer; // Required because dispatch may be called
+                                    // from different threads
+
+    void tcp_script_thread_fun(int port);
+    void process_script_line(const std::string& line, TASCAR::tictoc_t& tictoc);
+    std::atomic<bool> run_tcp_server{false};
+    std::thread tcp_server_thread;
   };
 
 }; // namespace TASCAR
