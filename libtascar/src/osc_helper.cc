@@ -70,7 +70,6 @@ void osc_server_t::stop_tcp_script_server()
 void osc_server_t::tcp_script_thread_fun(int port)
 {
 #ifdef _WIN32
-  // Windows-specific initialization
   WSADATA wsaData;
   if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
     return;
@@ -83,35 +82,47 @@ void osc_server_t::tcp_script_thread_fun(int port)
 #endif
     return;
   }
-  // int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+
   int opt = 1;
-  setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+  setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
 
   sockaddr_in address;
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(port);
 
-  DEBUG(1);
-
-  if(bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0){
-    DEBUG("bind failed");
+  if(bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+    TASCAR::add_warning("bind failed while setting up TOSC TCP server on port " + std::to_string(port));
+    CLOSE_SOCKET(server_fd); // Use the macro we defined
+#ifdef _WIN32
+    WSACleanup();
+#endif
     return;
   }
-  DEBUG(1);
   listen(server_fd, 3);
-  DEBUG(1);
 
   while(run_tcp_server) {
-    struct timeval tv{1, 0}; // 1 second timeout to check run_tcp_server
+    struct timeval tv{0, 100000}; // 1 second timeout to check run_tcp_server
     fd_set readfds;
     FD_ZERO(&readfds);
     FD_SET(server_fd, &readfds);
 
     if(select(server_fd + 1, &readfds, NULL, NULL, &tv) > 0) {
-      int client_socket = accept(server_fd, NULL, NULL);
+      socket_t client_socket = accept(server_fd, NULL, NULL);
       if(client_socket < 0)
         continue;
+
+      // --- START TIMEOUT CONFIGURATION ---
+      // Set a receive timeout so recv() doesn't block forever
+      // This allows the loop to check 'run_tcp_server' every 1 second
+#ifdef _WIN32
+      DWORD timeout = 100; // Milliseconds
+      setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+#else
+      struct timeval timeout_tv{0, 100000}; // 1 second
+      setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout_tv, sizeof(timeout_tv));
+#endif
+      // --- END TIMEOUT CONFIGURATION ---
 
       char buffer[4096];
       std::string line_acc;
@@ -119,24 +130,37 @@ void osc_server_t::tcp_script_thread_fun(int port)
 
       while(run_tcp_server) {
         ssize_t bytes = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
-        if(bytes <= 0)
+        
+        if(bytes > 0) {
+          buffer[bytes] = '\0';
+          line_acc += buffer;
+          size_t pos;
+          while((pos = line_acc.find('\n')) != std::string::npos) {
+            std::string line = line_acc.substr(0, pos);
+            if(!line.empty() && line.back() == '\r')
+              line.pop_back();
+            process_script_line(line, tictoc);
+            line_acc.erase(0, pos + 1);
+          }
+        } else if (bytes == 0) {
+          // Client closed connection
           break;
-        buffer[bytes] = '\0';
-
-        line_acc += buffer;
-        size_t pos;
-        while((pos = line_acc.find('\n')) != std::string::npos) {
-          std::string line = line_acc.substr(0, pos);
-          if(!line.empty() && line.back() == '\r')
-            line.pop_back();
-          process_script_line(line, tictoc);
-          line_acc.erase(0, pos + 1);
+        } else {
+          // bytes < 0: could be a real error or just a timeout
+#ifdef _WIN32
+          int err = WSAGetLastError();
+          if (err != WSAETIMEDOUT) break; 
+#else
+          if (errno != EAGAIN && errno != EWOULDBLOCK) break;
+#endif
+          // If it was just a timeout, the loop continues and checksL 
+          // checks 'run_tcp_server' again.
         }
       }
-      close(client_socket);
+      CLOSE_SOCKET(client_socket);
     }
   }
-  close(server_fd);
+  CLOSE_SOCKET(server_fd);
 #ifdef _WIN32
   WSACleanup();
 #endif

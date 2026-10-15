@@ -423,7 +423,6 @@ TASCAR::session_t::session_t()
   assert_jackpar("fragment size", requirefragsize, fragsize, false);
   assert_jackpar("sampling rate", warnsrate, srate, true, " Hz");
   assert_jackpar("fragment size", warnfragsize, fragsize, true);
-  DEBUG(tosc_port);
   if(tosc_port > 0)
     start_tcp_script_server(tosc_port);
   profilermsg = lo_message_new();
@@ -468,7 +467,6 @@ TASCAR::session_t::session_t(const std::string& filename_or_data, load_type_t t,
   assert_jackpar("fragment size", requirefragsize, fragsize, false);
   assert_jackpar("sampling rate", warnsrate, srate, true, " Hz");
   assert_jackpar("fragment size", warnfragsize, fragsize, true);
-  DEBUG(tosc_port);
   if(tosc_port > 0)
     start_tcp_script_server(tosc_port);
   profilermsg = lo_message_new();
