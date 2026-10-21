@@ -1,5 +1,5 @@
 # variables:
-VERSION=0.239.2
+VERSION=0.239.3
 
 # Set to 1 to build against system-provided libmysofa / gtest / gmock
 # instead of the copies bundled under external_libs/. See the top-level

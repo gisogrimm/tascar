@@ -1,3 +1,7 @@
+0.239.3:
+       - optional TCP server for tosc interface
+       - minor bugfixes
+      
 0.239.1:
        - Improve orientation update of image sources
        - Add literature-based head radiation pattern
