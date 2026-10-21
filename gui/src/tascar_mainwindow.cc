@@ -552,6 +552,9 @@ void tascar_window_t::load(const std::string& fname)
   if(session) {
     session->add_bool_true("/tascargui/quit", &sessionquit);
     session->add_bool_true("/tascar/quit", &sessionquit);
+    if(session->startpage > 0) {
+      notebook->set_current_page(session->startpage - 1);
+    }
   }
   reset_gui();
 }

@@ -316,6 +316,9 @@ TASCAR::session_core_t::session_core_t()
       "be used to start jack server.");
   root.GET_ATTRIBUTE(initcmdsleep, "s",
                      "Time to wait for initcmd to start up, in seconds.");
+  root.GET_ATTRIBUTE(
+      startpage, "",
+      "Start page in GUI window, or -1 for no explicit start page");
   start_initcmd();
 }
 
@@ -358,6 +361,9 @@ TASCAR::session_core_t::session_core_t(const std::string& filename_or_data,
       "be used to start jack server.");
   root.GET_ATTRIBUTE(initcmdsleep, "s",
                      "Time to wait for initcmd to start up, in seconds.");
+  root.GET_ATTRIBUTE(
+      startpage, "",
+      "Start page in GUI window, or -1 for no explicit start page");
   start_initcmd();
 }
 

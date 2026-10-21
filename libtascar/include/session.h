@@ -51,7 +51,7 @@ namespace TASCAR {
        \param running Transport running (true) or stopped (false).
      */
     virtual void update(uint32_t frame, bool running);
-    virtual std::string get_state_json() { return "";};
+    virtual std::string get_state_json() { return ""; };
 
   protected:
     TASCAR::session_t* session;
@@ -136,6 +136,7 @@ namespace TASCAR {
     int32_t warnfragsize = 0;
     std::string initcmd;
     double initcmdsleep = 0.0;
+    int32_t startpage = -1;
 
   private:
     void start_initcmd();
