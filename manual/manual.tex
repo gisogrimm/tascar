@@ -1165,9 +1165,29 @@ receiver type ``vmic'' (Section \ref{sec:recgen_vmic} on page
 \end{figure}
 
 
-A source radiation pattern similar to a human head is approximated,
-roughly based on data by \citet{Poerschmann2021}. The resulting
-radiation pattern is shown in Figure \ref{fig:radiation_head}.
+This module implements a frequency-dependent radiation pattern model
+for virtual sound sources, simulating the directional spectral
+characteristics of a human head. The model applies
+orientation-dependent lowpass filtering to the input audio signal,
+based on the source’s position relative to the listener. The
+directionality is defined by six independent cutoff frequencies:
+fc\_front, fc\_back, fc\_left, fc\_right, fc\_top, and fc\_bottom,
+which can be adjusted. The default values are based on data by
+\citet{Poerschmann2021}. When a source is positioned in a given
+direction, the corresponding frequency cutoff is selected, e.g.,
+fc\_front for positive $x$-direction, fc\_back for negative
+$x$-direction, and so on. The effective cutoff frequency is computed
+as a weighted geometric mean of the three orthogonal directional
+cutoffs, with weights derived from the absolute values of the
+normalized source direction vector. This ensures a smooth transition
+between directions and avoids abrupt spectral changes. The resulting
+cutoff frequency is used to configure a second-order Butterworth
+lowpass filter, which is applied to the input signal in real time. The
+module supports single-channel input and output and is designed for
+integration into larger audio simulation frameworks. The resulting
+radiation pattern based on the default values is shown in Figure
+\ref{fig:radiation_head}.  Parameters can be adjusted dynamically via
+OSC, allowing real-time exploration of different radiation behaviors.
 
 \input{tabsoundhead.tex}
 
