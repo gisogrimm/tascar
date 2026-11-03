@@ -311,6 +311,12 @@ int routemod_t::process(jack_nframes_t n, const std::vector<float*>& sIn,
       }
       if(!prefaderlevel)
         rmsmeter[ch]->update(TASCAR::wave_t(n, sOut[ch]));
+      if(active) {
+        auto localgain = 1.0f / caliblevel;
+        for(uint32_t k = 0; k < n; ++k) {
+          sOut[ch][k] *= localgain;
+        }
+      }
     }
     mtx_.unlock();
   }

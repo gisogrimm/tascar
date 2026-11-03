@@ -11,4 +11,55 @@ specifying target gain and duration. Output muting is also
 controllable via OSC, while input calibration ensures accurate level
 matching across sources. The plugin synchronizes with JACK transport
 
+The {\tt route} plugin is a versatile audio routing module that
+creates a JACK audio bus, enabling flexible routing between multiple
+input and output channels.
+
+{\bf Gain and Calibration} The plugin provides a
+multi-stage approach to level management:
+
+\begin{itemize}
+\item {\bf Input Calibration} (\attr{caliblevel\_in}): Each input
+  channel can be individually calibrated. The input signal is scaled
+  by the \attr{caliblevel\_in} value during the initial copy process
+  to ensure accurate level matching across different sources.
+\item Main Gain (\attr{gain} / \attr{lingain}): A global gain is
+  applied to the signal after it has passed through any hosted audio
+  effects and the smooth-fade fader.
+\item Output Calibration (\attr{caliblevel}): As a final stage, the
+  signal is multiplied by the inverse of the \attr{caliblevel}
+  (1/caliblevel), providing a final normalization step before the
+  audio leaves the module.
+\end{itemize}
+
+{\bf Level Metering} Built-in level metering offers configurable time
+constants and weighting filters (e.g., A-weighting). The monitoring
+position can be toggled via the \attr{prefaderlevel} attribute:
+\begin{itemize}
+\item Pre-fader: When enabled, the meter monitors the signal
+  immediately after input calibration but before the hosted effects,
+  the smooth-fade fader, and the main gain are applied. This is useful
+  for monitoring the raw incoming signal level.
+\item Post-fader: When disabled (default), the meter monitors the
+  signal after the main gain has been applied, reflecting the actual
+  level being sent to the output ports.
+\end{itemize}
+
+{\bf Control and Routing} The plugin supports real-time gain control
+and output muting via OSC messages, allowing remote adjustment of
+audio levels for live or automated setups. Smooth fades between levels
+can be triggered via OSC by specifying a target gain and
+duration. Additionally, the plugin can host additional audio effects,
+which are fully integrated and controllable within the routing chain,
+and it synchronizes with the JACK transport.
+
+The signal flow depends on the \attr{prefaderlevel} settings. With
+\attr{prefaderlevel="false"} (the default), the signal flow is:
+
+\framebox{input calib} $\rightarrow$ \framebox{plugins} $\rightarrow$ \framebox{gain} $\rightarrow$ \framebox{metering} $\rightarrow$ \framebox{output calib}
+
+With \attr{prefaderlevel="true"}, the signal flow is:
+
+\framebox{input calib} $\rightarrow$ \framebox{plugins} $\rightarrow$ \framebox{metering} $\rightarrow$ \framebox{gain} $\rightarrow$ \framebox{output calib}
+
 \input{modtabtex/tabroute.tex}
