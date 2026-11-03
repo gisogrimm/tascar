@@ -158,7 +158,12 @@ namespace TASCAR {
     inline pos_t normal() const
     {
       pos_t r(*this);
-      double n(1.0 / norm());
+      auto nm = norm();
+      if(nm < EPS) {
+        r.x = 1.0;
+        return r;
+      }
+      auto n = 1.0 / nm;
       r.x *= n;
       r.y *= n;
       r.z *= n;
@@ -302,7 +307,12 @@ namespace TASCAR {
     inline posf_t normal() const
     {
       posf_t r(*this);
-      float n(1.0f / norm());
+      auto nm = norm();
+      if(nm < EPSf) {
+        r.x = 1.0f;
+        return r;
+      }
+      auto n = 1.0f / nm;
       r.x *= n;
       r.y *= n;
       r.z *= n;
