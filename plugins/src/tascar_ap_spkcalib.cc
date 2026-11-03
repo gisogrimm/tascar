@@ -42,6 +42,7 @@ ap_spkcalib_t::ap_spkcalib_t(const TASCAR::audioplugin_cfg_t& cfg)
     : audioplugin_base_t(cfg), spk(e, false)
 {
   // register variable for XML access:
+  get_attribute_bool("enable_eq",spk.enable_eq,"","Enable speaker equalization");
 }
 
 void ap_spkcalib_t::add_variables(TASCAR::osc_server_t* srv)
