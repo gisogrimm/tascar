@@ -881,14 +881,14 @@ void calibsession_t::file_saveas(const std::string& fname)
     }
     ++k;
   }
-  size_t checksum = get_spklayout_checksum(elayout);
-  elayout.set_attribute("checksum", (uint64_t)checksum);
   char ctmp[1024];
   memset(ctmp, 0, 1024);
   std::time_t t(std::time(nullptr));
   std::strftime(ctmp, 1023, "%Y-%m-%d %H:%M:%S", std::localtime(&t));
   doc.root.set_attribute("calibdate", ctmp);
   doc.root.set_attribute("calibfor", calibfor);
+  size_t checksum = get_spklayout_checksum(elayout);
+  elayout.set_attribute("checksum", (uint64_t)checksum);
   cfg_.par_speaker.save_xml(doc.root());
   cfg_.par_sub.save_xml(doc.root());
   doc.save(fname);
