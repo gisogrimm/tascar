@@ -489,6 +489,72 @@ TEST(alpha2rflt, vals)
   // ASSERT_EQ(0, err);
 }
 
+TEST(acorr, vals)
+{
+  // Octave reference: xcorr([1,2,3,-4,-5,0,1,2,3,4]',3,'biased')
+  TASCAR::wave_t x(std::vector<float>(
+      {1.0f, 2.0f, 3.0f, -4.0f, -5.0f, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f}));
+  TASCAR::acorr_t r(3);
+  r.corr(x);
+  // expect four elements (lag + 1):
+  ASSERT_EQ(4u, r.n);
+  // expect values, starting at center value:
+  ASSERT_NEAR(8.5f, r.d[0], 1e-6f);
+  ASSERT_NEAR(3.6f, r.d[1], 1e-6f);
+  ASSERT_NEAR(-1.4f, r.d[2], 1e-6f);
+  ASSERT_NEAR(-2.4f, r.d[3], 1e-6f);
+}
+
+TEST(lpc,vals)
+{
+  // octave:74> acf = xcorr([1,2,3,-4,-5,0,1,2,3,4]',3,'biased')
+  // acf =
+  //
+  //   -2.4000
+  //   -1.4000
+  //    3.6000
+  //    8.5000
+  //    3.6000
+  //   -1.4000
+  //   -2.4000
+  //
+  // octave:75> [A, tmp, res] = levinson(acf(4:end))
+  // A =
+  //
+  //    1.0000e+00  -5.9754e-01   4.1417e-01   8.5197e-03
+  //
+  // tmp = 5.7486
+  // res =
+  //
+  //   -4.2353e-01
+  //    4.1929e-01
+  //    8.5197e-03
+  TASCAR::wave_t x(std::vector<float>(
+      {1.0f, 2.0f, 3.0f, -4.0f, -5.0f, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f}));
+  TASCAR::lpc_t lpc(3);
+  lpc.compute_coeffs(x);
+  EXPECT_EQ(4u, lpc.n);
+  EXPECT_NEAR(1.0f, lpc.d[0], 1e-6);
+  EXPECT_NEAR(-0.597540904f, lpc.d[1], 1e-6);
+  EXPECT_NEAR(0.414173686f, lpc.d[2], 1e-6);
+  EXPECT_NEAR(0.00851970181f, lpc.d[3], 1e-6);
+
+  TASCAR::wave_t res(x.n);
+  lpc.analyse(x, res);
+
+  EXPECT_NEAR(1, res.d[0], 1e-6f);
+  EXPECT_NEAR(1.4024591, res.d[1], 1e-6f);
+  EXPECT_NEAR(2.21909188, res.d[2], 1e-6f);
+  EXPECT_NEAR(-4.95575564, res.d[3], 1e-6f);
+  EXPECT_NEAR(-1.35027592, res.d[4], 1e-6f);
+  EXPECT_NEAR(1.35656888, res.d[5], 1e-6f);
+  EXPECT_NEAR(-1.10494724, res.d[6], 1e-6f);
+  EXPECT_NEAR(1.35986059, res.d[7], 1e-6f);
+  EXPECT_NEAR(2.21909188, res.d[8], 1e-6f);
+  EXPECT_NEAR(3.04424436, res.d[9], 1e-6f);
+}
+
+
 // Local Variables:
 // compile-command: "make -C ../.. unit-tests"
 // coding: utf-8-unix

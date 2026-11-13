@@ -73,8 +73,6 @@ RECEIVERS = omni nsp amb3h0v amb3h3v amb1h0v amb1h1v cardioid hann \
   vbap hoa2d ortf intensityvector vmic chmap hoa2d_fuma cardioidmod \
   debugpos hoa2d_fuma_hos wfs hrtf micarray
 
-
-
 LEVELREC = nsp hoa2d wfs vbap hann
 
 LEVTHR=0.25

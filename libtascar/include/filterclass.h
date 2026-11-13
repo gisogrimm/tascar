@@ -557,6 +557,87 @@ namespace TASCAR {
     float get_last_output(unsigned int ch) const { return d[ch]; }
   };
 
+  /**
+   * @class acorr_t
+   * @brief Computes the auto-correlation of a wave signal.
+   *
+   * This class inherits from wave_t and provides functionality to calculate
+   * the normalized auto-correlation of a given input signal.
+   */
+  class acorr_t : public TASCAR::wave_t {
+  public:
+    /**
+     * @brief Constructor for acorr_t.
+     * @param lag The maximum lag to be considered in the auto-correlation.
+     *            The internal buffer is allocated with size lag + 1.
+     */
+    acorr_t(uint32_t lag);
+    /**
+     * @brief Computes the auto-correlation of the provided wave signal.
+     *
+     * The function calculates the sum of products for each lag up to the
+     * minimum of the current object's capacity and the input signal's length.
+     * The result is normalized by dividing by the length of the input signal.
+     *
+     * @param x The input wave signal to correlate.
+     * @return A reference to this object (this) to allow method chaining.
+     *
+     * @note This operation has a time complexity of O(n * lag).
+     */
+    TASCAR::wave_t& corr(const TASCAR::wave_t& x);
+
+    void update_lag(uint32_t lag);
+  };
+
+  class lpc_t : public TASCAR::wave_t {
+  public:
+    /**
+     * @brief Constructor for LPC analysis.
+     * @param p The order of the LPC (number of coefficients).
+     */
+    lpc_t(uint32_t p);
+
+    void update_p(uint32_t p);
+
+    /**
+     * @brief Computes LPC coefficients using Levinson-Durbin recursion.
+     * @param x The input signal used to derive the coefficients.
+     * @return Reference to this object containing the coefficients.
+     */
+    TASCAR::wave_t& compute_coeffs(const TASCAR::wave_t& x);
+
+    /**
+     * @brief Analysis Filter: Extracts the residual (prediction error) from a
+     * signal.
+     * @param x The input signal.
+     * @param res [out] The wave_t object where residuals will be stored.
+     * @return Reference to the residual signal.
+     */
+    TASCAR::wave_t& analyse(const TASCAR::wave_t& x, TASCAR::wave_t& res);
+
+    /**
+     * @brief Reconstructs the signal from the residual using the current
+     * coefficients.
+     * @param res The residual signal (excitation).
+     * @param out [out] The wave_t object where the reconstructed signal will be
+     * stored.
+     * @return Reference to the output signal.
+     */
+    TASCAR::wave_t& synthesize(const TASCAR::wave_t& res, TASCAR::wave_t& out);
+
+    /**
+     * @brief Helper method to perform full analysis (coeffs + residuals).
+     */
+    TASCAR::wave_t& calc(const TASCAR::wave_t&, TASCAR::wave_t& res);
+
+  private:
+    uint32_t p; // LPC Order
+    TASCAR::wave_t prev_A;
+
+  public:
+    TASCAR::acorr_t acf; // Auto-correlation object
+  };
+
 } // namespace TASCAR
 
 #endif

@@ -1035,6 +1035,137 @@ TASCAR::o1_ar_filter_t::operator=(const TASCAR::o1_ar_filter_t& src)
   return *this;
 }
 
+TASCAR::acorr_t::acorr_t(uint32_t lag) : TASCAR::wave_t(lag + 1){}
+
+void TASCAR::acorr_t::update_lag(uint32_t lag)
+{
+  resize(lag+1);
+}
+
+
+TASCAR::wave_t& TASCAR::acorr_t::corr(const TASCAR::wave_t& x)
+{
+  clear();
+  auto nmin = std::min(n, x.n);
+  for(uint32_t k = 0u; k < nmin; ++k) {
+    for(uint32_t l = 0u; l < x.n - k; ++l) {
+      d[k] += x[l] * x[l + k];
+    }
+  }
+  *this *= 1.0f/(float)x.n;
+  return *this;
+}
+
+TASCAR::lpc_t::lpc_t(uint32_t order)
+    : TASCAR::wave_t(order + 1), p(order), prev_A(p + 1), acf(order)
+{
+}
+
+void TASCAR::lpc_t::update_p(uint32_t order)
+{
+  resize(order+1);
+  p = order;
+  prev_A.resize(order+1);
+  acf.update_lag(order);
+}
+
+
+TASCAR::wave_t& TASCAR::lpc_t::compute_coeffs(const TASCAR::wave_t& x)
+{
+  // 1. Initialize
+  clear(); // Clears the coefficients in this object (the 'd' array)
+  prev_A.clear();
+  acf.corr(x); // Compute auto-correlation: R[0]...R[p]
+  // Avoid division by zero if the signal is silent
+  if(std::fabs(acf.d[0]) < 1e-10f) {
+    acf.d[0] = 1e-10f;
+  }
+  // Error energy (E)
+  float E = acf.d[0];
+  // Initial coefficient for order 1
+  float k = -acf.d[1] / acf.d[0];
+  d[1] = k;
+  E *= (1.0f - k * k);
+  // Levinson-Durbin Recursion
+  for(uint32_t i = 2; i <= p; ++i) {
+    // Store current coefficients to calculate the next order
+    for(uint32_t j = 1; j < i; ++j) {
+      prev_A[j] = d[j];
+    }
+    // Calculate the reflection coefficient (k)
+    float sum = 0.0f;
+    for(uint32_t j = 1; j < i; ++j) {
+      sum += prev_A[j] * acf.d[i - j];
+    }
+    float reflection_coeff = -(acf.d[i] + sum) / E;
+    // Update coefficients for the current order i
+    d[i] = reflection_coeff;
+    for(uint32_t j = 1; j < i; ++j) {
+      d[j] = prev_A[j] + reflection_coeff * prev_A[i - j];
+    }
+    // Update error energy
+    E *= (1.0f - reflection_coeff * reflection_coeff);
+    // Stability check: if E becomes too small, the signal is perfectly
+    // predicted
+    if(E < 1e-10f)
+      break;
+  }
+  d[0] = 1.0f;
+  return *this;
+}
+
+TASCAR::wave_t& TASCAR::lpc_t::synthesize(const TASCAR::wave_t& res,
+                                          TASCAR::wave_t& out)
+{
+  // Ensure output buffer is the correct size
+  if(out.n != res.n) {
+    out.resize(res.n);
+  }
+  out.clear();
+  // Synthesis Filter: x[n] = e[n] - sum_{i=1}^p (a[i] * x[n-i])
+  // This is an IIR (Infinite Impulse Response) filter.
+  for(uint32_t n = 0; n < res.n; ++n) {
+    float feedback_sum = 0.0f;
+    for(uint32_t i = 1; i <= p; ++i) {
+      if(n >= i) {
+        // Note: we use 'out' here because the filter depends on its own
+        // previous outputs
+        feedback_sum += d[i] * out[n - i];
+      }
+    }
+    out[n] = res[n] - feedback_sum;
+  }
+  return out;
+}
+
+TASCAR::wave_t& TASCAR::lpc_t::analyse(const TASCAR::wave_t& x,
+                                       TASCAR::wave_t& res)
+{
+  if(res.n != x.n)
+    res.resize(x.n);
+  res.clear();
+
+  for(uint32_t n = 0; n < x.n; ++n) {
+    float prediction = 0.0f;
+    for(uint32_t i = 1; i <= p; ++i) {
+      if(n >= i) {
+        prediction += d[i] * x[n - i];
+      }
+    }
+    res[n] = x[n] + prediction;
+  }
+  return res;
+}
+
+
+TASCAR::wave_t& TASCAR::lpc_t::calc(const TASCAR::wave_t& x,
+                                    TASCAR::wave_t& res)
+{
+  compute_coeffs(x);
+  analyse(x, res);
+  return *this;
+}
+
 /*
  * Local Variables:
  * mode: c++
