@@ -1069,7 +1069,6 @@ void TASCAR::lpc_t::update_p(uint32_t order)
   acf.update_lag(order);
 }
 
-
 TASCAR::wave_t& TASCAR::lpc_t::compute_coeffs(const TASCAR::wave_t& x)
 {
   // 1. Initialize
@@ -1139,30 +1138,44 @@ TASCAR::wave_t& TASCAR::lpc_t::synthesize(const TASCAR::wave_t& res,
 }
 
 TASCAR::wave_t& TASCAR::lpc_t::analyse(const TASCAR::wave_t& x,
-                                       TASCAR::wave_t& res)
+                                       TASCAR::wave_t& res,
+                                       TASCAR::wave_t& prev_x)
 {
   if(res.n != x.n)
     res.resize(x.n);
+  if(prev_x.n != p)
+    prev_x.resize(p);
   res.clear();
-
   for(uint32_t n = 0; n < x.n; ++n) {
     float prediction = 0.0f;
     for(uint32_t i = 1; i <= p; ++i) {
       if(n >= i) {
+        // Use current block history
         prediction += d[i] * x[n - i];
+      } else {
+        // Use previous block history
+        prediction += d[i] * prev_x[i - 1 - n];
       }
     }
     res[n] = x[n] + prediction;
   }
+  // Update prev_x for the next call
+  // We need the last 'p' samples of the current 'x'
+  prev_x.clear();
+  for(uint32_t i = 0; i < p; ++i) {
+    if(x.n > i) {
+      // Store in reverse order: [0] is most recent, [p-1] is oldest
+      prev_x[i] = x[x.n - 1 - i];
+    }
+  }
   return res;
 }
 
-
 TASCAR::wave_t& TASCAR::lpc_t::calc(const TASCAR::wave_t& x,
-                                    TASCAR::wave_t& res)
+                                    TASCAR::wave_t& res, TASCAR::wave_t& prev_x)
 {
   compute_coeffs(x);
-  analyse(x, res);
+  analyse(x, res, prev_x);
   return *this;
 }
 

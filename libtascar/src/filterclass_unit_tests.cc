@@ -540,7 +540,8 @@ TEST(lpc,vals)
   EXPECT_NEAR(0.00851970181f, lpc.d[3], 1e-6);
 
   TASCAR::wave_t res(x.n);
-  lpc.analyse(x, res);
+  TASCAR::wave_t prev_x(3);
+  lpc.analyse(x, res, prev_x);
 
   EXPECT_NEAR(1, res.d[0], 1e-6f);
   EXPECT_NEAR(1.4024591, res.d[1], 1e-6f);

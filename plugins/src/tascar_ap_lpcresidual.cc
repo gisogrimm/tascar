@@ -23,16 +23,18 @@ public:
   ~lpc_residual_t();
 
 private:
-  int lpc_order = 12; // Default number of coefficients
+  int lpcorder = 12; // Default number of coefficients
 
   TASCAR::lpc_t lpc;
+  TASCAR::wave_t sigcpy;
+  std::vector<TASCAR::wave_t> prev_x;
 };
 
 lpc_residual_t::lpc_residual_t(const TASCAR::audioplugin_cfg_t& cfg)
-    : audioplugin_base_t(cfg), lpc(1)
+    : audioplugin_base_t(cfg), lpc(1), sigcpy(1)
 {
-  // Make the number of coefficients configurable via attribute "lpc_order"
-  GET_ATTRIBUTE(lpc_order, "", "LPC filter order");
+  // Make the number of coefficients configurable via attribute "lpcorder"
+  GET_ATTRIBUTE(lpcorder, "", "LPC filter order");
 }
 
 void lpc_residual_t::add_variables(TASCAR::osc_server_t*)
@@ -44,15 +46,23 @@ lpc_residual_t::~lpc_residual_t() {}
 
 void lpc_residual_t::configure()
 {
-  lpc.update_p(lpc_order);
+  audioplugin_base_t::configure();
+  lpc.update_p(lpcorder);
+  sigcpy.resize(n_fragment);
+  prev_x.resize(n_channels);
+  for(auto& px : prev_x)
+    px.resize(n_fragment);
 }
 
-void lpc_residual_t::release() {}
+void lpc_residual_t::release()
+{
+  audioplugin_base_t::release();
+}
 
 void lpc_residual_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
                                 const TASCAR::pos_t&,
                                 const TASCAR::zyx_euler_t&,
-                                const TASCAR::transport_t& ltp)
+                                const TASCAR::transport_t&)
 {
   if(chunk.empty())
     return;
@@ -62,11 +72,13 @@ void lpc_residual_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
   if(N == 0)
     return;
 
-  TASCAR::wave_t sig_in(chunk[0]);
-  
-  lpc.calc(sig_in, chunk[0]);
-  for(uint32_t ch = 1; ch < nch; ++ch)
-    lpc.analyse(chunk[ch], chunk[ch]);
+  sigcpy.copy(chunk[0]);
+
+  lpc.calc(sigcpy, chunk[0], prev_x[0]);
+  for(uint32_t ch = 1; ch < nch; ++ch) {
+    sigcpy.copy(chunk[ch]);
+    lpc.analyse(sigcpy, chunk[ch], prev_x[ch]);
+  }
 }
 
 REGISTER_AUDIOPLUGIN(lpc_residual_t);

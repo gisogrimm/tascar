@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<session license="CC-0">
+  <scene ismorder="1">
+    <source>
+      <sound x="1" delayline="false" airabsorption="false">
+	<plugins>
+	  <sndfile name="lpc_in.wav" license="CC0" levelmode="calib" level="93.979400086720374929"/>
+          <lpcresidual lpcorder="158"/>
+	</plugins>
+      </sound>
+    </source>
+    <receiver type="omni"/>
+  </scene>
+</session>

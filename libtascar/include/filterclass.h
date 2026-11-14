@@ -611,9 +611,12 @@ namespace TASCAR {
      * signal.
      * @param x The input signal.
      * @param res [out] The wave_t object where residuals will be stored.
+     * @param prev_x [out] The last p samples of the previous call, where p is
+     * the filter length (LPC order).
      * @return Reference to the residual signal.
      */
-    TASCAR::wave_t& analyse(const TASCAR::wave_t& x, TASCAR::wave_t& res);
+    TASCAR::wave_t& analyse(const TASCAR::wave_t& x, TASCAR::wave_t& res,
+                            TASCAR::wave_t& prev_x);
 
     /**
      * @brief Reconstructs the signal from the residual using the current
@@ -628,7 +631,8 @@ namespace TASCAR {
     /**
      * @brief Helper method to perform full analysis (coeffs + residuals).
      */
-    TASCAR::wave_t& calc(const TASCAR::wave_t&, TASCAR::wave_t& res);
+    TASCAR::wave_t& calc(const TASCAR::wave_t&, TASCAR::wave_t& res,
+                         TASCAR::wave_t& prev_x);
 
   private:
     uint32_t p; // LPC Order
