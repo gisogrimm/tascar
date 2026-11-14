@@ -58,6 +58,7 @@ void allpass_t::add_variables(TASCAR::osc_server_t* srv)
 
 void allpass_t::configure()
 {
+  audioplugin_base_t::configure();
   filters.clear();
   filters.resize(n_channels);
   for(auto& vf : filters) {

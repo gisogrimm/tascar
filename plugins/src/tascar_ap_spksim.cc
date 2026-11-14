@@ -61,6 +61,7 @@ spksim_t::spksim_t(const TASCAR::audioplugin_cfg_t& cfg)
 
 void spksim_t::configure()
 {
+  audioplugin_base_t::configure();
   statex.resize(n_channels);
   statey1.resize(n_channels);
   statey2.resize(n_channels);

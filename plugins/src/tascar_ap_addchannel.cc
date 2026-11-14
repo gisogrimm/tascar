@@ -39,6 +39,7 @@ void addchannel_t::ap_process(std::vector<wave_t>& chunk, const pos_t&,
 
 void addchannel_t::configure()
 {
+  audioplugin_base_t::configure();
   DEBUG(n_channels);
   n_channels++;
   DEBUG(n_channels);

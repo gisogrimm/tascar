@@ -77,6 +77,7 @@ void transportramp_t::add_variables(TASCAR::osc_server_t* srv)
 
 void transportramp_t::configure()
 {
+  audioplugin_base_t::configure();
   // create start ramp - starting with 1 because the iterator is going from
   // end to beginning:
   startramp.resize(

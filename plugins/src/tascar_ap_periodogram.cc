@@ -109,6 +109,7 @@ void periodogram_t::configure()
 
 void periodogram_t::release()
 {
+  audioplugin_base_t::release();
   for(auto it = bp.begin(); it != bp.end(); ++it)
     delete *it;
   bp.clear();
