@@ -1,27 +1,27 @@
-TESTS = test_snd_pink_diffuse test_ir1 test_ir2a test_ir2 test_ir3 test_ir4	\
-	test_ir_proxy_air test_ir_proxy_gain test_ir_proxy_delay	\
-	test_ir_proxy_direction test_ir6_ismminmax test_snd1		\
-	test_snd_include_sound test_snd2 test_snd4 test_snd3		\
-	test_snd5 test_pos1 test_pos2 test_pos_trackinterp		\
-	test_snd_door1 test_snd_door2 test_snd_door3 test_pos_door	\
-	test_snd_layers test_snd_rec_amb1h1v test_wav_diffuse		\
-	test_wav_diffuse_hoa2d test_ir_hoa2d_offset			\
-	test_wav_diffuse_nsp4 test_wav_diffuse_hoa2d4			\
-	test_wav_diffuse_layerbug test_wav_diffirs test_sndgainramp	\
-	test_sndgainramp2 test_ir_spkcorr test_snd_calib1		\
-	test_snd_calib2 test_snd_vbap51 test_snd_pink			\
-	test_snd_sndfile test_snd_sndfile2 test_snd_door4		\
-	test_snd_roommic test_level_vbap3d test_ir_ortf_0deg		\
-	test_ir_ortf_55deg test_ir_scatter test_ir_noscatter		\
-	test_ir_scatter_ortf test_snd_sourcedir_generic			\
-	test_snd_sourcedir_generic1					\
+TESTS = test_snd_pink_diffuse test_ir1 test_ir2a test_ir2 test_ir3	\
+	test_ir4 test_ir_proxy_air test_ir_proxy_gain			\
+	test_ir_proxy_delay test_ir_proxy_direction			\
+	test_ir6_ismminmax test_snd1 test_snd_include_sound test_snd2	\
+	test_snd4 test_snd3 test_snd5 test_pos1 test_pos2		\
+	test_pos_trackinterp test_snd_door1 test_snd_door2		\
+	test_snd_door3 test_pos_door test_snd_layers			\
+	test_snd_rec_amb1h1v test_wav_diffuse test_wav_diffuse_hoa2d	\
+	test_ir_hoa2d_offset test_wav_diffuse_nsp4			\
+	test_wav_diffuse_hoa2d4 test_wav_diffuse_layerbug		\
+	test_wav_diffirs test_sndgainramp test_sndgainramp2		\
+	test_ir_spkcorr test_snd_calib1 test_snd_calib2			\
+	test_snd_vbap51 test_snd_pink test_snd_sndfile			\
+	test_snd_sndfile2 test_snd_door4 test_snd_roommic		\
+	test_level_vbap3d test_ir_ortf_0deg test_ir_ortf_55deg		\
+	test_ir_scatter test_ir_noscatter test_ir_scatter_ortf		\
+	test_snd_sourcedir_generic test_snd_sourcedir_generic1		\
 	test_snd_sourcedir_generic_cardioid test_ir_wfs			\
-	test_snd_sourcedir_generic_ism                                  \
-	test_ir_wfs_noplanewave test_level_hoa2d_basic			\
-	test_level_hoa2d_maxre test_ir_reverb test_ir_simplefdn		\
-	test_ir_simplefdn_biquadallpass test_ir_simplefdn_gain		\
-	test_ir_simplefdn_feedforward test_snd_vbap3d_speakermatch	\
-	test_ir_volumetric test_pos_obstacle test_pos_obstacle_inner	\
+	test_snd_sourcedir_generic_ism test_ir_wfs_noplanewave		\
+	test_level_hoa2d_basic test_level_hoa2d_maxre test_ir_reverb	\
+	test_ir_simplefdn test_ir_simplefdn_biquadallpass		\
+	test_ir_simplefdn_gain test_ir_simplefdn_feedforward		\
+	test_snd_vbap3d_speakermatch test_ir_volumetric			\
+	test_pos_obstacle test_pos_obstacle_inner			\
 	test_level_absorption test_ir_hrtf_0deg test_ir_hrtf_45deg	\
 	test_ir_hrtf_75deg test_ir_hrtf_90deg test_ir_hrtf_105deg	\
 	test_ir_hrtf_135deg test_ir_hrtf_180deg test_ir_hrtf_225deg	\
@@ -39,20 +39,20 @@ TESTS = test_snd_pink_diffuse test_ir1 test_ir2a test_ir2 test_ir3 test_ir4	\
 	test_ir_micarray_az270deg test_ir_micarray_az315deg		\
 	test_ir_micarray_el45deg test_ir_micarray_el90deg		\
 	test_ir_micarray_el-45deg test_ir_micarray_el-90deg		\
-	test_snd_diffuse_micarray test_snd_micarray_az0deg		\
-	test_ir_micarraysinc test_ir_amb1 test_ir_amb1_y		\
-	test_ir_amb1_z test_snd_diffuse_0deg test_snd_diffuse_17deg	\
-	test_snd_diffuse_rec17deg test_snd_maskplugin_fig8		\
-	test_snd_maskplugin_multibeam test_snd_maskplugin_multibeam1	\
+	test_snd_micarray_az0deg test_ir_micarraysinc test_ir_amb1	\
+	test_ir_amb1_y test_ir_amb1_z test_snd_diffuse_0deg		\
+	test_snd_maskplugin_fig8 test_snd_maskplugin_multibeam		\
+	test_snd_maskplugin_multibeam1					\
 	test_snd_maskplugin_sampledgain test_snd_diffuse_inphase	\
 	test_snd_diffuse_basic test_snd_diffuse_maxre			\
-	test_snd_maskplugin_multibeam_diff test_ir_apfilter_highpass	\
-	test_ir_apfilter_lowpass test_snd_hoa2d_fuma_hos		\
-	test_ir_material_carpet test_ir_material_window			\
-	test_ir1_spkcalib test_snd_spkcorr0 test_snd_spkcorr70		\
-	test_snd_nospkcorr test_snd_spkcorr_long			\
+	test_ir_apfilter_highpass test_ir_apfilter_lowpass		\
+	test_snd_hoa2d_fuma_hos test_ir_material_carpet			\
+	test_ir_material_window test_ir1_spkcalib test_snd_spkcorr0	\
+	test_snd_spkcorr70 test_snd_nospkcorr test_snd_spkcorr_long	\
 	test_ir_nodelaylineimagesource test_ir_occlusion_ism		\
-	test_ir_spkcalibplug
+	test_ir_spkcalibplug test_snd_diff_x_orientation_z		\
+	test_snd_diffuse_micarray test_snd_diffuse_17deg		\
+	test_snd_diffuse_rec17deg test_snd_maskplugin_multibeam_diff
 
 #test_ir_simplefdn_optimt60
 #test_ir_scatter_reflections 
