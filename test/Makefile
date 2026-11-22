@@ -50,9 +50,12 @@ TESTS = test_snd_pink_diffuse test_ir1 test_ir2a test_ir2 test_ir3	\
 	test_ir_material_window test_ir1_spkcalib test_snd_spkcorr0	\
 	test_snd_spkcorr70 test_snd_nospkcorr test_snd_spkcorr_long	\
 	test_ir_nodelaylineimagesource test_ir_occlusion_ism		\
-	test_ir_spkcalibplug test_snd_diff_x_orientation_z		\
+	test_ir_spkcalibplug test_snd_diff_rec_x_orientation_z		\
+	test_snd_diff_x_orientation_z test_snd_diff_y_orientation_z	\
+	test_snd_diff_z_orientation_z test_snd_diff_x_orientation_z	\
 	test_snd_diffuse_micarray test_snd_diffuse_17deg		\
-	test_snd_diffuse_rec17deg test_snd_maskplugin_multibeam_diff
+	test_snd_diffuse_rec17deg test_snd_maskplugin_multibeam_diff	\
+	test_snd_diff_or_z
 
 #test_ir_simplefdn_optimt60
 #test_ir_scatter_reflections 
@@ -189,9 +192,9 @@ test_wav%: test_wav%.tsc input_wav%.wav expected_wav%.wav
 
 test_snd%: test_snd%.tsc expected_snd%.wav
 	@echo "Generation test: $<"
-	$(MLIBPATH) $(VALIDATE) $< || (echo "$(<):2: Validation failed"; false)
-	$(MLIBPATH) $(RENDERFILE) -i zeros.wav -f 64 -o test_snd$*.wav $< || (echo "$(<):2: Rendering failed"; false)
-	$(MLIBPATH) $(COMPARE) expected_snd$*.wav test_snd$*.wav $(TOL) $(RMSTOL) || (echo "$(<):2: Output differs"; false)
+	@$(MLIBPATH) $(VALIDATE) $< || (echo "$(<):2: Validation failed"; false)
+	@$(MLIBPATH) $(RENDERFILE) -i zeros.wav -f 64 -o test_snd$*.wav $< || (echo "$(<):2: Rendering failed"; false)
+	@$(MLIBPATH) $(COMPARE) expected_snd$*.wav test_snd$*.wav $(TOL) $(RMSTOL) || (echo "$(<):2: Output differs"; false)
 #	@rm -f test_snd$*.wav
 
 test_pos%: test_pos%.tsc expected_pos%.wav

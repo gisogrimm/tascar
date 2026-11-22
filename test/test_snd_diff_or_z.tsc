@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<session license="CC-0">
+  <scene>
+    <receiver type="amb1h1v"/>
+    <diffuse>
+      <orientation>0 0 0 0
+      1 360 0 0</orientation>
+      <plugins>
+	<!-- ACN, FuMa: t y z x -->
+	<const a="0.7071 0 0 1"/>
+      </plugins>
+    </diffuse>
+  </scene>
+</session>

@@ -522,15 +522,18 @@ uint32_t diffuse_acoustic_model_t::process(const TASCAR::transport_t&)
   receiver_->update_refpoint(src_->center, src_->center, prel, d,
                              nexttraveltime_in_m, nextgain, false, GAIN_INVR,
                              nflimit);
+  //DEBUG(TASCAR::to_string(receiver_->orientation));
+  //DEBUG(TASCAR::to_string(src_->orientation));
   shoebox_t box(*src_);
   // box.size = src_->size;
   box.center = pos_t();
   pos_t prel_nonrot(prel);
-  prel_nonrot *= receiver_->orientation;
+  prel_nonrot /= receiver_->orientation;
   d = box.nextpoint(prel_nonrot).normf();
   nextgain = 0.5f + 0.5f * cosf(TASCAR_PIf * std::min(1.0f, d * src_->falloff));
   if(!((gain == 0) && (nextgain == 0))) {
-    audio.rotate(src_->audio, receiver_->orientation);
+    audio.rotate(src_->audio, receiver_->orientation, true);
+    //audio.copy(src_->audio);
     memset(gainmat, 0, sizeof(float) * 16);
     gainmat[0] = gainmat[5] = gainmat[10] = gainmat[15] = 1.0f;
     if(receiver_->maskplug)

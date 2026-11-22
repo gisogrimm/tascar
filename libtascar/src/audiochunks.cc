@@ -597,64 +597,18 @@ amb1rotator_t::amb1rotator_t(uint32_t chunksize)
       wzx(0), wzy(0), wzz(1), dt(1.0 / (double)chunksize)
 {
 }
+
 amb1rotator_t& amb1rotator_t::rotate(const amb1wave_t& src, const rotmat_t& o,
                                      bool invert)
 {
-  float dxx, dxy, dxz, dyx, dyy, dyz, dzx, dzy, dzz;
-
-  if(invert) {
-    // Use the transpose of the rotation matrix for the inverse
-    dxx = (o.m11 - wxx) * dt;
-    dxy = (o.m21 - wxy) * dt;
-    dxz = (o.m31 - wxz) * dt;
-    dyx = (o.m12 - wyx) * dt;
-    dyy = (o.m22 - wyy) * dt;
-    dyz = (o.m32 - wyz) * dt;
-    dzx = (o.m13 - wzx) * dt;
-    dzy = (o.m23 - wzy) * dt;
-    dzz = (o.m33 - wzz) * dt;
-  } else {
-    // Use the rotation matrix as is
-    dxx = (o.m11 - wxx) * dt;
-    dxy = (o.m12 - wxy) * dt;
-    dxz = (o.m13 - wxz) * dt;
-    dyx = (o.m21 - wyx) * dt;
-    dyy = (o.m22 - wyy) * dt;
-    dyz = (o.m23 - wyz) * dt;
-    dzx = (o.m31 - wzx) * dt;
-    dzy = (o.m32 - wzy) * dt;
-    dzz = (o.m33 - wzz) * dt;
-  }
-
-  w_.copy(src.w());
-  float* p_src_x = src.x().d;
-  float* p_src_y = src.y().d;
-  float* p_src_z = src.z().d;
-  float* p_x = x_.d;
-  float* p_y = y_.d;
-  float* p_z = z_.d;
-
-  for(uint32_t k = 0; k < w_.n; ++k) {
-    *p_x = *p_src_x * (wxx += dxx) + *p_src_y * (wxy += dxy) +
-           *p_src_z * (wxz += dxz);
-    *p_y = *p_src_x * (wyx += dyx) + *p_src_y * (wyy += dyy) +
-           *p_src_z * (wyz += dyz);
-    *p_z = *p_src_x * (wzx += dzx) + *p_src_y * (wzy += dzy) +
-           *p_src_z * (wzz += dzz);
-    ++p_x;
-    ++p_y;
-    ++p_z;
-    ++p_src_x;
-    ++p_src_y;
-    ++p_src_z;
-  }
+  copy(src);
+  rotate(o,invert);
   return *this;
 }
 
 void amb1rotator_t::rotate(const rotmat_t& o, bool invert)
 {
   float dxx, dxy, dxz, dyx, dyy, dyz, dzx, dzy, dzz;
-
   if(invert) {
     dxx = (o.m11 - wxx) * dt;
     dxy = (o.m21 - wxy) * dt;
@@ -676,11 +630,9 @@ void amb1rotator_t::rotate(const rotmat_t& o, bool invert)
     dzy = (o.m32 - wzy) * dt;
     dzz = (o.m33 - wzz) * dt;
   }
-
   float* p_x = x_.d;
   float* p_y = y_.d;
   float* p_z = z_.d;
-
   for(uint32_t k = 0; k < w_.n; ++k) {
     float tmp_x =
         *p_x * (wxx += dxx) + *p_y * (wxy += dxy) + *p_z * (wxz += dxz);
@@ -694,6 +646,27 @@ void amb1rotator_t::rotate(const rotmat_t& o, bool invert)
     ++p_x;
     ++p_y;
     ++p_z;
+  }
+  if(invert) {
+    wxx = o.m11;
+    wxy = o.m21;
+    wxz = o.m31;
+    wyx = o.m12;
+    wyy = o.m22;
+    wyz = o.m32;
+    wzx = o.m13;
+    wzy = o.m23;
+    wzz = o.m33;
+  } else {
+    wxx = o.m11;
+    wxy = o.m12;
+    wxz = o.m13;
+    wyx = o.m21;
+    wyy = o.m22;
+    wyz = o.m23;
+    wzx = o.m31;
+    wzy = o.m32;
+    wzz = o.m33;
   }
 }
 
