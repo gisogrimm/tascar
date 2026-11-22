@@ -341,7 +341,7 @@ void geopresets_t::update(uint32_t, bool)
   else
     for(std::vector<TASCAR::named_object_t>::iterator iobj = obj.begin();
         iobj != obj.end(); ++iobj) {
-      new_r = current_r = iobj->obj->dorientation;
+      new_r = current_r = iobj->obj->dorientation.to_euler();
       new_p = current_p = iobj->obj->dlocation;
     }
 }

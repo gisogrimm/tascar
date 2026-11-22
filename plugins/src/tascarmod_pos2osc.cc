@@ -194,42 +194,45 @@ void pos2osc_t::update_local()
       for(auto& obj : objects) {
         if(obj.scene->mtx_geometry.try_lock()) {
           // copy position from parent object:
-          TASCAR::pos_t p(obj.obj->c6dof.position);
-          TASCAR::zyx_euler_t o(obj.obj->c6dof.orientation);
-          TASCAR::zyx_euler_t eul_delta;
+          auto p = obj.obj->c6dof.position;
+          auto o = obj.obj->c6dof.orientation;
+          TASCAR::rotmat_t rot_delta;
           TASCAR::quaternion_t q_delta;
           TASCAR::quaternion_t q_nodelta;
           // update rotation in local coordinate system:
-          eul_delta = obj.obj->dorientation;
-          eul_delta += obj.obj->c6dof_nodelta.orientation;
-          q_delta.set_euler_zyx(eul_delta);
-          q_nodelta.set_euler_zyx(obj.obj->c6dof_nodelta.orientation);
+          rot_delta = obj.obj->dorientation;
+          rot_delta *= obj.obj->c6dof_nodelta.orientation;
+          q_delta.set_euler_zyx(rot_delta.to_euler());
+          q_nodelta.set_euler_zyx(
+              obj.obj->c6dof_nodelta.orientation.to_euler());
           q_delta.lmul(q_nodelta.inverse());
-          eul_delta = q_delta.to_euler_xyz();
+          rot_delta = q_delta.to_euler_xyz();
+          auto eul_delta = rot_delta.to_euler();
           //
           if(ignoreorientation)
             o = obj.obj->c6dof_nodelta.orientation;
           obj.scene->mtx_geometry.unlock();
           std::string path;
+          auto oeul = o.to_euler();
           switch(mode) {
           case 0:
             path = obj.name + "/pos";
             lo_send(target, path.c_str(), "fff", p.x, p.y, p.z);
             path = obj.name + "/rot";
-            lo_send(target, path.c_str(), "fff", RAD2DEG * o.z * oscale,
-                    RAD2DEG * o.y * oscale, RAD2DEG * o.x * oscale);
+            lo_send(target, path.c_str(), "fff", RAD2DEG * oeul.z * oscale,
+                    RAD2DEG * oeul.y * oscale, RAD2DEG * oeul.x * oscale);
             break;
           case 1:
             path = obj.name + "/pos";
             lo_send(target, path.c_str(), "ffffff", p.x, p.y, p.z,
-                    RAD2DEG * o.z * oscale, RAD2DEG * o.y * oscale,
-                    RAD2DEG * o.x * oscale);
+                    RAD2DEG * oeul.z * oscale, RAD2DEG * oeul.y * oscale,
+                    RAD2DEG * oeul.x * oscale);
             break;
           case 2:
             path = "/tascarpos";
             lo_send(target, path.c_str(), "sffffff", obj.name.c_str(), p.x, p.y,
-                    p.z, RAD2DEG * o.z * oscale, RAD2DEG * o.y * oscale,
-                    RAD2DEG * o.x * oscale);
+                    p.z, RAD2DEG * oeul.z * oscale, RAD2DEG * oeul.y * oscale,
+                    RAD2DEG * oeul.x * oscale);
             if(sendsounds) {
               TASCAR::Scene::src_object_t* src(
                   dynamic_cast<TASCAR::Scene::src_object_t*>(obj.obj));
@@ -243,7 +246,7 @@ void pos2osc_t::update_local()
                     soundname = isnd->get_name();
                   if(obj.scene->mtx_geometry.try_lock()) {
                     auto ipos = isnd->position;
-                    auto iori = isnd->orientation;
+                    auto iori = isnd->orientation.to_euler();
                     obj.scene->mtx_geometry.unlock();
                     lo_send(target, path.c_str(), "sffffff", soundname.c_str(),
                             ipos.x, ipos.y, ipos.z, RAD2DEG * iori.z * oscale,
@@ -258,8 +261,8 @@ void pos2osc_t::update_local()
             path = "/tascarpos";
             lo_send(target, path.c_str(), "sffffff",
                     obj.obj->get_name().c_str(), p.x, p.y, p.z,
-                    RAD2DEG * o.z * oscale, RAD2DEG * o.y * oscale,
-                    RAD2DEG * o.x * oscale);
+                    RAD2DEG * oeul.z * oscale, RAD2DEG * oeul.y * oscale,
+                    RAD2DEG * oeul.x * oscale);
             if(sendsounds) {
               TASCAR::Scene::src_object_t* src(
                   dynamic_cast<TASCAR::Scene::src_object_t*>(obj.obj));
@@ -273,7 +276,7 @@ void pos2osc_t::update_local()
                     soundname = isnd->get_name();
                   if(obj.scene->mtx_geometry.try_lock()) {
                     auto ipos = isnd->position;
-                    auto iori = isnd->orientation;
+                    auto iori = isnd->orientation.to_euler();
                     obj.scene->mtx_geometry.unlock();
                     lo_send(target, path.c_str(), "sffffff", soundname.c_str(),
                             ipos.x, ipos.y, ipos.z, RAD2DEG * iori.z * oscale,
@@ -294,7 +297,7 @@ void pos2osc_t::update_local()
             break;
           case 5:
             path = "/" + avatar;
-            lo_send(target, path.c_str(), "f", RAD2DEG * o.z * oscale);
+            lo_send(target, path.c_str(), "f", RAD2DEG * oeul.z * oscale);
             break;
           case 6:
             if(avatar.size())
@@ -311,7 +314,7 @@ void pos2osc_t::update_local()
             else
               path = "/" + obj.obj->get_name();
             lo_send(target, path.c_str(), "sfff", orientationname.c_str(),
-                    o.y * oscale, o.z * oscale, o.x * oscale);
+                    oeul.y * oscale, oeul.z * oscale, oeul.x * oscale);
             break;
           case 8:
             if(avatar.size())
@@ -336,16 +339,17 @@ void pos2osc_t::update_local()
               path = "/" + avatar;
             else
               path = "/" + obj.obj->get_name();
-            lo_send(target, path.c_str(), "sfff", orientationname.c_str(),
-                    obj.obj->dorientation.y * oscale,
-                    obj.obj->dorientation.x * oscale,
-                    obj.obj->dorientation.z * oscale);
+            {
+              auto leul = obj.obj->dorientation.to_euler();
+              lo_send(target, path.c_str(), "sfff", orientationname.c_str(),
+                      leul.y * oscale, leul.x * oscale, leul.z * oscale);
+            }
             break;
           case 11:
             path = "/" + avatar + "/" + obj.obj->get_name();
             lo_send(target, path.c_str(), "ffffff", p.x, p.y, p.z,
-                    RAD2DEG * o.z * oscale, RAD2DEG * o.y * oscale,
-                    RAD2DEG * o.x * oscale);
+                    RAD2DEG * oeul.z * oscale, RAD2DEG * oeul.y * oscale,
+                    RAD2DEG * oeul.x * oscale);
             break;
           case 12:
             path = "/" + avatar;

@@ -214,16 +214,18 @@ void simplecontroller_t::update(uint32_t, bool)
   TASCAR::zyx_euler_t r(rotvel);
   r *= vscale;
   add_orientation(r);
-  for(std::vector<TASCAR::named_object_t>::iterator it = obj.begin();
-      it != obj.end(); ++it) {
+  for(auto& obj_ : obj) {
     TASCAR::pos_t v(velocity);
     v *= vscale;
-    v *= TASCAR::zyx_euler_t(it->obj->dorientation.z, 0, 0);
-    it->obj->dlocation += v;
+    auto eulz = obj_.obj->dorientation.to_euler();
+    eulz.x = 0.0;
+    eulz.y = 0.0;
+    v *= eulz;
+    obj_.obj->dlocation += v;
     if(maxnorm > 0) {
-      double dnorm(it->obj->dlocation.norm());
+      double dnorm(obj_.obj->dlocation.norm());
       if(dnorm > maxnorm)
-        it->obj->dlocation *= maxnorm / dnorm;
+        obj_.obj->dlocation *= maxnorm / dnorm;
     }
   }
 }

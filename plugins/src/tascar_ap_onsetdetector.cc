@@ -27,7 +27,7 @@ class onsetdetector_t : public TASCAR::audioplugin_base_t {
 public:
   onsetdetector_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   void configure();
   ~onsetdetector_t();
 
@@ -83,7 +83,7 @@ onsetdetector_t::~onsetdetector_t()
 
 void onsetdetector_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
                                  const TASCAR::pos_t& pos,
-                                 const TASCAR::zyx_euler_t&,
+                                 const TASCAR::rotmat_t&,
                                  const TASCAR::transport_t&)
 {
   const char* this_side(side.c_str());

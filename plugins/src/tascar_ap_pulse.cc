@@ -25,7 +25,7 @@ class pulse_t : public TASCAR::audioplugin_base_t {
 public:
   pulse_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   void add_variables(TASCAR::osc_server_t* srv);
   ~pulse_t();
 
@@ -54,7 +54,7 @@ void pulse_t::add_variables(TASCAR::osc_server_t* srv)
 }
 
 void pulse_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
-                         const TASCAR::pos_t&, const TASCAR::zyx_euler_t&,
+                         const TASCAR::pos_t&, const TASCAR::rotmat_t&,
                          const TASCAR::transport_t&)
 {
   uint32_t p(f_sample / f);

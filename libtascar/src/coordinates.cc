@@ -33,9 +33,9 @@
 #include "errorhandling.h"
 #include "tscconfig.h"
 #include <cmath>
+#include <cstdlib>
 #include <numeric>
 #include <sstream>
-#include <cstdlib>
 #include <vector>
 
 #include "quickhull/QuickHull.cpp"
@@ -219,6 +219,13 @@ void ngon_t::nonrt_set(const std::vector<pos_t>& verts)
 }
 
 void ngon_t::apply_rot_loc(const pos_t& p0, const zyx_euler_t& o)
+{
+  orientation = o;
+  delta = p0;
+  update();
+}
+
+void ngon_t::apply_rot_loc(const pos_t& p0, const rotmat_t& o)
 {
   orientation = o;
   delta = p0;
@@ -500,18 +507,19 @@ TASCAR::quickhull_t::quickhull_t(const std::vector<pos_t>& vertices)
     }
     faces.push_back(sim);
   }
-  std::sort(faces.begin(), faces.end(), [](const simplex_t& a, const simplex_t& b) {
-    if(a.c1 < b.c1)
-      return true;
-    if(a.c1 == b.c1) {
-      if(a.c2 < b.c2)
-        return true;
-      if(a.c2 == b.c2)
-        if(a.c3 < b.c3)
-          return true;
-    }
-    return false;
-  });
+  std::sort(faces.begin(), faces.end(),
+            [](const simplex_t& a, const simplex_t& b) {
+              if(a.c1 < b.c1)
+                return true;
+              if(a.c1 == b.c1) {
+                if(a.c2 < b.c2)
+                  return true;
+                if(a.c2 == b.c2)
+                  if(a.c3 < b.c3)
+                    return true;
+              }
+              return false;
+            });
 }
 
 std::vector<pos_t> TASCAR::subdivide_and_normalize_mesh(std::vector<pos_t> mesh,

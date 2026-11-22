@@ -23,14 +23,16 @@ using namespace TASCAR;
 
 class addchannel_t : public audioplugin_base_t {
 public:
-  addchannel_t( const audioplugin_cfg_t& cfg) : audioplugin_base_t( cfg ), first(true) {};
-  void ap_process( std::vector<wave_t>& chunk, const pos_t& pos, const TASCAR::zyx_euler_t&, const transport_t& tp);
+  addchannel_t(const audioplugin_cfg_t& cfg)
+      : audioplugin_base_t(cfg), first(true){};
+  void ap_process(std::vector<wave_t>& chunk, const pos_t& pos,
+                  const TASCAR::rotmat_t&, const transport_t& tp);
   void configure();
   bool first;
 };
 
 void addchannel_t::ap_process(std::vector<wave_t>& chunk, const pos_t&,
-                              const TASCAR::zyx_euler_t&, const transport_t&)
+                              const TASCAR::rotmat_t&, const transport_t&)
 {
   if(first)
     DEBUG(chunk.size());
@@ -45,7 +47,7 @@ void addchannel_t::configure()
   DEBUG(n_channels);
 }
 
-REGISTER_AUDIOPLUGIN( addchannel_t );
+REGISTER_AUDIOPLUGIN(addchannel_t);
 
 /*
  * Local Variables:

@@ -37,7 +37,7 @@ namespace TASCAR {
     void post_prepare();
     void release();
     void process_plugins(std::vector<wave_t>& s, const pos_t& p,
-                         const zyx_euler_t& o, const transport_t& tp);
+                         const rotmat_t& o, const transport_t& tp);
     void validate_attributes(std::string& msg) const;
     void add_variables(TASCAR::osc_server_t* srv);
     void add_licenses(licensehandler_t*);
@@ -48,6 +48,7 @@ namespace TASCAR {
     bool use_profiler = false;
     std::string profilingpath = "";
     std::vector<TASCAR::audioplugin_t*> plugins;
+
   private:
     lo_message msg;
     lo_arg** oscmsgargv;

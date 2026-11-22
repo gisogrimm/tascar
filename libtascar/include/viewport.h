@@ -32,14 +32,14 @@ public:
   void set_perspective(bool p);
   void set_fov(double f);
   void set_scale(double s);
-  void set_ref( const pos_t& r );
-  void set_euler( const zyx_euler_t& e );
+  void set_ref(const pos_t& r);
+  void set_rot(const rotmat_t& o);
   bool get_perspective() const;
   double get_scale() const;
   double get_fov() const;
   pos_t get_ref() const;
-  //private:
-  zyx_euler_t euler;
+  // private:
+  rotmat_t orientation;
   pos_t ref;
   bool perspective;
   double fov;
@@ -47,7 +47,6 @@ public:
 };
 
 #endif
-
 
 /*
  * Local Variables:

@@ -42,7 +42,7 @@ class lipsync_t : public TASCAR::audioplugin_base_t {
 public:
   lipsync_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   void configure();
   void release();
   void add_variables(TASCAR::osc_server_t* srv);
@@ -228,7 +228,8 @@ void lipsync_t::configure()
   formantEdges = new uint32_t[numFormants + 1];
   for(uint32_t k = 0; k < numFormants + 1; ++k)
     formantEdges[k] = std::min(
-                               num_bins, (uint32_t)(round(2 * freqBins[k] * (float)n_fragment / (float)f_sample)));
+        num_bins, (uint32_t)(round(2 * freqBins[k] * (float)n_fragment /
+                                   (float)f_sample)));
 }
 
 void lipsync_t::release()
@@ -250,7 +251,7 @@ lipsync_t::~lipsync_t()
 }
 
 void lipsync_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
-                           const TASCAR::pos_t&, const TASCAR::zyx_euler_t&,
+                           const TASCAR::pos_t&, const TASCAR::rotmat_t&,
                            const TASCAR::transport_t& tp)
 {
   // Following web api doc:
@@ -284,9 +285,10 @@ void lipsync_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
       energy[k] += sSmoothedMag[i] * sSmoothedMag[i];
     // Divide by number of sumples
     energy[k] /= (float)(formantEdges[k + 1] - formantEdges[k]);
-    energy[k] = std::max(0.0f, (10.0f * log10f(energy[k] + 1e-6f) - maxspeechlevel) /
-                                      dynamicrange +
-                                  1.0f - threshold);
+    energy[k] =
+        std::max(0.0f, (10.0f * log10f(energy[k] + 1e-6f) - maxspeechlevel) /
+                               dynamicrange +
+                           1.0f - threshold);
   }
 
   // Lipsync - Blend shape values

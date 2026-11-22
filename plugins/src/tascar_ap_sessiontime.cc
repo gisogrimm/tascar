@@ -32,7 +32,7 @@ class sessiontime_t : public TASCAR::audioplugin_base_t {
 public:
   sessiontime_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   virtual ~sessiontime_t();
 
 private:
@@ -48,16 +48,16 @@ sessiontime_t::sessiontime_t(const TASCAR::audioplugin_cfg_t& cfg)
 sessiontime_t::~sessiontime_t() {}
 
 void sessiontime_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
-                               const TASCAR::pos_t&, const TASCAR::zyx_euler_t&,
+                               const TASCAR::pos_t&, const TASCAR::rotmat_t&,
                                const TASCAR::transport_t& tp)
 {
   float dt = 0.0f;
   float inct = 0.0f;
-  if( tp.rolling )
+  if(tp.rolling)
     inct = t_sample;
   size_t channels(std::min(chunk.size(), a.size()));
   for(size_t ch = 0; ch < channels; ++ch)
-    for(uint32_t k = 0; k < chunk[ch].n; ++k){
+    for(uint32_t k = 0; k < chunk[ch].n; ++k) {
       chunk[ch].d[k] = tp.session_time_seconds + dt;
       dt += inct;
     }

@@ -42,7 +42,7 @@ class lipsync_t : public TASCAR::audioplugin_base_t {
 public:
   lipsync_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   void configure();
   void release();
   void add_variables(TASCAR::osc_server_t* srv);
@@ -248,7 +248,7 @@ lipsync_t::~lipsync_t()
 }
 
 void lipsync_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
-                           const TASCAR::pos_t&, const TASCAR::zyx_euler_t&,
+                           const TASCAR::pos_t&, const TASCAR::rotmat_t&,
                            const TASCAR::transport_t& tp)
 {
   // Following web api doc:

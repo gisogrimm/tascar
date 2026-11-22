@@ -361,8 +361,8 @@ void lightscene_t::update(uint32_t, bool, double t_fragment)
   for(uint32_t k = 0; k < tmpdmxdata.size(); ++k)
     tmpdmxdata[k] = 0;
   if(parent_.obj) {
-    TASCAR::pos_t self_pos(parent_.obj->get_location());
-    TASCAR::zyx_euler_t self_rot(parent_.obj->get_orientation());
+    auto self_pos = parent_.obj->get_location();
+    auto self_rot = parent_.obj->get_orientation();
     for(uint32_t kobj = 0; kobj < objects_.size(); ++kobj) {
       TASCAR::Scene::object_t* obj(objects_[kobj].obj);
       TASCAR::pos_t pobj(obj->get_location());
@@ -667,7 +667,7 @@ lightctl_t::~lightctl_t()
 {
   stop_service();
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  //usleep(100000);
+  // usleep(100000);
   for(auto it = lightscenes.begin(); it != lightscenes.end(); ++it)
     delete(*it);
   if(driver_)
@@ -682,7 +682,7 @@ void lightctl_t::service()
   std::vector<uint16_t> localdata;
   localdata.resize(512);
   std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  //usleep(1000);
+  // usleep(1000);
   while(run_service) {
     // clear DMX values:
     for(auto& d : localdata)
@@ -698,7 +698,7 @@ void lightctl_t::service()
     if(driver_)
       driver_->send(universe, localdata);
     std::this_thread::sleep_for(std::chrono::microseconds(waitusec));
-    //usleep(waitusec);
+    // usleep(waitusec);
   }
   for(uint32_t k = 0; k < localdata.size(); ++k)
     localdata[k] = 0;

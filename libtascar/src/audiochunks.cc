@@ -244,9 +244,8 @@ void amb1wave_t::copy(const amb1wave_t& src)
 
 void amb1wave_t::print_levels() const
 {
-  std::cout << this << " wyzx"
-            << " " << w_.spldb() << " " << y_.spldb() << " " << z_.spldb()
-            << " " << x_.spldb() << std::endl;
+  std::cout << this << " wyzx" << " " << w_.spldb() << " " << y_.spldb() << " "
+            << z_.spldb() << " " << x_.spldb() << std::endl;
 }
 
 void amb1wave_t::apply_matrix(float* m)
@@ -598,76 +597,43 @@ amb1rotator_t::amb1rotator_t(uint32_t chunksize)
       wzx(0), wzy(0), wzz(1), dt(1.0 / (double)chunksize)
 {
 }
-
-amb1rotator_t& amb1rotator_t::rotate(const amb1wave_t& src,
-                                     const zyx_euler_t& o, bool invert)
+amb1rotator_t& amb1rotator_t::rotate(const amb1wave_t& src, const rotmat_t& o,
+                                     bool invert)
 {
-  float dxx;
-  float dxy;
-  float dxz;
-  float dyx;
-  float dyy;
-  float dyz;
-  float dzx;
-  float dzy;
-  float dzz;
+  float dxx, dxy, dxz, dyx, dyy, dyz, dzx, dzy, dzz;
+
   if(invert) {
-    double cosy(cos(o.y));
-    double siny(sin(-o.y));
-    double cosz(cos(o.z));
-    double sinz(sin(-o.z));
-    double sinx(sin(-o.x));
-    double cosx(cos(o.x));
-    double sinxsiny(sinx * siny);
-    double cosxsiny(cosx * siny);
-    dxx = (cosz * cosy - wxx) * dt;
-    dxy = (sinz * cosy - wxy) * dt;
-    dxz = (siny - wxz) * dt;
-    dyx = (-cosz * sinxsiny - sinz * cosx - wyx) * dt;
-    dyy = (cosz * cosx - sinz * sinxsiny - wyy) * dt;
-    dyz = (cosy * sinx - wyz) * dt;
-    dzx = (-cosz * cosxsiny + sinz * sinx - wzx) * dt;
-    dzy = (-cosz * sinx - sinz * cosxsiny - wzy) * dt;
-    dzz = (cosy * cosx - wzz) * dt;
+    // Use the transpose of the rotation matrix for the inverse
+    dxx = (o.m11 - wxx) * dt;
+    dxy = (o.m21 - wxy) * dt;
+    dxz = (o.m31 - wxz) * dt;
+    dyx = (o.m12 - wyx) * dt;
+    dyy = (o.m22 - wyy) * dt;
+    dyz = (o.m32 - wyz) * dt;
+    dzx = (o.m13 - wzx) * dt;
+    dzy = (o.m23 - wzy) * dt;
+    dzz = (o.m33 - wzz) * dt;
   } else {
-    // 1, 0, 0
-    // rot_z: cosz, sinz, 0
-    // rot_y: cosy*cosz, sinz, siny*cosz
-    // rot_x: cosy*cosz, cosx*sinz-sinx*siny*cosz, cosx*siny*cosz+sinx*sinz
-
-    // 0, 1, 0
-    // rot_z: -sinz, cosz, 0
-    // rot_y: -cosy*sinz, cosz, -siny*sinz
-    // rot_x: -cosy*sinz, cosx*cosz+sinx*siny*sinz, -cosx*siny*sinz + sinx*cosz
-
-    // 0, 0, 1
-    // rot_z: 0, 0, 1
-    // rot_y: -siny, 0, cosy
-    // rot_x: -siny, -sinx*cosy, cosx*cosy
-    double cosy(cos(o.y));
-    double cosz(cos(o.z));
-    double cosx(cos(o.x));
-    double sinz(sin(o.z));
-    double siny(sin(o.y));
-    double sinx(sin(o.x));
-    double sinxsiny(sinx * siny);
-    dxx = (cosy * cosz - wxx) * dt;
-    dxy = (cosx * sinz - sinxsiny * cosz - wxy) * dt;
-    dxz = (cosx * siny * cosz + sinx * sinz - wxz) * dt;
-    dyx = (-cosy * sinz - wyx) * dt;
-    dyy = (cosx * cosz + sinxsiny * sinz - wyy) * dt;
-    dyz = (-cosx * siny * sinz + sinx * cosz - wyz) * dt;
-    dzx = (-siny - wzx) * dt;
-    dzy = (-sinx * cosy - wzy) * dt;
-    dzz = (cosx * cosy - wzz) * dt;
+    // Use the rotation matrix as is
+    dxx = (o.m11 - wxx) * dt;
+    dxy = (o.m12 - wxy) * dt;
+    dxz = (o.m13 - wxz) * dt;
+    dyx = (o.m21 - wyx) * dt;
+    dyy = (o.m22 - wyy) * dt;
+    dyz = (o.m23 - wyz) * dt;
+    dzx = (o.m31 - wzx) * dt;
+    dzy = (o.m32 - wzy) * dt;
+    dzz = (o.m33 - wzz) * dt;
   }
+
   w_.copy(src.w());
-  float* p_src_x(src.x().d);
-  float* p_src_y(src.y().d);
-  float* p_src_z(src.z().d);
-  float* p_x(x_.d);
-  float* p_y(y_.d);
-  float* p_z(z_.d);
+  float* p_src_x = src.x().d;
+  float* p_src_y = src.y().d;
+  float* p_src_z = src.z().d;
+  float* p_x = x_.d;
+  float* p_y = y_.d;
+  float* p_z = z_.d;
+
   for(uint32_t k = 0; k < w_.n; ++k) {
     *p_x = *p_src_x * (wxx += dxx) + *p_src_y * (wxy += dxy) +
            *p_src_z * (wxz += dxz);
@@ -685,70 +651,36 @@ amb1rotator_t& amb1rotator_t::rotate(const amb1wave_t& src,
   return *this;
 }
 
-void amb1rotator_t::rotate(const zyx_euler_t& o, bool invert)
+void amb1rotator_t::rotate(const rotmat_t& o, bool invert)
 {
-  float dxx;
-  float dxy;
-  float dxz;
-  float dyx;
-  float dyy;
-  float dyz;
-  float dzx;
-  float dzy;
-  float dzz;
+  float dxx, dxy, dxz, dyx, dyy, dyz, dzx, dzy, dzz;
+
   if(invert) {
-    double cosy(cos(o.y));
-    double siny(sin(-o.y));
-    double cosz(cos(o.z));
-    double sinz(sin(-o.z));
-    double sinx(sin(-o.x));
-    double cosx(cos(o.x));
-    double sinxsiny(sinx * siny);
-    double cosxsiny(cosx * siny);
-    dxx = (cosz * cosy - wxx) * dt;
-    dxy = (sinz * cosy - wxy) * dt;
-    dxz = (siny - wxz) * dt;
-    dyx = (-cosz * sinxsiny - sinz * cosx - wyx) * dt;
-    dyy = (cosz * cosx - sinz * sinxsiny - wyy) * dt;
-    dyz = (cosy * sinx - wyz) * dt;
-    dzx = (-cosz * cosxsiny + sinz * sinx - wzx) * dt;
-    dzy = (-cosz * sinx - sinz * cosxsiny - wzy) * dt;
-    dzz = (cosy * cosx - wzz) * dt;
+    dxx = (o.m11 - wxx) * dt;
+    dxy = (o.m21 - wxy) * dt;
+    dxz = (o.m31 - wxz) * dt;
+    dyx = (o.m12 - wyx) * dt;
+    dyy = (o.m22 - wyy) * dt;
+    dyz = (o.m32 - wyz) * dt;
+    dzx = (o.m13 - wzx) * dt;
+    dzy = (o.m23 - wzy) * dt;
+    dzz = (o.m33 - wzz) * dt;
   } else {
-    // 1, 0, 0
-    // rot_z: cosz, sinz, 0
-    // rot_y: cosy*cosz, sinz, siny*cosz
-    // rot_x: cosy*cosz, cosx*sinz-sinx*siny*cosz, cosx*siny*cosz+sinx*sinz
-
-    // 0, 1, 0
-    // rot_z: -sinz, cosz, 0
-    // rot_y: -cosy*sinz, cosz, -siny*sinz
-    // rot_x: -cosy*sinz, cosx*cosz+sinx*siny*sinz, -cosx*siny*sinz + sinx*cosz
-
-    // 0, 0, 1
-    // rot_z: 0, 0, 1
-    // rot_y: -siny, 0, cosy
-    // rot_x: -siny, -sinx*cosy, cosx*cosy
-    double cosy(cos(o.y));
-    double cosz(cos(o.z));
-    double cosx(cos(o.x));
-    double sinz(sin(o.z));
-    double siny(sin(o.y));
-    double sinx(sin(o.x));
-    double sinxsiny(sinx * siny);
-    dxx = (cosy * cosz - wxx) * dt;
-    dxy = (cosx * sinz - sinxsiny * cosz - wxy) * dt;
-    dxz = (cosx * siny * cosz + sinx * sinz - wxz) * dt;
-    dyx = (-cosy * sinz - wyx) * dt;
-    dyy = (cosx * cosz + sinxsiny * sinz - wyy) * dt;
-    dyz = (-cosx * siny * sinz + sinx * cosz - wyz) * dt;
-    dzx = (-siny - wzx) * dt;
-    dzy = (-sinx * cosy - wzy) * dt;
-    dzz = (cosx * cosy - wzz) * dt;
+    dxx = (o.m11 - wxx) * dt;
+    dxy = (o.m12 - wxy) * dt;
+    dxz = (o.m13 - wxz) * dt;
+    dyx = (o.m21 - wyx) * dt;
+    dyy = (o.m22 - wyy) * dt;
+    dyz = (o.m23 - wyz) * dt;
+    dzx = (o.m31 - wzx) * dt;
+    dzy = (o.m32 - wzy) * dt;
+    dzz = (o.m33 - wzz) * dt;
   }
-  float* p_x(x_.d);
-  float* p_y(y_.d);
-  float* p_z(z_.d);
+
+  float* p_x = x_.d;
+  float* p_y = y_.d;
+  float* p_z = z_.d;
+
   for(uint32_t k = 0; k < w_.n; ++k) {
     float tmp_x =
         *p_x * (wxx += dxx) + *p_y * (wxy += dxy) + *p_z * (wxz += dxz);

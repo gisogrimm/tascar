@@ -34,9 +34,11 @@ private:
   std::vector<int32_t> channels;
   std::vector<float> influence;
   std::vector<float> data;
-  TASCAR::c6dof_t transform;
   bool local = false;
   bool incremental = false;
+  TASCAR::c6dof_t transform;
+  TASCAR::pos_t pos;
+  TASCAR::zyx_euler_t eul;
 };
 
 oscactor_t::oscactor_t(const TASCAR::module_cfg_t& cfg) : actor_module_t(cfg)
@@ -81,17 +83,19 @@ oscactor_t::~oscactor_t() {}
 void oscactor_t::update(uint32_t, bool)
 {
   if(channels[0] > -1)
-    transform.position.x = data[channels[0]] * influence[0];
+    pos.x = data[channels[0]] * influence[0];
   if(channels[1] > -1)
-    transform.position.y = data[channels[1]] * influence[1];
+    pos.y = data[channels[1]] * influence[1];
   if(channels[2] > -1)
-    transform.position.z = data[channels[2]] * influence[2];
+    pos.z = data[channels[2]] * influence[2];
   if(channels[3] > -1)
-    transform.orientation.z = data[channels[3]] * influence[3];
+    eul.z = data[channels[3]] * influence[3];
   if(channels[4] > -1)
-    transform.orientation.y = data[channels[4]] * influence[4];
+    eul.y = data[channels[4]] * influence[4];
   if(channels[5] > -1)
-    transform.orientation.x = data[channels[5]] * influence[5];
+    eul.x = data[channels[5]] * influence[5];
+  transform.position = pos;
+  transform.orientation = eul;
   if(incremental)
     add_transformation(transform, local);
   else

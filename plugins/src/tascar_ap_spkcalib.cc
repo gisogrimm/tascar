@@ -27,7 +27,7 @@ class ap_spkcalib_t : public TASCAR::audioplugin_base_t {
 public:
   ap_spkcalib_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   void add_variables(TASCAR::osc_server_t* srv);
   void configure();
   void release();
@@ -42,7 +42,8 @@ ap_spkcalib_t::ap_spkcalib_t(const TASCAR::audioplugin_cfg_t& cfg)
     : audioplugin_base_t(cfg), spk(e, false)
 {
   // register variable for XML access:
-  get_attribute_bool("enable_eq",spk.enable_eq,"","Enable speaker equalization");
+  get_attribute_bool("enable_eq", spk.enable_eq, "",
+                     "Enable speaker equalization");
 }
 
 void ap_spkcalib_t::add_variables(TASCAR::osc_server_t* srv)
@@ -76,7 +77,7 @@ void ap_spkcalib_t::release()
 ap_spkcalib_t::~ap_spkcalib_t() {}
 
 void ap_spkcalib_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
-                               const TASCAR::pos_t&, const TASCAR::zyx_euler_t&,
+                               const TASCAR::pos_t&, const TASCAR::rotmat_t&,
                                const TASCAR::transport_t&)
 {
   // implement the algrithm:

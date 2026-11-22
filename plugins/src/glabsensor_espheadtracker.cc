@@ -197,7 +197,7 @@ void espheadtracker_t::service()
 {
   while(run_service) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    //usleep(1000);
+    // usleep(1000);
     double ct(gettime());
     for(std::map<std::string, espdevice_t*>::iterator it = devices.begin();
         it != devices.end(); ++it) {

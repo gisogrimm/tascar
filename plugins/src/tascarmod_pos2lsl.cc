@@ -24,10 +24,11 @@
 
 class pos2lsl_t : public TASCAR::module_base_t {
 public:
-  pos2lsl_t( const TASCAR::module_cfg_t& cfg );
+  pos2lsl_t(const TASCAR::module_cfg_t& cfg);
   ~pos2lsl_t();
-  virtual void configure( );
+  virtual void configure();
   void update(uint32_t frame, bool running);
+
 private:
   std::string pattern;
   bool transport;
@@ -36,33 +37,34 @@ private:
   std::vector<float> data;
 };
 
-pos2lsl_t::pos2lsl_t( const TASCAR::module_cfg_t& cfg )
-  : module_base_t( cfg ),
-    transport(true)
+pos2lsl_t::pos2lsl_t(const TASCAR::module_cfg_t& cfg)
+    : module_base_t(cfg), transport(true)
 {
   data.resize(6);
   GET_ATTRIBUTE_(pattern);
   GET_ATTRIBUTE_BOOL_(transport);
-  if( pattern.empty() )
+  if(pattern.empty())
     pattern = "/*/*";
   obj = session->find_objects(pattern);
-  if( !obj.size() )
-    throw TASCAR::ErrMsg("No target objects found (target pattern: \""+pattern+"\").");
+  if(!obj.size())
+    throw TASCAR::ErrMsg("No target objects found (target pattern: \"" +
+                         pattern + "\").");
 }
 
 void pos2lsl_t::configure()
 {
-  module_base_t::configure( );
-  for(auto it=voutlet.begin();it!=voutlet.end();++it)
+  module_base_t::configure();
+  for(auto it = voutlet.begin(); it != voutlet.end(); ++it)
     delete *it;
   voutlet.clear();
-  for(auto it=obj.begin();it!=obj.end();++it)
-    voutlet.push_back(new lsl::stream_outlet(lsl::stream_info(it->obj->get_name(),"position",6,f_fragment)));
+  for(auto it = obj.begin(); it != obj.end(); ++it)
+    voutlet.push_back(new lsl::stream_outlet(
+        lsl::stream_info(it->obj->get_name(), "position", 6, f_fragment)));
 }
 
 pos2lsl_t::~pos2lsl_t()
 {
-  for(uint32_t k=0;k<voutlet.size();++k)
+  for(uint32_t k = 0; k < voutlet.size(); ++k)
     delete voutlet[k];
 }
 
@@ -72,7 +74,7 @@ void pos2lsl_t::update(uint32_t, bool tp_rolling)
     uint32_t kobj(0);
     for(auto it = obj.begin(); it != obj.end(); ++it) {
       const TASCAR::pos_t& p(it->obj->c6dof.position);
-      const TASCAR::zyx_euler_t& o(it->obj->c6dof.orientation);
+      auto o = it->obj->c6dof.orientation.to_euler();
       // it->obj->get_6dof(p,o);
       data[0] = p.x;
       data[1] = p.y;

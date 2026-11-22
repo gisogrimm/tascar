@@ -25,11 +25,11 @@ using namespace TASCAR;
 class identity_t : public audioplugin_base_t {
 public:
   identity_t(const audioplugin_cfg_t& cfg) : audioplugin_base_t(cfg){};
-  void ap_process(std::vector<wave_t>&, const pos_t&,
-                  const TASCAR::zyx_euler_t&, const transport_t&){};
+  void ap_process(std::vector<wave_t>&, const pos_t&, const TASCAR::rotmat_t&,
+                  const transport_t&) {};
 };
 
-REGISTER_AUDIOPLUGIN( identity_t );
+REGISTER_AUDIOPLUGIN(identity_t);
 
 /*
  * Local Variables:

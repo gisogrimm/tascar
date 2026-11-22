@@ -29,7 +29,7 @@ class pink_t : public TASCAR::audioplugin_base_t {
 public:
   pink_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   void add_variables(TASCAR::osc_server_t* srv);
   void configure();
   void release();
@@ -136,7 +136,7 @@ void pink_t::add_variables(TASCAR::osc_server_t* srv)
 }
 
 void pink_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
-                        const TASCAR::pos_t&, const TASCAR::zyx_euler_t&,
+                        const TASCAR::pos_t&, const TASCAR::rotmat_t&,
                         const TASCAR::transport_t& tp)
 {
   if(mute)

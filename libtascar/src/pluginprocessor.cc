@@ -99,7 +99,7 @@ void plugin_processor_t::validate_attributes(std::string& msg) const
 }
 
 void plugin_processor_t::process_plugins(std::vector<wave_t>& s,
-                                         const pos_t& pos, const zyx_euler_t& o,
+                                         const pos_t& pos, const rotmat_t& o,
                                          const transport_t& tp)
 {
   double t_prev = 0.0;

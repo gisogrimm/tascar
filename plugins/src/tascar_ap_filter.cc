@@ -28,7 +28,7 @@ public:
   enum filtertype_t { lowpass, highpass, equalizer, highshelf, lowshelf };
   biquadplugin_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   void configure();
   void release();
   void add_variables(TASCAR::osc_server_t* srv);
@@ -79,7 +79,7 @@ void biquadplugin_t::add_variables(TASCAR::osc_server_t* srv)
   srv->set_variable_owner(
       TASCAR::strrep(TASCAR::tscbasename(__FILE__), ".cc", ""));
   srv->add_float("/fc", &fc, "]0,20000]", "Cutoff frequency in Hz");
-  switch( ftype ){
+  switch(ftype) {
   case biquadplugin_t::equalizer:
   case biquadplugin_t::highshelf:
   case biquadplugin_t::lowshelf:
@@ -111,8 +111,7 @@ void biquadplugin_t::release()
 biquadplugin_t::~biquadplugin_t() {}
 
 void biquadplugin_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
-                                const TASCAR::pos_t&,
-                                const TASCAR::zyx_euler_t&,
+                                const TASCAR::pos_t&, const TASCAR::rotmat_t&,
                                 const TASCAR::transport_t&)
 {
   for(size_t k = 0; k < chunk.size(); ++k) {

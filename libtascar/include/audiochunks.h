@@ -176,10 +176,10 @@ namespace TASCAR {
     uint32_t n;
     float* begin() { return d; };
     float* end() { return d + n; };
-    void ramp_start( uint32_t ramplen );
-    void ramp_end( uint32_t ramplen );
-    void trim_start( uint32_t len );
-    void trim_end( uint32_t len );
+    void ramp_start(uint32_t ramplen);
+    void ramp_end(uint32_t ramplen);
+    void trim_start(uint32_t len);
+    void trim_end(uint32_t len);
 
   private:
     bool own_pointer;
@@ -224,9 +224,9 @@ namespace TASCAR {
   class amb1rotator_t : public amb1wave_t {
   public:
     amb1rotator_t(uint32_t chunksize);
-    amb1rotator_t& rotate(const amb1wave_t& src, const TASCAR::zyx_euler_t& o,
+    amb1rotator_t& rotate(const amb1wave_t& src, const TASCAR::rotmat_t& o,
                           bool invert = false);
-    void rotate(const TASCAR::zyx_euler_t& o, bool invert = false);
+    void rotate(const TASCAR::rotmat_t& o, bool invert = false);
 
   private:
     double wxx, wxy, wxz, wyx, wyy, wyz, wzx, wzy, wzz, dt;

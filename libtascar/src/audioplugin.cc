@@ -72,7 +72,7 @@ TASCAR::audioplugin_t::audioplugin_t(const audioplugin_cfg_t& cfg)
 
 void TASCAR::audioplugin_t::ap_process(std::vector<wave_t>& chunk,
                                        const TASCAR::pos_t& pos,
-                                       const TASCAR::zyx_euler_t& o,
+                                       const TASCAR::rotmat_t& o,
                                        const TASCAR::transport_t& tp)
 {
   libdata->ap_process(chunk, pos, o, tp);

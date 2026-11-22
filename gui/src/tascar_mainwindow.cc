@@ -863,11 +863,12 @@ void tascar_window_t::on_menu_file_exportcsv()
                 session->scenes[kscene]->get_objects());
             for(uint32_t k = 0; k < obj.size(); k++) {
               TASCAR::pos_t p;
-              TASCAR::zyx_euler_t o;
+              TASCAR::rotmat_t o;
               obj[k]->get_6dof(p, o);
+              auto eul = o.to_euler();
               ofs << "\"" << obj[k]->get_name() << "\"," << p.x << "," << p.y
-                  << "," << p.z << "," << o.z * RAD2DEG << "," << o.y * RAD2DEG
-                  << "," << o.x * RAD2DEG << "\n";
+                  << "," << p.z << "," << eul.z * RAD2DEG << ","
+                  << eul.y * RAD2DEG << "," << eul.x * RAD2DEG << "\n";
             }
           }
         }
@@ -1283,12 +1284,12 @@ void tascar_window_t::on_menu_view_viewport_xy()
 
 void tascar_window_t::on_menu_view_viewport_rotz()
 {
-  draw.view.euler.z += TASCAR_PIf / 24;
+  draw.view.orientation *= TASCAR::zyx_euler_t(TASCAR_PIf / 24, 0, 0);
 }
 
 void tascar_window_t::on_menu_view_viewport_rotzcw()
 {
-  draw.view.euler.z -= TASCAR_PIf / 24;
+  draw.view.orientation *= TASCAR::zyx_euler_t(-TASCAR_PIf / 24, 0, 0);
 }
 
 void tascar_window_t::on_menu_view_viewport_setref()

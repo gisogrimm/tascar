@@ -61,11 +61,11 @@ snapangle_t::~snapangle_t() {}
 
 void snapangle_t::update(uint32_t, bool)
 {
-  if( bypass )
+  if(bypass)
     return;
   TASCAR::pos_t dir(1.0, 0.0, 0.0);
   TASCAR::pos_t srcpos;
-  TASCAR::zyx_euler_t srcdir;
+  TASCAR::rotmat_t srcdir;
   obj_source[0].obj->get_6dof(srcpos, srcdir);
   dir *= srcdir;
   TASCAR::pos_t dirmin;

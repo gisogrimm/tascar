@@ -33,7 +33,7 @@ class reclevelanalyzer_t : public TASCAR::audioplugin_base_t {
 public:
   reclevelanalyzer_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t&,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t&);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t&);
   void add_variables(TASCAR::osc_server_t* srv);
   ~reclevelanalyzer_t();
   void configure();
@@ -172,7 +172,7 @@ reclevelanalyzer_t::~reclevelanalyzer_t() {}
 
 void reclevelanalyzer_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
                                     const TASCAR::pos_t&,
-                                    const TASCAR::zyx_euler_t&,
+                                    const TASCAR::rotmat_t&,
                                     const TASCAR::transport_t&)
 {
   if(!rb)

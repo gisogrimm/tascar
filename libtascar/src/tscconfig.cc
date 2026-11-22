@@ -108,7 +108,7 @@ namespace TASCAR {
   public:
     class log_entry_t {
     public:
-      log_entry_t(double t, const std::string& msg) : t(t), msg(msg) {};
+      log_entry_t(double t, const std::string& msg) : t(t), msg(msg){};
       double t = 0.0;
       const std::string msg;
     };
@@ -1218,6 +1218,19 @@ void TASCAR::xml_element_t::get_attribute(const std::string& name,
 }
 
 void TASCAR::xml_element_t::get_attribute(const std::string& name,
+                                          TASCAR::rotmat_t& value,
+                                          const std::string& info)
+{
+  TASCAR_ASSERT(e);
+  node_register_attr(e, name, TASCAR::to_string_deg(value.to_euler()), "deg",
+                     info, "Rotation in ZYX Euler angles");
+  if(has_attribute(name))
+    get_attribute_value(e, name, value);
+  else
+    set_attribute(name, value);
+}
+
+void TASCAR::xml_element_t::get_attribute(const std::string& name,
                                           std::vector<TASCAR::pos_t>& value,
                                           const std::string& unit,
                                           const std::string& info)
@@ -1432,6 +1445,13 @@ void TASCAR::xml_element_t::set_attribute(const std::string& name,
   set_attribute_value(e, name, value);
 }
 
+void TASCAR::xml_element_t::set_attribute(const std::string& name,
+                                          const TASCAR::rotmat_t& value)
+{
+  TASCAR_ASSERT(e);
+  set_attribute_value(e, name, value);
+}
+
 void TASCAR::xml_element_t::set_attribute(
     const std::string& name, const std::vector<TASCAR::pos_t>& value)
 {
@@ -1623,6 +1643,18 @@ void set_attribute_value(tsccfg::node_t& elem, const std::string& name,
 }
 
 void set_attribute_value(tsccfg::node_t& elem, const std::string& name,
+                         const TASCAR::rotmat_t& value)
+{
+  TASCAR_ASSERT(elem);
+  char ctmp[1024];
+  ctmp[1023] = 0;
+  auto tmpval = value.to_euler();
+  snprintf(ctmp, 1023, "%1.12g %1.12g %1.12g", tmpval.z * RAD2DEG,
+           tmpval.y * RAD2DEG, tmpval.x * RAD2DEG);
+  tsccfg::node_set_attribute(elem, name, ctmp);
+}
+
+void set_attribute_value(tsccfg::node_t& elem, const std::string& name,
                          const TASCAR::levelmeter::weight_t& value)
 {
   TASCAR_ASSERT(elem);
@@ -1785,6 +1817,20 @@ void get_attribute_value(const tsccfg::node_t& elem, const std::string& name,
     tmpv.y *= DEG2RAD;
     tmpv.z *= DEG2RAD;
     value = tmpv;
+  }
+}
+
+void get_attribute_value(const tsccfg::node_t& elem, const std::string& name,
+                         TASCAR::rotmat_t& value)
+{
+  TASCAR_ASSERT(elem);
+  std::string attv(tsccfg::node_get_attribute_value(elem, name));
+  TASCAR::zyx_euler_t tmpv;
+  if(sscanf(attv.c_str(), "%lf%lf%lf", &(tmpv.z), &(tmpv.y), &(tmpv.x)) == 3) {
+    tmpv.x *= DEG2RAD;
+    tmpv.y *= DEG2RAD;
+    tmpv.z *= DEG2RAD;
+    value.set_from_euler(tmpv);
   }
 }
 

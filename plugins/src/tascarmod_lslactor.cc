@@ -36,9 +36,13 @@ private:
   lsl::stream_inlet* inlet;
   std::thread srv;
   bool run_service;
-  TASCAR::c6dof_t transform;
   bool local;
   bool incremental;
+  TASCAR::c6dof_t transform;
+  TASCAR::pos_t pos;
+  TASCAR::zyx_euler_t eul;
+  std::vector<double> sync_sample;
+  std::mutex mtx;
 };
 
 lslactor_t::lslactor_t(const TASCAR::module_cfg_t& cfg)
@@ -99,18 +103,8 @@ void lslactor_t::service()
   while(run_service && inlet) {
     double t(inlet->pull_sample(sample, 0.1));
     if(t != 0) {
-      if(channels[0] > -1)
-        transform.position.x = sample[channels[0]] * influence[0];
-      if(channels[1] > -1)
-        transform.position.y = sample[channels[1]] * influence[1];
-      if(channels[2] > -1)
-        transform.position.z = sample[channels[2]] * influence[2];
-      if(channels[3] > -1)
-        transform.orientation.z = sample[channels[3]] * influence[3];
-      if(channels[4] > -1)
-        transform.orientation.y = sample[channels[4]] * influence[4];
-      if(channels[5] > -1)
-        transform.orientation.x = sample[channels[5]] * influence[5];
+      std::lock_guard<std::mutex> lock(mtx);
+      sync_sample = sample;
     }
   }
 }
@@ -125,6 +119,35 @@ lslactor_t::~lslactor_t()
 
 void lslactor_t::update(uint32_t, bool)
 {
+  if(mtx.try_lock()) {
+    if((channels[0] > -1) && (sync_sample.size() > 0))
+      pos.x = sync_sample[channels[0]] * influence[0];
+    if((channels[1] > -1) && (sync_sample.size() > 1))
+      pos.y = sync_sample[channels[1]] * influence[1];
+    if((channels[2] > -1) && (sync_sample.size() > 2))
+      pos.z = sync_sample[channels[2]] * influence[2];
+    if((channels[3] > -1) && (sync_sample.size() > 3))
+      eul.z = sync_sample[channels[3]] * influence[3];
+    if((channels[4] > -1) && (sync_sample.size() > 4))
+      eul.y = sync_sample[channels[4]] * influence[4];
+    if((channels[5] > -1) && (sync_sample.size() > 5))
+      eul.x = sync_sample[channels[5]] * influence[5];
+    transform.position = pos;
+    transform.orientation = eul;
+    // if(channels[0] > -1)
+    //   transform.position.x = sample[channels[0]] * influence[0];
+    // if(channels[1] > -1)
+    //   transform.position.y = sample[channels[1]] * influence[1];
+    // if(channels[2] > -1)
+    //   transform.position.z = sample[channels[2]] * influence[2];
+    // if(channels[3] > -1)
+    //   transform.orientation.z = sample[channels[3]] * influence[3];
+    // if(channels[4] > -1)
+    //   transform.orientation.y = sample[channels[4]] * influence[4];
+    // if(channels[5] > -1)
+    //   transform.orientation.x = sample[channels[5]] * influence[5];
+    mtx.unlock();
+  }
   if(incremental)
     add_transformation(transform, local);
   else

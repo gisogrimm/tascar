@@ -180,14 +180,15 @@ void TASCAR::dynobject_t::geometry_update(double time)
     pdt -= location.interp(tp);
     if(sampledorientation < 0)
       pdt *= -1.0;
-    c6dof_.orientation.z = pdt.azim();
-    c6dof_.orientation.y = pdt.elev();
-    c6dof_.orientation.x = 0.0;
+    // c6dof_.orientation.z = pdt.azim();
+    // c6dof_.orientation.y = pdt.elev();
+    // c6dof_.orientation.x = 0.0;
+    c6dof_.orientation.set_from_euler(zyx_euler_t(pdt.azim(), pdt.elev(), 0.0));
   }
   // store orientation without delta orientation:
   c6dof_nodelta_.orientation = c6dof_.orientation;
   // add delta orientation (here: addition of Euler angles!):
-  c6dof_.orientation += dorientation;
+  c6dof_.orientation *= dorientation;
   if(navmesh) {
     // the object is restricted to a navigation mesh:
     navmesh->update_pos(c6dof_.position);
@@ -201,7 +202,7 @@ void TASCAR::dynobject_t::geometry_update(double time)
   if(oparent) {
     c6dof_.position *= oparent->c6dof.orientation;
     c6dof_.position += oparent->c6dof.position;
-    c6dof_.orientation += oparent->c6dof.orientation;
+    c6dof_.orientation *= oparent->c6dof.orientation;
   }
 }
 
@@ -210,18 +211,18 @@ TASCAR::pos_t TASCAR::dynobject_t::get_location() const
   return c6dof_.position;
 }
 
-TASCAR::zyx_euler_t TASCAR::dynobject_t::get_orientation() const
+TASCAR::rotmat_t TASCAR::dynobject_t::get_orientation() const
 {
   return c6dof_.orientation;
 }
 
-void TASCAR::dynobject_t::get_6dof(pos_t& p, zyx_euler_t& o) const
+void TASCAR::dynobject_t::get_6dof(pos_t& p, rotmat_t& o) const
 {
   p = c6dof_.position;
   o = c6dof_.orientation;
 }
 
-void TASCAR::dynobject_t::get_6dof_prev(pos_t& p, zyx_euler_t& o) const
+void TASCAR::dynobject_t::get_6dof_prev(pos_t& p, rotmat_t& o) const
 {
   p = c6dof_prev.position;
   o = c6dof_prev.orientation;

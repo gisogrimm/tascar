@@ -22,9 +22,10 @@
 
 class pendulum_t : public TASCAR::actor_module_t {
 public:
-  pendulum_t( const TASCAR::module_cfg_t& cfg );
+  pendulum_t(const TASCAR::module_cfg_t& cfg);
   ~pendulum_t();
   void update(uint32_t frame, bool running);
+
 private:
   double amplitude;
   double frequency;
@@ -33,13 +34,9 @@ private:
   TASCAR::pos_t distance;
 };
 
-pendulum_t::pendulum_t( const TASCAR::module_cfg_t& cfg )
-  : actor_module_t( cfg ),
-    amplitude(45),
-    frequency(0.5),
-    decaytime(40),
-    starttime(10),
-    distance(0,0,-2)
+pendulum_t::pendulum_t(const TASCAR::module_cfg_t& cfg)
+    : actor_module_t(cfg), amplitude(45), frequency(0.5), decaytime(40),
+      starttime(10), distance(0, 0, -2)
 {
   GET_ATTRIBUTE_(amplitude);
   GET_ATTRIBUTE_(frequency);
@@ -48,22 +45,24 @@ pendulum_t::pendulum_t( const TASCAR::module_cfg_t& cfg )
   GET_ATTRIBUTE_(distance);
 }
 
-pendulum_t::~pendulum_t()
-{
-}
+pendulum_t::~pendulum_t() {}
 
-void pendulum_t::update(uint32_t frame,bool )
+void pendulum_t::update(uint32_t frame, bool)
 {
-  double time((double)frame*t_sample);
-  double rx(amplitude*DEG2RAD);
+  double time((double)frame * t_sample);
+  double rx(amplitude * DEG2RAD);
   time -= starttime;
-  if( time>0 )
-    rx = amplitude*DEG2RAD*cos(TASCAR_2PI*frequency*(time))*exp(-0.70711*time/decaytime);
-  for(std::vector<TASCAR::named_object_t>::iterator iobj=obj.begin();iobj!=obj.end();++iobj){
-    TASCAR::zyx_euler_t dr(0,0,rx);
+  if(time > 0)
+    rx = amplitude * DEG2RAD * cos(TASCAR_2PI * frequency * (time)) *
+         exp(-0.70711 * time / decaytime);
+  for(std::vector<TASCAR::named_object_t>::iterator iobj = obj.begin();
+      iobj != obj.end(); ++iobj) {
+    TASCAR::zyx_euler_t dr(0, 0, rx);
     TASCAR::pos_t dp(distance);
-    dp *= TASCAR::zyx_euler_t(0,0,rx);
-    dp *= TASCAR::zyx_euler_t(iobj->obj->c6dof.orientation.z,iobj->obj->c6dof.orientation.y,0);
+    dp *= TASCAR::zyx_euler_t(0, 0, rx);
+    auto zyeul = iobj->obj->c6dof.orientation.to_euler();
+    zyeul.x = 0.0;
+    dp *= zyeul;
     iobj->obj->dorientation = dr;
     iobj->obj->dlocation = dp;
   }

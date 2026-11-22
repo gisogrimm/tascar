@@ -25,7 +25,7 @@ class apfence_t : public TASCAR::audioplugin_base_t {
 public:
   apfence_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   void add_variables(TASCAR::osc_server_t* srv);
   ~apfence_t();
 
@@ -59,7 +59,7 @@ void apfence_t::add_variables(TASCAR::osc_server_t* srv)
 apfence_t::~apfence_t() {}
 
 void apfence_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
-                           const TASCAR::pos_t& p, const TASCAR::zyx_euler_t&,
+                           const TASCAR::pos_t& p, const TASCAR::rotmat_t&,
                            const TASCAR::transport_t&)
 {
   float gain =

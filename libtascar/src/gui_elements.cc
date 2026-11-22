@@ -717,26 +717,26 @@ void scene_draw_t::set_viewport(const viewt_t& viewt)
   switch(viewt) {
   case xy:
     view.set_perspective(false);
-    view.set_euler(zyx_euler_t());
+    view.set_rot(zyx_euler_t());
     break;
   case xz:
     view.set_perspective(false);
-    view.set_euler(zyx_euler_t(0, 0, -TASCAR_PI2));
+    view.set_rot(zyx_euler_t(0, 0, -TASCAR_PI2));
     break;
   case yz:
     view.set_perspective(false);
-    view.set_euler(zyx_euler_t(TASCAR_PI2, 0, -TASCAR_PI2));
+    view.set_rot(zyx_euler_t(TASCAR_PI2, 0, -TASCAR_PI2));
     break;
   case xyz:
     view.set_perspective(false);
-    view.set_euler(zyx_euler_t(0.1 * TASCAR_PI, 0, -0.45 * TASCAR_PI));
+    view.set_rot(zyx_euler_t(0.1 * TASCAR_PI, 0, -0.45 * TASCAR_PI));
     break;
   case p:
     view.set_perspective(true);
     if(scene_) {
       if(scene_->receivermod_objects.size()) {
         view.set_ref(scene_->receivermod_objects[0]->get_location());
-        view.set_euler(scene_->receivermod_objects[0]->get_orientation());
+        view.set_rot(scene_->receivermod_objects[0]->get_orientation());
       }
     }
     break;
@@ -941,7 +941,7 @@ void scene_draw_t::ngon_draw(TASCAR::ngon_t* f,
   }
 }
 
-void scene_draw_t::draw_cube(TASCAR::pos_t pos, TASCAR::zyx_euler_t orient,
+void scene_draw_t::draw_cube(TASCAR::pos_t pos, TASCAR::rotmat_t orient,
                              TASCAR::pos_t size,
                              Cairo::RefPtr<Cairo::Context> cr)
 {
@@ -1171,8 +1171,8 @@ void scene_draw_t::draw_receiver_object(TASCAR::Scene::receiver_obj_t* obj,
     cr->save();
     cr->set_line_width(0.2 * msize);
     cr->set_source_rgba(obj->color.r, obj->color.g, obj->color.b, 0.6);
-    pos_t p(obj->get_location());
-    zyx_euler_t o(obj->get_orientation());
+    auto p = obj->get_location();
+    auto o = obj->get_orientation();
     if(obj->volumetric.has_volume()) {
       draw_cube(p, o, obj->volumetric, cr);
       if(obj->falloff > 0) {
@@ -1353,8 +1353,8 @@ void scene_draw_t::draw_receiver_object(TASCAR::Scene::receiver_obj_t* obj,
     cr->stroke();
     if(obj->boundingbox.active) {
       cr->set_line_width(0.1 * msize);
-      pos_t p(obj->boundingbox.get_location());
-      zyx_euler_t o(obj->boundingbox.get_orientation());
+      auto p = obj->boundingbox.get_location();
+      auto o = obj->boundingbox.get_orientation();
       draw_cube(p, o, obj->boundingbox.size, cr);
       if(obj->boundingbox.falloff > 0) {
         std::vector<double> dash(2);
@@ -1386,8 +1386,8 @@ void scene_draw_t::draw_room_src(TASCAR::Scene::diff_snd_field_obj_t* obj,
 {
   if(obj) {
     bool solo(obj->get_solo());
-    pos_t p(obj->get_location());
-    zyx_euler_t o(obj->get_orientation());
+    auto p = obj->get_location();
+    auto o = obj->get_orientation();
     cr->save();
     if(obj == selection) {
       cr->set_line_width(2 * msize);

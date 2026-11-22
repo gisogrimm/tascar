@@ -210,7 +210,7 @@ namespace TSCGUI {
                                   double normalsize, double msize);
     virtual void ngon_draw(TASCAR::ngon_t* f, Cairo::RefPtr<Cairo::Context> cr,
                            bool fill = false, bool area = false);
-    virtual void draw_cube(TASCAR::pos_t pos, TASCAR::zyx_euler_t orient,
+    virtual void draw_cube(TASCAR::pos_t pos, TASCAR::rotmat_t orient,
                            TASCAR::pos_t size,
                            Cairo::RefPtr<Cairo::Context> cr);
     // object draw functions:

@@ -26,7 +26,7 @@ class timestamp_t : public TASCAR::audioplugin_base_t {
 public:
   timestamp_t(const TASCAR::audioplugin_cfg_t& cfg);
   void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
-                  const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   void add_variables(TASCAR::osc_server_t* srv);
   ~timestamp_t();
 
@@ -62,7 +62,7 @@ timestamp_t::~timestamp_t()
 }
 
 void timestamp_t::ap_process(std::vector<TASCAR::wave_t>&, const TASCAR::pos_t&,
-                             const TASCAR::zyx_euler_t&,
+                             const TASCAR::rotmat_t&,
                              const TASCAR::transport_t&)
 {
   time1 = tictoc.toc();

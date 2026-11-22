@@ -317,6 +317,8 @@ namespace TASCAR {
                        const std::string& unit, const std::string& info);
     void get_attribute(const std::string& name, TASCAR::zyx_euler_t& value,
                        const std::string& info);
+    void get_attribute(const std::string& name, TASCAR::rotmat_t& value,
+                       const std::string& info);
     void get_attribute(const std::string& name,
                        TASCAR::levelmeter::weight_t& value,
                        const std::string& info);
@@ -356,6 +358,7 @@ namespace TASCAR {
     void set_attribute(const std::string& name, const TASCAR::posf_t& value);
     void set_attribute(const std::string& name,
                        const TASCAR::zyx_euler_t& value);
+    void set_attribute(const std::string& name, const TASCAR::rotmat_t& value);
     void set_attribute(const std::string& name,
                        const TASCAR::levelmeter::weight_t& value);
     void set_attribute(const std::string& name,
@@ -480,6 +483,8 @@ void get_attribute_value(const tsccfg::node_t& elem, const std::string& name,
 void get_attribute_value(const tsccfg::node_t& elem, const std::string& name,
                          TASCAR::zyx_euler_t& value);
 void get_attribute_value(const tsccfg::node_t& elem, const std::string& name,
+                         TASCAR::rotmat_t& value);
+void get_attribute_value(const tsccfg::node_t& elem, const std::string& name,
                          std::vector<TASCAR::pos_t>& value);
 void get_attribute_value(const tsccfg::node_t& elem, const std::string& name,
                          std::vector<std::string>& value);
@@ -518,6 +523,8 @@ void set_attribute_value(tsccfg::node_t& elem, const std::string& name,
                          const TASCAR::posf_t& value);
 void set_attribute_value(tsccfg::node_t& elem, const std::string& name,
                          const TASCAR::zyx_euler_t& value);
+void set_attribute_value(tsccfg::node_t& elem, const std::string& name,
+                         const TASCAR::rotmat_t& value);
 void set_attribute_value(tsccfg::node_t& elem, const std::string& name,
                          const std::vector<TASCAR::pos_t>& value);
 void set_attribute_value(tsccfg::node_t& elem, const std::string& name,

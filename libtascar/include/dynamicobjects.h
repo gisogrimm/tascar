@@ -201,9 +201,9 @@ namespace TASCAR {
     ~dynobject_t();
     virtual void geometry_update(double t);
     pos_t get_location() const;
-    zyx_euler_t get_orientation() const;
-    void get_6dof(pos_t&, zyx_euler_t&) const;
-    void get_6dof_prev(pos_t&, zyx_euler_t&) const;
+    rotmat_t get_orientation() const;
+    void get_6dof(pos_t&, rotmat_t&) const;
+    void get_6dof_prev(pos_t&, rotmat_t&) const;
     void set_parent(dynobject_t* p);
     size_t get_num_descendants() const;
     double starttime;
@@ -211,7 +211,7 @@ namespace TASCAR {
     track_t location;
     euler_track_t orientation;
     pos_t dlocation;
-    zyx_euler_t dorientation;
+    rotmat_t dorientation;
     const c6dof_t& c6dof;
     const c6dof_t& c6dof_nodelta;
     std::string parent;

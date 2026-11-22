@@ -19,47 +19,44 @@
 
 #include "viewport.h"
 
-viewport_t::viewport_t()
-  : perspective(false),
-    fov(110.0*DEG2RAD),
-    scale(10.0)
+viewport_t::viewport_t() : perspective(false), fov(110.0 * DEG2RAD), scale(10.0)
 {
   set_fov(120);
 }
 
 void viewport_t::set_perspective(bool p)
-{ 
-  perspective=p;
+{
+  perspective = p;
 }
 
-void viewport_t::set_fov(double f) 
-{ 
-  fov = 0.5*f*DEG2RAD;
+void viewport_t::set_fov(double f)
+{
+  fov = 0.5 * f * DEG2RAD;
 }
 
 void viewport_t::set_scale(double s)
-{ 
-  scale = 0.5*s;
+{
+  scale = 0.5 * s;
 }
 
-void viewport_t::set_ref( const pos_t& r ) 
-{ 
+void viewport_t::set_ref(const pos_t& r)
+{
   ref = r;
 }
 
-void viewport_t::set_euler( const zyx_euler_t& e ) 
-{ 
-  euler = e;
+void viewport_t::set_rot(const rotmat_t& e)
+{
+  orientation = e;
 }
 
-bool viewport_t::get_perspective() const 
+bool viewport_t::get_perspective() const
 {
   return perspective;
 }
 
 double viewport_t::get_scale() const
 {
-  return 2*scale;
+  return 2 * scale;
 }
 
 TASCAR::pos_t viewport_t::get_ref() const
@@ -69,25 +66,25 @@ TASCAR::pos_t viewport_t::get_ref() const
 
 double viewport_t::get_fov() const
 {
-  return 2*fov*RAD2DEG;
+  return 2 * fov * RAD2DEG;
 }
 
 pos_t viewport_t::operator()(pos_t x)
 {
   x -= ref;
-  x *= euler;
-  if( perspective ){
+  x *= orientation;
+  if(perspective) {
     pos_t t;
     t.x = -x.y;
     t.y = x.z;
     t.z = x.x;
-    if( x.x < 0 )
+    if(x.x < 0)
       t.z = std::numeric_limits<double>::infinity();
     x = t;
-    double d(5.0/x.norm());
+    double d(5.0 / x.norm());
     x.x *= d;
     x.y *= d;
-  }else{
+  } else {
     x /= scale;
   }
   return x;
@@ -95,14 +92,14 @@ pos_t viewport_t::operator()(pos_t x)
 
 pos_t viewport_t::inverse(pos_t x)
 {
-  if( perspective ){
+  if(perspective) {
     x.x *= scale;
     x.y *= scale;
-  }else{
+  } else {
     x.x *= scale;
     x.y *= scale;
   }
-  x /= euler;
+  x /= orientation;
   x += ref;
   return x;
 }

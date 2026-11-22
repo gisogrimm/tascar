@@ -455,6 +455,7 @@ namespace TASCAR {
   class rotmat_t {
   public:
     rotmat_t(){};
+    rotmat_t(const zyx_euler_t& eul) { set_from_euler(eul); };
     inline void set_from_euler(const zyx_euler_t& eul)
     {
       const auto cx = cos(eul.x), sx = sin(eul.x);
@@ -514,6 +515,45 @@ namespace TASCAR {
 
       return *this;
     };
+
+    inline rotmat_t& operator/=(const rotmat_t& rhs_inv)
+    {
+      // We multiply by the transpose of rhs.
+      // Instead of rhs.m21 (row 2, col 1), we use rhs.m12 (row 1, col 2).
+
+      const double t11 =
+          m11 * rhs_inv.m11 + m12 * rhs_inv.m12 + m13 * rhs_inv.m13;
+      const double t12 =
+          m11 * rhs_inv.m21 + m12 * rhs_inv.m22 + m13 * rhs_inv.m23;
+      const double t13 =
+          m11 * rhs_inv.m31 + m12 * rhs_inv.m32 + m13 * rhs_inv.m33;
+
+      const double t21 =
+          m21 * rhs_inv.m11 + m22 * rhs_inv.m12 + m23 * rhs_inv.m13;
+      const double t22 =
+          m21 * rhs_inv.m21 + m22 * rhs_inv.m22 + m23 * rhs_inv.m23;
+      const double t23 =
+          m21 * rhs_inv.m31 + m22 * rhs_inv.m32 + m23 * rhs_inv.m33;
+
+      const double t31 =
+          m31 * rhs_inv.m11 + m32 * rhs_inv.m12 + m33 * rhs_inv.m13;
+      const double t32 =
+          m31 * rhs_inv.m21 + m32 * rhs_inv.m22 + m33 * rhs_inv.m23;
+      const double t33 =
+          m31 * rhs_inv.m31 + m32 * rhs_inv.m32 + m33 * rhs_inv.m33;
+
+      m11 = t11;
+      m12 = t12;
+      m13 = t13;
+      m21 = t21;
+      m22 = t22;
+      m23 = t23;
+      m31 = t31;
+      m32 = t32;
+      m33 = t33;
+
+      return *this;
+    }
 
     double m11 = 1;
     double m12 = 0;
@@ -599,6 +639,22 @@ namespace TASCAR {
     self.rot_z(-r.z);
     return self;
   };
+
+  inline TASCAR::pos_t& operator/=(TASCAR::pos_t& self,
+                                   const TASCAR::rotmat_t& r)
+  {
+    // Store current values to ensure we use the original x, y, z
+    // for all three calculations.
+    const auto tx = self.x;
+    const auto ty = self.y;
+    const auto tz = self.z;
+
+    self.x = tx * r.m11 + ty * r.m21 + tz * r.m31;
+    self.y = tx * r.m12 + ty * r.m22 + tz * r.m32;
+    self.z = tx * r.m13 + ty * r.m23 + tz * r.m33;
+
+    return self;
+  }
 
   /**
      \brief Translate a point
@@ -766,6 +822,7 @@ namespace TASCAR {
     */
     void nonrt_set_rect(double width, double height);
     void apply_rot_loc(const pos_t& p0, const zyx_euler_t& o);
+    void apply_rot_loc(const pos_t& p0, const rotmat_t& o);
     bool is_infront(const pos_t& p0) const;
     bool is_behind(const pos_t& p0) const;
     /**
@@ -831,7 +888,7 @@ namespace TASCAR {
     std::vector<pos_t> edges_;
     std::vector<pos_t> vert_normals_;
     std::vector<pos_t> edge_normals_;
-    zyx_euler_t orientation;
+    rotmat_t orientation;
     pos_t delta;
     pos_t normal;
     pos_t local_normal;
@@ -858,7 +915,8 @@ namespace TASCAR {
     double area() const { return size.boxarea(); };
     pos_t center;
     pos_t size;
-    zyx_euler_t orientation;
+    // zyx_euler_t orientation;
+    rotmat_t orientation;
   };
 
   class c6dof_t {
@@ -867,7 +925,8 @@ namespace TASCAR {
     c6dof_t(const pos_t& psrc, const zyx_euler_t& osrc)
         : position(psrc), orientation(osrc){};
     pos_t position;
-    zyx_euler_t orientation;
+    // zyx_euler_t orientation;
+    rotmat_t orientation;
   };
 
   class quickhull_t {

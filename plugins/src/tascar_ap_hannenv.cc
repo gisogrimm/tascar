@@ -23,9 +23,11 @@
 
 class hannenv_t : public TASCAR::audioplugin_base_t {
 public:
-  hannenv_t( const TASCAR::audioplugin_cfg_t& cfg );
-  void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos, const TASCAR::zyx_euler_t&, const TASCAR::transport_t& tp);
+  hannenv_t(const TASCAR::audioplugin_cfg_t& cfg);
+  void ap_process(std::vector<TASCAR::wave_t>& chunk, const TASCAR::pos_t& pos,
+                  const TASCAR::rotmat_t&, const TASCAR::transport_t& tp);
   ~hannenv_t();
+
 private:
   double t0;
   double ramp1;
@@ -34,27 +36,21 @@ private:
   double period;
 };
 
-hannenv_t::hannenv_t( const TASCAR::audioplugin_cfg_t& cfg )
-  : audioplugin_base_t( cfg ),
-    t0(0),
-    ramp1(0.25),
-    steady(0.5),
-    ramp2(0.25),
-    period(2)
+hannenv_t::hannenv_t(const TASCAR::audioplugin_cfg_t& cfg)
+    : audioplugin_base_t(cfg), t0(0), ramp1(0.25), steady(0.5), ramp2(0.25),
+      period(2)
 {
-  GET_ATTRIBUTE(t0,"s","Start time");
-  GET_ATTRIBUTE(ramp1,"s","First ramp length");
-  GET_ATTRIBUTE(steady,"s","Duration of steady state");
-  GET_ATTRIBUTE(ramp2,"s","Second ramp length");
-  GET_ATTRIBUTE(period,"s","Period time");
+  GET_ATTRIBUTE(t0, "s", "Start time");
+  GET_ATTRIBUTE(ramp1, "s", "First ramp length");
+  GET_ATTRIBUTE(steady, "s", "Duration of steady state");
+  GET_ATTRIBUTE(ramp2, "s", "Second ramp length");
+  GET_ATTRIBUTE(period, "s", "Period time");
 }
 
-hannenv_t::~hannenv_t()
-{
-}
+hannenv_t::~hannenv_t() {}
 
 void hannenv_t::ap_process(std::vector<TASCAR::wave_t>& chunk,
-                           const TASCAR::pos_t&, const TASCAR::zyx_euler_t&,
+                           const TASCAR::pos_t&, const TASCAR::rotmat_t&,
                            const TASCAR::transport_t& tp)
 {
   const double t1(ramp1);

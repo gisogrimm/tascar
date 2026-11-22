@@ -1369,7 +1369,7 @@ void sound_t::geometry_update(double t)
 {
   orientation = local_orientation;
   if(parent)
-    orientation += parent->c6dof.orientation;
+    orientation *= parent->c6dof.orientation;
   if(global_position != position) {
     // this can only happen if global_position was changed
     // externally. Now we need to update local_position based on the

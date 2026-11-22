@@ -415,7 +415,7 @@ void trackir_tracker_t::get_and_process_ltr_markers()
     }
   } else {
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
-    //usleep(2000);
+    // usleep(2000);
   }
 }
 
@@ -627,9 +627,8 @@ void trackir_tracker_t::marker_match()
     for(uint32_t k = 0; k < cIdx[kC].size(); ++k)
       lscale += std::abs(vP[cIdx[kC][k]] - pC);
     lscale /= (cIdx[kC].size() * f * 0.105);
-    tf_presolve.orientation.z = -rot;
-    tf_presolve.orientation.y = 0;
-    tf_presolve.orientation.x = 0;
+    TASCAR::zyx_euler_t eul(-rot, 0, 0);
+    tf_presolve.orientation = eul;
     tf_presolve.position.z = -1.0 / lscale;
     tf_presolve.position.x = -std::real(pC) * tf_presolve.position.z / f;
     tf_presolve.position.y = -std::imag(pC) * tf_presolve.position.z / f;
@@ -659,7 +658,7 @@ trackir_solver_t::trackir_solver_t(const sensorplugin_cfg_t& cfg)
       distCoeffs(cv::Mat::zeros(4, 1, cv::DataType<double>::type)),
       maxframedist(0.05), use_presolvepos(false)
 {
-  zyx_euler_inv2mat(tf_cam.orientation, cam_comp_mat);
+  zyx_euler_inv2mat(tf_cam.orientation.to_euler(), cam_comp_mat);
   GET_ATTRIBUTE_(f);
   GET_ATTRIBUTE_(maxframedist);
   GET_ATTRIBUTE_(camcalibfile);
@@ -698,7 +697,7 @@ void trackir_solver_t::current2camcalib()
   std::lock_guard<std::mutex> lock(mtx);
   if(solved) {
     tf_cam = tf_current;
-    zyx_euler_inv2mat(tf_cam.orientation, cam_comp_mat);
+    zyx_euler_inv2mat(tf_cam.orientation.to_euler(), cam_comp_mat);
     // cv::Mat mat;
     // zyx_euler2mat( tf_cam.orientation, mat );
     // DEBUG(tf_cam.orientation.print());
@@ -735,7 +734,7 @@ void trackir_solver_t::load_camcalib()
   tf_cam.position = TASCAR::pos_t(calibvals[0], calibvals[1], calibvals[2]);
   tf_cam.orientation = TASCAR::zyx_euler_t(
       DEG2RAD * calibvals[3], DEG2RAD * calibvals[4], DEG2RAD * calibvals[5]);
-  zyx_euler_inv2mat(tf_cam.orientation, cam_comp_mat);
+  zyx_euler_inv2mat(tf_cam.orientation.to_euler(), cam_comp_mat);
 }
 
 void trackir_solver_t::load_crown()
@@ -784,14 +783,14 @@ void trackir_solver_t::save_camcalib()
     throw TASCAR::ErrMsg("Unable to open calib file \"" +
                          TASCAR::env_expand(camcalibfile) + "\".");
   std::lock_guard<std::mutex> lock(mtx);
+  auto eul = tf_cam.orientation.to_euler();
   calibfile << "# camera calibration" << std::endl
             << "# pos.x pos.y pos.z (meter)" << std::endl
             << "# rot.z rot.y rot.x (degree)" << std::endl
             << tf_cam.position.x << " " << tf_cam.position.y << " "
             << tf_cam.position.z << std::endl
-            << RAD2DEG * tf_cam.orientation.z << " "
-            << RAD2DEG * tf_cam.orientation.y << " "
-            << RAD2DEG * tf_cam.orientation.x << std::endl;
+            << RAD2DEG * eul.z << " " << RAD2DEG * eul.y << " "
+            << RAD2DEG * eul.x << std::endl;
 }
 
 void trackir_solver_t::clear_camcalib()
@@ -799,7 +798,7 @@ void trackir_solver_t::clear_camcalib()
   std::lock_guard<std::mutex> lock(mtx);
   tf_cam.position = pos_t();
   tf_cam.orientation = zyx_euler_t();
-  zyx_euler_inv2mat(tf_cam.orientation, cam_comp_mat);
+  zyx_euler_inv2mat(tf_cam.orientation.to_euler(), cam_comp_mat);
 }
 
 trackir_drawer_t::trackir_drawer_t(const sensorplugin_cfg_t& cfg)
@@ -891,9 +890,10 @@ void c6dof_to_vec(std::vector<double>& self, const TASCAR::c6dof_t& tf)
   self[0] = tf.position.x;
   self[1] = tf.position.y;
   self[2] = tf.position.z;
-  self[3] = tf.orientation.z;
-  self[4] = tf.orientation.y;
-  self[5] = tf.orientation.x;
+  auto eul = tf.orientation.to_euler();
+  self[3] = eul.z;
+  self[4] = eul.y;
+  self[5] = eul.x;
 }
 
 void trackir_solver_t::solve()
@@ -948,7 +948,7 @@ void trackir_solver_t::solve()
         tf_global.position *= tf_cam.orientation;
         // calibration of pre-solved estimation:
         cv::Mat presolve_rotmat;
-        zyx_euler2mat(tf_presolve.orientation, presolve_rotmat);
+        zyx_euler2mat(tf_presolve.orientation.to_euler(), presolve_rotmat);
         presolve_rotmat = presolve_rotmat * cam_comp_mat;
         tf_presolve.orientation = rotmat2euler(presolve_rotmat);
         tf_presolve.position -= tf_cam.position;

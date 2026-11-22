@@ -1139,8 +1139,7 @@ void soundpath_t::update_position()
     // plane.
 
     // Get parent rotation matrix
-    rotmat_t r;
-    r.set_from_euler(parent->orientation);
+    rotmat_t r = parent->orientation;
 
     // Create reflection matrix F = I - 2 * n * n^T
     const pos_t n = reflector->get_normal();
@@ -1159,7 +1158,7 @@ void soundpath_t::update_position()
     r *= F;
 
     // Convert back to Euler angles
-    orientation = r.to_euler();
+    orientation = r;
 
   } else {
     position = primary->position;

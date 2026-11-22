@@ -226,9 +226,7 @@ void motionpath_t::update(uint32_t tp_frame, bool)
     pdt -= location.interp(tp);
     if(sampledorientation < 0)
       pdt *= -1.0;
-    c6dof_.orientation.z = pdt.azim();
-    c6dof_.orientation.y = pdt.elev();
-    c6dof_.orientation.x = 0.0;
+    c6dof_.orientation = TASCAR::zyx_euler_t(pdt.azim(), pdt.elev(), 0.0);
   }
 
   // Apply the calculated transform to all attached objects

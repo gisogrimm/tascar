@@ -35,7 +35,10 @@
       return NULL;                                                             \
     }                                                                          \
   };                                                                           \
-  extern "C" const char* baseclass##_tascar_version() { return TASCARVER; };
+  extern "C" const char* baseclass##_tascar_version()                          \
+  {                                                                            \
+    return TASCARVER;                                                          \
+  };
 
 #define TASCAR_RESOLVER(baseclass, cfgclass)                                   \
   void baseclass##_resolver(baseclass** instance, cfgclass cfg, void* lib,     \
