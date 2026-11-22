@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<session license="CC-0">
+  <scene>
+    <receiver name="x" type="vmic" a="0.5"/>
+    <receiver name="xy" type="vmic" a="0.5">
+      <orientation>0 45 0 0</orientation>
+    </receiver>
+    <receiver name="y" type="vmic" a="0.5">
+      <orientation>0 90 0 0</orientation>
+    </receiver>
+    <receiver name="z" type="vmic" a="0.5">
+      <orientation>0 0 -90 0</orientation>
+    </receiver>
+    <diffuse>
+      <orientation>0 0 0 0
+      1 360 0 0</orientation>
+      <plugins>
+	<!-- ACN, FuMa: t y z x -->
+	<const a="0.7071 1 0 0"/>
+      </plugins>
+    </diffuse>
+  </scene>
+</session>
